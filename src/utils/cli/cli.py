@@ -7,12 +7,16 @@ Contains useful functions for commands:
  - make output dirs
 ------------------------------------------------------------------------------
 """
+import logging
 
 __version__ = "1.0.0"
 __copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
 __Application__ = "market_scout"
 
-logger_name = f"{__Application__}_{__version__}_driver"
+SCOUT_LOGGER_NAME = f"{__Application__}_{__version__}_scout"
+
+logger = logging.getLogger(SCOUT_LOGGER_NAME)
+
 
 import logging
 import os
@@ -22,6 +26,7 @@ import typer
 from datetime import datetime, timedelta
 from pathlib import Path
 from src.utils.logging_utils import LoggingUtils, LogFileCreationError
+from src.utils.references import hour, week, day
 
 
 def version_callback(value: bool) -> None:
@@ -47,11 +52,19 @@ def set_error_and_exit(error):
 
 
 def parse_date(date_string: str, formats: list) -> datetime:
+    """
+    Parses a date from a string using the 'YYYY-MM-DD' or
+    'YYYY/MM/DD' format.
+    If the format doesn't match, it raises a ValueError.
+
+    :params date_string: string representation of the date
+    :params     formats: valid formats
+    """
     for fmt in formats:
         try:
             return datetime.strptime(date_string, fmt)
-        except ValueError:
-            continue
+        except ValueError as ve:
+            logger.error(f"Could not parse date: {ve}")
     raise ValueError(f"Could not parse date: {date_string}")
 
 
@@ -68,13 +81,13 @@ def get_default_start_end_time(time_unit: str) -> (datetime, datetime):
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-    if time_unit == "hour":
+    if time_unit == hour:
         # If the time unit is an hour, set the default end time to the next hour
         end_of_day = now.replace(minute=59, second=59, microsecond=999999)
-    elif time_unit == "day":
+    elif time_unit == day:
         # If the time unit is a day, the default times are already set to the start and end of the day
         pass
-    elif time_unit == "week":
+    elif time_unit == week:
         # If the time unit is a week, set the default end time to the end of the week
         end_of_day += timedelta(days=(6 - end_of_day.weekday()))
     # Handle other time units as needed
@@ -96,7 +109,7 @@ def init_logging(log_level: str) -> LoggingUtils:
         log_dir.mkdir(exist_ok=True, parents=True)
 
         logging_utils = LoggingUtils(
-            application_name=logger_name,
+            application_name=SCOUT_LOGGER_NAME,
             log_file=log_file,
             file_level=log_level,
             console_level=logging.ERROR,
