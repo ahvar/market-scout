@@ -7,7 +7,7 @@ scout (main)
 
 import typer
 from rich import print as rprint
-from src.utils.cli import version_callback, __version__, __Application__
+from src.utils.cli.cli import version_callback, __version__, __Application__
 from src.app import app
 
 

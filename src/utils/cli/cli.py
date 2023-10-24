@@ -19,7 +19,7 @@ import os
 import sys
 import time
 import typer
-import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from src.utils.logging_utils import LoggingUtils, LogFileCreationError
 
@@ -44,6 +44,42 @@ def set_error_and_exit(error):
             The error message to report.
     """
     sys.stderr.write(f"Error: {error} \n")
+
+
+def parse_date(date_string: str, formats: list) -> datetime:
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_string, fmt)
+        except ValueError:
+            continue
+    raise ValueError(f"Could not parse date: {date_string}")
+
+
+def get_default_start_end_time(time_unit: str) -> (datetime, datetime):
+    """
+    Calculates the default start and end times based on the current day
+    and the specified time unit. It assumes the smallest time unit is a minute.
+
+    :params time_unit: time unit
+    :return datetime: the time unit as datetime
+    """
+    # Assuming the smallest time unit is a minute
+    now = datetime.now()
+    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    if time_unit == "hour":
+        # If the time unit is an hour, set the default end time to the next hour
+        end_of_day = now.replace(minute=59, second=59, microsecond=999999)
+    elif time_unit == "day":
+        # If the time unit is a day, the default times are already set to the start and end of the day
+        pass
+    elif time_unit == "week":
+        # If the time unit is a week, set the default end time to the end of the week
+        end_of_day += timedelta(days=(6 - end_of_day.weekday()))
+    # Handle other time units as needed
+
+    return start_of_day, end_of_day
 
 
 def init_logging(log_level: str) -> LoggingUtils:
