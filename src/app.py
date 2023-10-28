@@ -16,7 +16,7 @@ from src.utils.cli.callbacks import (
 )
 from src.utils.cli.cli import init_logging
 
-app = typer.Typer
+app = typer.Typer()
 
 
 @app.command(

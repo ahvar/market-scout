@@ -23,10 +23,10 @@ def main(
     ),
 ):
     message = f"""
-    [bold]------------------------------------------------------------------------------------------------[\bold]
-    [bold blue]{__Application__.replace("_", " ").upper()} {__version__} [\bold blue]
-    [bold yellow]A query tool for equity market data [\bold yellow]
-    [bold]------------------------------------------------------------------------------------------------[\bold]
+    [bold]------------------------------------------------------------------------------------------------[/bold]
+    [bold blue]{__Application__.replace("_", " ").upper()} {__version__} [/bold blue]
+    [bold yellow]A query tool for equity market data [/bold yellow]
+    [bold]------------------------------------------------------------------------------------------------[/bold]
 
     [green]
     A comprehensive command-line companion for navigating the financial markets. Interact with your brokerage account, 
