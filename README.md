@@ -70,7 +70,7 @@ Here is how to run scout
     $ cd /market_scout/
     $ python ./helper_scripts/not_here_yet.sh
 
-Now you can observe the timestamped output directory in etl/ and check the/market_scout/etl/output_<timestamp>/logs/scout.log for duplicate and unique record counts
+Now you can observe the timestamped output directory in /path/to/output and check /path/to/output/output_<timestamp>/logs/scout.log for market data
 
 ## Spin up an instance of the Flask server
     # change to the api/ directory in project root and run the app
