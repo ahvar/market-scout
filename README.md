@@ -44,14 +44,16 @@ Here are two options for printing the help message for Market Scout
     # change to project root and run scout
     $ cd /path/to/market_scout/
     $ scout
-    ![the application description should be here](./img/app_description.png)
+
+![the application description should be here](./img/app_description.png)
 
 ### Print help message
     # be sure your virtual environment is activated
     # change to project root and run the helper script
     $ cd/market_scout/
     $ scout --help
-    ![scout help message should be here](./img/scout_help_msg.png)
+
+![scout help message should be here](./img/scout_help_msg.png)
 
 ## Run the Market Scout
 Here is how to run scout
