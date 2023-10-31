@@ -28,9 +28,9 @@ class TestCLI(unittest.TestCase):
                 "-u",
                 "minute",
                 "-s",
-                "2023-01-01T00:00",
+                "2023-01-01",
                 "-e",
-                "2023-01-01T01:00",
+                "2023-01-01",
             ],
         )
         self.assertEqual(result.exit_code, 0)
@@ -39,8 +39,8 @@ class TestCLI(unittest.TestCase):
         """
         Test the 'quote' command with callbacks for start and end times validation.
         """
-        start_time = "2023-01-01T00:00"
-        end_time = "2023-01-01T01:00"
+        start_time = "2023-01-01"
+        end_time = "2023-01-01"
         result = self.runner.invoke(
             app,
             [
@@ -63,8 +63,3 @@ class TestCLI(unittest.TestCase):
         )  # Assuming an error would be printed with 'Error:' in the message.
 
         # Here you would add more test scenarios, especially edge cases, to make sure all code paths in your callbacks are being tested properly.
-
-
-# The following is standard boilerplate to run the test case.
-if __name__ == "__main__":
-    unittest.main()
