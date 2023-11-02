@@ -9,12 +9,14 @@ __Application__ = "MarketScout"
 logger_name = f"{__Application__}_{__version__}_driver"
 
 import typer
+import logging
 from src.utils.cli.callbacks import (
     validate_end_time,
     validate_start_time,
     validate_time_unit,
 )
 from src.utils.cli.cli import init_logging
+from src.api.ib import IBApi
 
 app = typer.Typer()
 
@@ -24,7 +26,7 @@ app = typer.Typer()
 )
 def quote(
     ctx: typer.Context,
-    quote: str,
+    ticker: str = typer.Argument(..., help="Ticker symbol for the stock"),
     time_unit: str = typer.Option(
         "minute",
         "-u",
@@ -38,5 +40,28 @@ def quote(
     end_time: str = typer.Option(
         None, "-e", "--end-time", callback=validate_end_time, help="The end time"
     ),
+    debug: bool = typer.Option(
+        False,
+        "-b",
+        "--debug",
+        help="Set log level to debug",
+    ),
 ):
-    """ """
+    """
+    Retrieve historical data for a given ticker
+    """
+    if debug:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+    typer.echo(
+        f"Fetching data for {ticker} from {start_time} to {end_time} in {time_unit} intervals."
+    )
+    # Connect to IB API and fetch data based on the above parameters
+    # Handle possible errors with try-except blocks.
+    try:
+        # Mock the process of fetching data
+        data = "Sample data for demonstration purposes."
+        typer.echo(data)
+    except Exception as e:
+        typer.echo(f"An error occurred: {e}")

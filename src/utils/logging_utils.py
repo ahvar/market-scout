@@ -139,19 +139,19 @@ class LoggingUtils:
         """
         self._finish_date_time = datetime.now()
         finish = self._format_date_time(self._finish_date_time)
-        elapsedTime = self._finish_date_time - self._start_date_time
+        elapsed_time = self._finish_date_time - self._start_date_time
         self._logger.info(
             "**************************************************************"
         )
         self._logger.info(f"{self._app_Name} finished.")
         self._logger.info(f"  Finish time  = {finish}")
-        self._logger.info(f"  Elapsed time = {str(elapsedTime)}")
+        self._logger.info(f"  Elapsed time = {str(elapsed_time)}")
         self._logger.info(
             "**************************************************************"
         )
 
-    def _format_date_time(self, rawDateTime):
+    def _format_date_time(self, raw_date_time):
         """
         Formats a time value in a human-readable format.
         """
-        return rawDateTime.strftime(self._time_with_milleseconds)
+        return raw_date_time.strftime(self._time_with_milleseconds)

@@ -1,9 +1,11 @@
-#!/usr/bin/env python3
-
-import os
+"""
+Contains classes and functions to host data in a web server
+"""
+import pandas as pd
+from ibapi.client import EClient
+from ibapi.wrapper import EWrapper
 from datetime import datetime
 from pathlib import Path
-import pandas as pd
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
