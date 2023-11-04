@@ -3,15 +3,13 @@
 """
 Classes for interacting with the IB API.
 """
-
-import pandas as pd
-import threading
-import atexit
 import logging
+import atexit
+import threading
+import pandas as pd
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
-from src.utils.logging_utils import LoggingUtils
 from src.api.ib_api_exception import (
     IBApiException,
     IBApiConnectionException,
@@ -36,7 +34,7 @@ class IBApi(EWrapper, EClient):
         :param port: The port on which the TWS or IB Gateway is listening.
         :param client_id: A unique identifier for the client application.
         """
-        ib_api_logger.debug(f"Initializing {self.__class__.__name__} instance")
+        ib_api_logger.debug("Initializing %s instance", self.__class__.__name__)
         EWrapper.__init__(self)
         EClient.__init__(self, wrapper=self)
         self._host = host
@@ -46,8 +44,13 @@ class IBApi(EWrapper, EClient):
         self._request_counter = 0
         self._request_lock = threading.Lock()
         atexit.register(self._disconnect_from_ib)
+        # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
         ib_api_logger.debug(
-            f"{self.__class__.__name__} instance initialized.\nHost: {self._host}\nPort: {self._port}\nClient_Id: {self._client_id}"
+            "%s instance initialized. \nHost: %s\nPort: %s\nClient_ID: %s",
+            self.__class__.__name__,
+            self._host,
+            self._port,
+            self._client_id,
         )
 
     def _run_connection_thread(self) -> None:
@@ -69,7 +72,11 @@ class IBApi(EWrapper, EClient):
         """
         if not self.isConnected():
             ib_api_logger.debug(
-                f"{self.__class__.__name__} is connecting to IB with host {self._host}, port {self._port}, and client_id {self._client_id}"
+                "%s is connecting to IB with host %s, port %s, and client_id %s",
+                self.__class__.__name__,
+                self._host,
+                self._port,
+                self._client_id,
             )
             try:
                 self.connect(self._host, self._port, self._client_id)
@@ -78,16 +85,13 @@ class IBApi(EWrapper, EClient):
                 )
                 self._connection_thread.start()
             except Exception as e:
-                ib_api_logger.error(
-                    f"{self.__class__.__name__} encountered an error while connecting to IB: {e}"
-                )
+                # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
+                ib_api_logger.error("Error while connecting to IB: %s", e)
                 raise IBApiConnectionException(
-                    f"An error occurred while connecting to IB"
+                    "An error occurred while connecting to IB"
                 ) from e
         else:
-            ib_api_logger.debug(
-                f"{self.__class__.__name__} is already connected to IB"
-            )
+            ib_api_logger.debug("%s already connected to IB", self.__class__.__name__)
 
     def _disconnect_from_ib(self) -> None:
         """
@@ -100,17 +104,16 @@ class IBApi(EWrapper, EClient):
                     self._connection_thread.join()  # Wait for the thread to complete
                     self._connection_thread = None
             except Exception as e:
-                ib_api_logger.error(
-                    f"{self.__class__.__name__} encountered an error while disconnecting from IB: {e}"
-                )
+                # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
+                ib_api_logger.error("Error while disconnecting from IB: %s", e)
                 raise IBApiConnectionException(
-                    f"An error occurred while disconnecting from IB"
+                    "An error occurred while disconnecting from IB"
                 ) from e
         else:
             ib_api_logger.debug(
-                f"{self.__class__.__name__} is already disconnected from IB"
+                "%s is already disconnected from IB", self.__class__.__name__
             )
-        
+
     def historicalData(self, reqId: int, bar):
         # `bar` contains the historical data information for that bar.
         # You can access bar's attributes to get the data:
@@ -120,7 +123,7 @@ class IBApi(EWrapper, EClient):
         low = bar.low
         close = bar.close
         volume = bar.volume
-    
+
         # You can now process/store this data as needed.
         # For example, you could append it to a list or store it in a database.
 
@@ -132,18 +135,19 @@ class IBApi(EWrapper, EClient):
     def error(self, reqId: int, errorCode: int, errorString: str):
         """
         This method is called when an error occurs.
-        
+
         :param reqId: The request ID that this error is associated with. If the error isn't associated with a request, reqId will be -1.
         :param errorCode: The error code.
         :param errorString: A description of the error.
         """
         # Log or print the error
-        ib_api_logger.error(f"Error. ReqId: {reqId}, Code: {errorCode}, Msg: {errorString}")
-        
+        ib_api_logger.error(
+            "Error. ReqId: %s, Code: %s, Msg: %s", reqId, errorCode, errorString
+        )
+
         # Depending on the nature of your application, you might also:
         # - Raise exceptions for certain error codes.
         # - Attempt to retry the request for certain
-
 
     def request_historical_data(
         self,
@@ -163,7 +167,14 @@ class IBApi(EWrapper, EClient):
         """
         req_id = self._get_next_request_id()
         ib_api_logger.debug(
-            f"{self.__class__.__name__} is requesting historical data from IB for {contract.symbol} with end_datetime {end_datetime}, duration {duration}, bar_size {bar_size}, use_rth {use_rth}, and req_id {req_id}"
+            "%s is requesting historical data from IB for %s with end_datetime %s, duration %s, bar_size %s, use_rth %s, and req_id %s",
+            self.__class__.__name__,
+            contract.symbol,
+            end_datetime,
+            duration,
+            bar_size,
+            use_rth,
+            req_id,
         )
         try:
             self.reqHistoricalData(
@@ -180,12 +191,14 @@ class IBApi(EWrapper, EClient):
             )
         except Exception as e:
             ib_api_logger.error(
-                f"{self.__class__.__name__} encountered an error while requesting historical data from IB: {e}"
+                "%s encountered an error while requesting historical data from IB: %s",
+                self.__class__.__name__,
+                e,
             )
             raise IBApiDataRequestException(
-                f"An error occurred while requesting data from IB"
+                "An error occurred while requesting data from IB"
             ) from e
-        
+
     def _get_next_request_id(self) -> int:
         """
         Get the next request ID for the IB API. The IB API requires a unique request ID for each request.
@@ -194,12 +207,10 @@ class IBApi(EWrapper, EClient):
         with self._request_lock:
             self._request_counter += 1
             return self._request_counter
-    
+
     @property
     def request_counter(self) -> int:
         """
         Get the current request counter.
         """
         return self._request_counter
-        
-
