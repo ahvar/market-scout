@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Classes for interacting with the IB API.
 """
@@ -10,6 +8,13 @@ import pandas as pd
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
+from src.utils.references import (
+    server_and_system_msgs,
+    connection_disruptions,
+    pacing_violation,
+    mkt_data_farm_msgs,
+    hist_data_farm_msgs,
+)
 from src.api.ib_api_exception import (
     IBApiException,
     IBApiConnectionException,
@@ -25,11 +30,18 @@ ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
 class IBApi(EWrapper, EClient):
     """
     Serves as the intermediary between the IB API and the app logic. Handles connecting/reconnecting, errors, formatting responses.
+
+    Callbacks:
+    ---------------------------------------------------------------------------------------------------------------------------------
+    When working with Interactive Brokers, one of the main concepts to understand is that it works in an asynchronous way. This means
+    that when you request data, you don't get it immediately. Instead, you get it through a callback. For example, when you request
+    historical data, you get it through the historicalData() callback. This means that you need to implement the callback methods.
     """
 
     def __init__(self, host: str, port: int, client_id: int):
         """
         Initialize the IBApi instance.
+
         :param host: The hostname or IP address of the machine on which the TWS or IB Gateway is running.
         :param port: The port on which the TWS or IB Gateway is listening.
         :param client_id: A unique identifier for the client application.
@@ -45,6 +57,7 @@ class IBApi(EWrapper, EClient):
         self._request_lock = threading.Lock()
         atexit.register(self._disconnect_from_ib)
         # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
+        # We save some performance overhead by not evaluating the f-string.
         ib_api_logger.debug(
             "%s instance initialized. \nHost: %s\nPort: %s\nClient_ID: %s",
             self.__class__.__name__,
@@ -85,7 +98,6 @@ class IBApi(EWrapper, EClient):
                 )
                 self._connection_thread.start()
             except Exception as e:
-                # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
                 ib_api_logger.error("Error while connecting to IB: %s", e)
                 raise IBApiConnectionException(
                     "An error occurred while connecting to IB"
@@ -104,7 +116,6 @@ class IBApi(EWrapper, EClient):
                     self._connection_thread.join()  # Wait for the thread to complete
                     self._connection_thread = None
             except Exception as e:
-                # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
                 ib_api_logger.error("Error while disconnecting from IB: %s", e)
                 raise IBApiConnectionException(
                     "An error occurred while disconnecting from IB"
@@ -115,39 +126,98 @@ class IBApi(EWrapper, EClient):
             )
 
     def historicalData(self, reqId: int, bar):
-        # `bar` contains the historical data information for that bar.
-        # You can access bar's attributes to get the data:
-        date = bar.date
-        open_ = bar.open
-        high = bar.high
-        low = bar.low
-        close = bar.close
-        volume = bar.volume
+        """
+        This callback is invoked for every data point/bar received from the IB API.
 
-        # You can now process/store this data as needed.
-        # For example, you could append it to a list or store it in a database.
+        :params reqId: The request ID that this bar data is associated with.
+        :params   bar: The bar data that was received.
+        """
+        try:
+            date = bar.date
+            open_ = bar.open
+            high = bar.high
+            low = bar.low
+            close = bar.close
+            volume = bar.volume
+            # You can now process/store this data as needed.
+            # For example, you could append it to a list or store it in a database.
+        except Exception as e:
+            ib_api_logger.error(
+                "Error while processing historical data. ReqId: %s, Error: %s", reqId, e
+            )
+            # Here you can add logic to handle the error, such as retrying the request,
+            # notifying the user, or storing the error in a log or database.
 
     def historicalDataEnd(self, reqId: int, start: str, end: str):
+        """
+        This callback indicates the end of the data transmission for the specific request.
+        This method will be called for every data point (or bar) that is returned by the API.
+
+        :params reqId: The request ID that this bar data is associated with.
+        :params start: The start date and time for the request.
+        :params   end: The end date and time for the request.
+        """
         # This indicates the end of historical data transmission for the request with id `reqId`
         # You can now finalize the processing for this data set, e.g., writing to a file or sending a signal that data is ready.
-        pass
+        try:
+            pass
+        except Exception as e:
+            ib_api_logger.error(
+                "Error at the end of historical data transmission. ReqId: %s, Error: %s",
+                reqId,
+                e,
+            )
 
     def error(self, reqId: int, errorCode: int, errorString: str):
         """
-        This method is called when an error occurs.
+        Callback for errors received from the IB API.
 
         :param reqId: The request ID that this error is associated with. If the error isn't associated with a request, reqId will be -1.
         :param errorCode: The error code.
         :param errorString: A description of the error.
         """
-        # Log or print the error
-        ib_api_logger.error(
-            "Error. ReqId: %s, Code: %s, Msg: %s", reqId, errorCode, errorString
-        )
+        if errorCode in server_and_system_msgs:  # Server and system messages
+            ib_api_logger.critical(
+                "Server or system message. Code: %s, Msg: %s", errorCode, errorString
+            )
+            # TODO: Implement connection retry logic here if necessary.
+        elif (
+            errorCode in connection_disruptions
+        ):  # Connection lost/restored without API
+            ib_api_logger.warning(
+                "Connection lost/restored without API. Code: %s, Msg: %s",
+                errorCode,
+                errorString,
+            )
+            # TODO: Decide whether to pause operations or wait for reconnection.
+        elif errorCode in pacing_violation:  # Historical data request pacing violation
+            ib_api_logger.warning(
+                "Historical data request pacing violation. Code: %s, Msg: %s",
+                errorCode,
+                errorString,
+            )
+            # TODO: Implement logic to slow down historical data requests.
+        else:
+            # General error handling
+            ib_api_logger.error(
+                "Error. ReqId: %s, Code: %s, Msg: %s", reqId, errorCode, errorString
+            )
+            # Here, you can decide whether to raise an exception or handle it differently
+            # depending on the severity of the error.
+            if self._is_critical_error(errorCode):
+                raise IBApiConnectionException(
+                    f"Critical error occurred: {errorString}"
+                )
 
-        # Depending on the nature of your application, you might also:
-        # - Raise exceptions for certain error codes.
-        # - Attempt to retry the request for certain
+    def _is_critical_error(self, error_code: int) -> bool:
+        """
+        Determine if the given error code is considered critical.
+
+        :params errorCode: The error code.
+        """
+        # Define your own set of critical error codes
+        critical_errors = {...}  # Populate with actual critical error codes
+        return error_code in critical_errors
 
     def request_historical_data(
         self,
