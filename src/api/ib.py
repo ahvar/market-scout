@@ -31,7 +31,7 @@ class IBApi(EWrapper, EClient):
     """
     Serves as the intermediary between the IB API and the app logic. Handles connecting/reconnecting, errors, formatting responses.
 
-    Callbacks:
+    Callbacks: https://interactivebrokers.github.io/tws-api/callbacks.html
     ---------------------------------------------------------------------------------------------------------------------------------
     When working with Interactive Brokers, one of the main concepts to understand is that it works in an asynchronous way. This means
     that when you request data, you don't get it immediately. Instead, you get it through a callback. For example, when you request

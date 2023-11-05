@@ -8,7 +8,8 @@ day = "day"
 week = "week"
 minute = "minute"
 
-# IB API error codes
+# IB API error codes: https://interactivebrokers.github.io/tws-api/message_codes.html
+
 connection_lost = 1100  # Connectivity between the TWS and the server is lost.
 connection_restored = (
     1101  # Connectivity between the TWS and the server is restored - data lost.
