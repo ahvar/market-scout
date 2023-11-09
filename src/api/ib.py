@@ -5,6 +5,7 @@ import logging
 import atexit
 import threading
 import pandas as pd
+import backoff as backoff
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
@@ -74,6 +75,13 @@ class IBApi(EWrapper, EClient):
         """
         self.run()
 
+    @backoff.on_exception(
+        backoff.expo,
+        IBApiException,
+        max_tries=8,
+        max_time=300,
+        jitter=backoff.full_jitter,
+    )
     def connect_to_ib(self) -> None:
         """
         Connect to the IB Gateway or TWS. This method is called from the main thread. We want to ensure that
