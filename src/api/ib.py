@@ -9,6 +9,7 @@ import backoff as backoff
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
+from src.api.ib_utils import ConnectionWatchdog
 from src.utils.references import (
     server_and_system_msgs,
     connection_disruptions,
@@ -56,6 +57,7 @@ class IBApi(EWrapper, EClient):
         self._connection_thread = None
         self._request_counter = 0
         self._request_lock = threading.Lock()
+        self._watchdog = None
         atexit.register(self._disconnect_from_ib)
         # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
         # We save some performance overhead by not evaluating the f-string.
@@ -105,6 +107,7 @@ class IBApi(EWrapper, EClient):
                     target=self._run_connection_thread
                 )
                 self._connection_thread.start()
+                self._start_watchdog()
             except Exception as e:
                 ib_api_logger.error("Error while connecting to IB: %s", e)
                 raise IBApiConnectionException(
@@ -117,6 +120,7 @@ class IBApi(EWrapper, EClient):
         """
         Disconnect from the IB Gateway or TWS.
         """
+        self._stop_watchdog()
         if self.isConnected():
             try:
                 self.disconnect()
@@ -132,6 +136,27 @@ class IBApi(EWrapper, EClient):
             ib_api_logger.debug(
                 "%s is already disconnected from IB", self.__class__.__name__
             )
+
+    def _start_watchdog(self) -> None:
+        """
+        Start the watchdog thread.
+        """
+        if self._watchdog is None or not self._watchdog.is_alive():
+            self._watchdog = ConnectionWatchdog(
+                check_interval=10,
+                connect_method=self.connect_to_ib,
+                is_connected_method=self.isConnected,
+            )
+            self._watchdog.start()
+
+    def _stop_watchdog(self) -> None:
+        """
+        Stop the watchdog thread.
+        """
+        if self._watchdog is not None and self._watchdog.is_alive():
+            self._watchdog.stop()
+            self._watchdog.join()
+            self._watchdog = None
 
     def historicalData(self, reqId: int, bar):
         """
