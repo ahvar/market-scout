@@ -7,7 +7,7 @@ import threading
 import time
 
 
-class ConnectionWatchdog(threading.Thread):
+class ConnectionWatchdog:
     """
     A watchdog class that monitors the connection to the IB API and
     """
@@ -33,27 +33,19 @@ class ConnectionWatchdog(threading.Thread):
         )
         self._running = True
 
-    def run(self):
+    def monitor_connection(self):
         """
         Runs the watchdog thread.
+        To make ConnectionWatchdog more responsive, there are multiple
+        shorter sleeps in a loop, each time checking the _running flag.
         """
         while self._running:
             if not self._is_connected_method():
-                self.handle_reconnection()
-            time.sleep(self._check_interval)
-
-    def is_connection_alive(self):
-        """
-        Checks if the connection to the IB API is alive.
-        :returns: True if the connection is alive, False otherwise.
-        """
-        pass
-
-    def handle_reconnection(self):
-        """
-        Handles the reconnection to the IB API.
-        """
-        self._connect_method()
+                self._connect_method()
+            for _ in range(0, self._check_interval, 1):
+                if not self._running:
+                    break
+                time.sleep(1)
 
     def stop(self):
         """

@@ -9,6 +9,7 @@ import backoff as backoff
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
+from concurrent.futures import ThreadPoolExecutor, Future
 from src.api.ib_utils import ConnectionWatchdog
 from src.utils.references import (
     server_and_system_msgs,
@@ -37,7 +38,7 @@ class IBApi(EWrapper, EClient):
     ---------------------------------------------------------------------------------------------------------------------------------
     When working with Interactive Brokers, one of the main concepts to understand is that it works in an asynchronous way. This means
     that when you request data, you don't get it immediately. Instead, you get it through a callback. For example, when you request
-    historical data, you get it through the historicalData() callback. This means that you need to implement the callback methods.
+    historical data, you get it through the historicalData() callback.
     """
 
     def __init__(self, host: str, port: int, client_id: int):
@@ -54,10 +55,11 @@ class IBApi(EWrapper, EClient):
         self._host = host
         self._port = port
         self._client_id = client_id
-        self._connection_thread = None
+        self._connection_future = None
         self._request_counter = 0
         self._request_lock = threading.Lock()
-        self._watchdog = None
+        self._watchdog_future = None
+        self._executor = ThreadPoolExecutor(max_workers=2)
         atexit.register(self._disconnect_from_ib)
         # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
         # We save some performance overhead by not evaluating the f-string.
@@ -68,6 +70,26 @@ class IBApi(EWrapper, EClient):
             self._port,
             self._client_id,
         )
+
+    def _start_services(self) -> None:
+        """
+        Start the connection and watchdog threads.
+        """
+        self._connection_future = self._executor.submit(self._run_connection_thread)
+        watchdog = ConnectionWatchdog(
+            check_interval=10,
+            connect_method=self.connect_to_ib,
+            is_connected_method=self.isConnected,
+        )
+        self._watchdog_future = self._executor.submit(watchdog.monitor_connection)
+
+    def _stop_services(self) -> None:
+        """
+        Stop the connection and watchdog threads.
+        """
+        if self._watchdog_future:
+            self._watchdog_future.cancel()
+        self._executor.shutdown(wait=True)
 
     def _run_connection_thread(self) -> None:
         """
@@ -103,11 +125,7 @@ class IBApi(EWrapper, EClient):
             )
             try:
                 self.connect(self._host, self._port, self._client_id)
-                self._connection_thread = threading.Thread(
-                    target=self._run_connection_thread
-                )
-                self._connection_thread.start()
-                self._start_watchdog()
+                self._start_services()
             except Exception as e:
                 ib_api_logger.error("Error while connecting to IB: %s", e)
                 raise IBApiConnectionException(
@@ -120,43 +138,23 @@ class IBApi(EWrapper, EClient):
         """
         Disconnect from the IB Gateway or TWS.
         """
-        self._stop_watchdog()
         if self.isConnected():
             try:
                 self.disconnect()
-                if self._connection_thread:
-                    self._connection_thread.join()  # Wait for the thread to complete
-                    self._connection_thread = None
+                if self._connection_future:
+                    self._connection_future.join()  # Wait for the thread to complete
+                    self._connection_future = None
+                    self._stop_services()
             except Exception as e:
                 ib_api_logger.error("Error while disconnecting from IB: %s", e)
                 raise IBApiConnectionException(
                     "An error occurred while disconnecting from IB"
                 ) from e
+
         else:
             ib_api_logger.debug(
                 "%s is already disconnected from IB", self.__class__.__name__
             )
-
-    def _start_watchdog(self) -> None:
-        """
-        Start the watchdog thread.
-        """
-        if self._watchdog is None or not self._watchdog.is_alive():
-            self._watchdog = ConnectionWatchdog(
-                check_interval=10,
-                connect_method=self.connect_to_ib,
-                is_connected_method=self.isConnected,
-            )
-            self._watchdog.start()
-
-    def _stop_watchdog(self) -> None:
-        """
-        Stop the watchdog thread.
-        """
-        if self._watchdog is not None and self._watchdog.is_alive():
-            self._watchdog.stop()
-            self._watchdog.join()
-            self._watchdog = None
 
     def historicalData(self, reqId: int, bar):
         """
@@ -317,3 +315,45 @@ class IBApi(EWrapper, EClient):
         Get the current request counter.
         """
         return self._request_counter
+
+    @property
+    def watchdog(self) -> ConnectionWatchdog:
+        """
+        Get the watchdog thread.
+        """
+        return self._watchdog_future
+
+    @watchdog.setter
+    def watchdog(self, watchdog: ConnectionWatchdog) -> None:
+        """
+        Set the watchdog thread.
+        """
+        self._watchdog_future = watchdog
+
+    @property
+    def connection_thread(self) -> threading.Thread:
+        """
+        Get the connection thread.
+        """
+        return self._connection_future
+
+    @connection_thread.setter
+    def connection_thread(self, connection_thread: threading.Thread) -> None:
+        """
+        Set the connection thread.
+        """
+        self._connection_future = connection_thread
+
+    @property
+    def executor(self) -> ThreadPoolExecutor:
+        """
+        Get the executor.
+        """
+        return self._executor
+
+    @executor.setter
+    def executor(self, executor: ThreadPoolExecutor) -> None:
+        """
+        Set the executor.
+        """
+        self._executor = executor

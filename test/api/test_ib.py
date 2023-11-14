@@ -39,14 +39,22 @@ class TestIBApi(unittest.TestCase):
         """
         Tear down the IBApi instance after each test.
         """
-        if self.ib_api.isConnected():
-            self.ib_api.isConnected = MagicMock(return_value=False)
+        if self.ib_api.watchdog is not None:
+            self.ib_api.watchdog.stop()
+        if self.ib_api.connection_thread and self.ib_api.connection_thread.is_alive():
+            self.ib_api.connection_thread.join()
+            self.ib_api.connection_thread = None
 
+        self.ib_api.isConnected = MagicMock(return_value=False)
+        self.ib_api._disconnect_from_ib()
+
+    @patch("src.api.ib.ConnectionWatchdog")
     @patch("src.api.ib.threading.Thread.start")
-    def test_connect_to_ib_successful(self, mock_thread_start):
+    def test_connect_to_ib_successful(self, mock_thread_start, mock_watchdog):
         """
         Test connecting to IB successfully.
         :params mock_thread_start: Mock the Thread.start() method
+        :params mock_watchdog: Mock the ConnectionWatchdog class
         """
         self.ib_api.connect_to_ib()
         self.ib_api.connect.assert_called_once_with("127.0.0.1", 4002, 0)
@@ -54,7 +62,8 @@ class TestIBApi(unittest.TestCase):
         # if self.ib_api.connect is successful then self.ib_api.isConnected should be True
         self.ib_api.isConnected = MagicMock(return_value=True)
         self.assertTrue(self.ib_api.isConnected())
-        mock_thread_start.assert_called_once()
+        # mock_thread_start.assert_called_once()
+        mock_watchdog.assert_called_once()
 
     def test_connect_to_ib(self):
         """
@@ -62,6 +71,21 @@ class TestIBApi(unittest.TestCase):
         """
         self.ib_api.connect_to_ib()
         self.ib_api.connect.assert_called_with("127.0.0.1", 4002, 0)
+
+    @patch("src.api.ib.IBApi.connect")
+    def test_connect_to_ib_with_retries(self, mock_ib_connect):
+        """
+        Test connecting to IB with retries
+        :params mock_ib_connect: Mock the IBApi.connect() method
+        """
+        mock_ib_connect.side_effect = IBApiConnectionException("Connection failed")
+
+        with self.assertRaises(IBApiConnectionException):
+            self.ib_api.connect_to_ib()
+
+        self.assertEqual(
+            mock_ib_connect.call_count, 8
+        )  # max_tries = 8 defined in decorator
 
     def test_disconnect_from_ib(self):
         """
@@ -84,16 +108,31 @@ class TestIBApi(unittest.TestCase):
         )
         self.assertTrue(mock_req_historical_data.called)
 
-    def test_connect_to_ib_exception(self):
+    # @patch("src.api.ib.backoff.on_exception")
+    @patch("src.api.ib.threading.Thread.start")
+    @patch("src.api.ib.ConnectionWatchdog.start")
+    @patch("src.api.ib.IBApi.connect")
+    def test_connect_to_ib_exception(
+        self,
+        mock_connect,
+        mock_watchdog_start,
+        mock_thread_start,
+    ):
         """
         Test connecting to IB with an exception
+        :params mock_connect: Mock the IBApi.connect() method
         """
+        self.ib_api.connect_to_ib = lambda: IBApi.connect_to_ib(self.ib_api)
         # Given
         self.ib_api.connect.side_effect = Exception("Connection failed")
 
         # When/Then
         with self.assertRaises(IBApiConnectionException):
             self.ib_api.connect_to_ib()
+
+        mock_connect.assert_called_once()
+        mock_thread_start.assert_not_called()
+        mock_watchdog_start.assert_not_called()
 
     def test_error(self):
         """
