@@ -60,7 +60,7 @@ class IBApi(EWrapper, EClient):
         self._request_lock = threading.Lock()
         self._watchdog_future = None
         self._executor = ThreadPoolExecutor(max_workers=2)
-        atexit.register(self._disconnect_from_ib)
+        atexit.register(self.disconnect_from_ib)
         # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
         # We save some performance overhead by not evaluating the f-string.
         ib_api_logger.debug(
@@ -95,7 +95,7 @@ class IBApi(EWrapper, EClient):
         """
         Run the connection thread to keep the IB connection alive. To do this we call the IBApi.run() method
         of the EClient class, which is a blocking call. To avoid blocking the main thread, we run it in a
-        separate thread. To manage the thread, we use the threading module.
+        separate thread.
         """
         self.run()
 
@@ -134,7 +134,7 @@ class IBApi(EWrapper, EClient):
         else:
             ib_api_logger.debug("%s already connected to IB", self.__class__.__name__)
 
-    def _disconnect_from_ib(self) -> None:
+    def disconnect_from_ib(self) -> None:
         """
         Disconnect from the IB Gateway or TWS.
         """
@@ -142,9 +142,8 @@ class IBApi(EWrapper, EClient):
             try:
                 self.disconnect()
                 if self._connection_future:
-                    self._connection_future.join()  # Wait for the thread to complete
                     self._connection_future = None
-                    self._stop_services()
+                self._stop_services()
             except Exception as e:
                 ib_api_logger.error("Error while disconnecting from IB: %s", e)
                 raise IBApiConnectionException(
@@ -317,18 +316,18 @@ class IBApi(EWrapper, EClient):
         return self._request_counter
 
     @property
-    def watchdog(self) -> ConnectionWatchdog:
+    def watchdog_future(self) -> Future:
         """
-        Get the watchdog thread.
+        Get the watchdog future.
         """
         return self._watchdog_future
 
-    @watchdog.setter
-    def watchdog(self, watchdog: ConnectionWatchdog) -> None:
+    @watchdog_future.setter
+    def watchdog_future(self, watchdog_future: Future) -> None:
         """
-        Set the watchdog thread.
+        Set the watchdog future.
         """
-        self._watchdog_future = watchdog
+        self._watchdog_future = watchdog_future
 
     @property
     def connection_thread(self) -> threading.Thread:

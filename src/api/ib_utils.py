@@ -3,7 +3,6 @@ Utility classes and functions for the IB API.
 """
 
 from typing import Any, Callable
-import threading
 import time
 
 
