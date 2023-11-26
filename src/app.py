@@ -16,7 +16,7 @@ from src.utils.cli.callbacks import (
     validate_time_unit,
 )
 from src.utils.cli.cli import init_logging
-from src.api.ib import IBApi
+from src.api.ib import IBApiClient
 
 app = typer.Typer()
 

@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 date_formats = [
     "%Y/%m/%d",
     "%Y-%m-%d",
@@ -7,6 +9,21 @@ hour = "hour"
 day = "day"
 week = "week"
 minute = "minute"
+
+
+@dataclass
+class PriceBar:
+    """
+    PriceBar dataclass
+    """
+
+    date: str = "date"
+    open: str = "open"
+    high: str = "high"
+    low: str = "low"
+    close: str = "close"
+    volume: str = "volume"
+
 
 # IB API error codes: https://interactivebrokers.github.io/tws-api/message_codes.html
 

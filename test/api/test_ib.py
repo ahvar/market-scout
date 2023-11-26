@@ -3,7 +3,7 @@ Test IBApi with unittest.TestCase
 """
 import unittest
 from ibapi.contract import Contract
-from src.api.ib import IBApi
+from src.api.ib import IBApiClient
 from src.api.ib_api_exception import IBApiConnectionException
 from unittest.mock import patch, create_autospec, MagicMock
 from datetime import datetime, timedelta
@@ -24,7 +24,7 @@ class TestIBApi(unittest.TestCase):
         :params mock_disconnect: Mock the IBApi.disconnect() method
         :params mock_connect: Mock the IBApi.connect() method
         """
-        self.ib_api = IBApi(host="127.0.0.1", port=4002, client_id=0)
+        self.ib_api = IBApiClient(host="127.0.0.1", port=4002, client_id=0)
         # Mock the connect and run methods so no actual connection is attempted.
         self.ib_api.connect = mock_connect
         self.ib_api.executor = mock_executor

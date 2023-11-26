@@ -17,6 +17,7 @@ from src.utils.references import (
     pacing_violation,
     mkt_data_farm_msgs,
     hist_data_farm_msgs,
+    PriceBar,
 )
 from src.api.ib_api_exception import (
     IBApiException,
@@ -30,7 +31,7 @@ IB_API_LOGGER_NAME = __Application__ + "__" + __version__
 ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
-class IBApi(EWrapper, EClient):
+class IBApiClient(EWrapper, EClient):
     """
     Serves as the intermediary between the IB API and the app logic. Handles connecting/reconnecting, errors, formatting responses.
 
@@ -60,6 +61,16 @@ class IBApi(EWrapper, EClient):
         self._request_lock = threading.Lock()
         self._watchdog_future = None
         self._executor = ThreadPoolExecutor(max_workers=2)
+        self._historical_data = pd.DataFrame(
+            columns=[
+                PriceBar.date,
+                PriceBar.open,
+                PriceBar.high,
+                PriceBar.low,
+                PriceBar.close,
+                PriceBar.volume,
+            ]
+        )
         atexit.register(self.disconnect_from_ib)
         # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
         # We save some performance overhead by not evaluating the f-string.
@@ -163,22 +174,54 @@ class IBApi(EWrapper, EClient):
         :params   bar: The bar data that was received.
         """
         try:
-            date = bar.date
-            open_ = bar.open
-            high = bar.high
-            low = bar.low
-            close = bar.close
-            volume = bar.volume
-            # You can now process/store this data as needed.
-            # For example, you could append it to a list or store it in a database.
+            new_row = {
+                PriceBar.date: bar.date,
+                PriceBar.open: bar.open,
+                PriceBar.high: bar.high,
+                PriceBar.low: bar.low,
+                PriceBar.close: bar.close,
+                PriceBar.volume: bar.volume,
+            }
+            self._historical_data = self._historical_data.append(
+                new_row, ignore_index=True
+            )
+        except KeyError as e:
+            ib_api_logger.error(
+                "%s encountered a KeyError while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+        except pd.errors.ParserError as e:
+            ib_api_logger.error(
+                "%s encountered Pandas error while parsing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+        except pd.errors.EmptyDataError as e:
+            ib_api_logger.error(
+                "%s encountered a Pandas EmptyDataError while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+        except ValueError as e:
+            ib_api_logger.error(
+                "%s encountered a ValueError while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
         except Exception as e:
             ib_api_logger.error(
-                "Error while processing historical data. ReqId: %s, Error: %s", reqId, e
+                "%s encountered an unexpected error while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
             )
-            # Here you can add logic to handle the error, such as retrying the request,
-            # notifying the user, or storing the error in a log or database.
 
-    def historicalDataEnd(self, reqId: int, start: str, end: str):
+    def historicalDataEnd(self, reqId: int, start: str, end: str) -> None:
         """
         This callback indicates the end of the data transmission for the specific request.
         This method will be called for every data point (or bar) that is returned by the API.
@@ -198,7 +241,7 @@ class IBApi(EWrapper, EClient):
                 e,
             )
 
-    def error(self, reqId: int, errorCode: int, errorString: str):
+    def error(self, reqId: int, errorCode: int, errorString: str) -> None:
         """
         Callback for errors received from the IB API.
 
