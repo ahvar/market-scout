@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Script file intended for executable invocation
+    Scout: A command-line companion for navigating the financial markets.
 
-scout (main)
+Can be invoked from the command line as 'scout'
 """
 
 import typer
 from rich import print as rprint
-from src.utils.cli.cli import version_callback, __version__, __Application__
+from src.utils.references import __Application__, __version__
+from src.utils.cli.cli import version_callback
 from src.app import app
 
 
@@ -22,6 +23,9 @@ def main(
         help="Show software version",
     ),
 ):
+    """
+    Prints application information and exits if no subcommand is provided.
+    """
     message = f"""
     [bold]------------------------------------------------------------------------------------------------[/bold]
     [bold blue]{__Application__.replace("_", " ").upper()} {__version__} [/bold blue]

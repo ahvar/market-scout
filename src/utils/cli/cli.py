@@ -7,26 +7,21 @@ Contains useful functions for commands:
  - make output dirs
 ------------------------------------------------------------------------------
 """
-import logging
-
-__version__ = "1.0.0"
-__copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
-__Application__ = "market_scout"
-
-SCOUT_LOGGER_NAME = f"{__Application__}_{__version__}_scout"
-
-logger = logging.getLogger(SCOUT_LOGGER_NAME)
-
-
-import logging
-import os
 import sys
 import time
+import logging
 import typer
 from datetime import datetime, timedelta
 from pathlib import Path
+
 from src.utils.logging_utils import LoggingUtils, LogFileCreationError
-from src.utils.references import hour, week, day
+from src.utils.references import hour, week, day, minute, __Application__, __version__
+
+__copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
+
+SCOUT_LOGGER_NAME = f"{__Application__}_{__version__}_driver"
+
+logger = logging.getLogger(SCOUT_LOGGER_NAME)
 
 
 def version_callback(value: bool) -> None:
@@ -62,10 +57,11 @@ def parse_date(date_string: str, formats: list) -> datetime:
     """
     for fmt in formats:
         try:
+            logger.debug("Trying to parse date string: %s", date_string)
             return datetime.strptime(date_string, fmt)
         except ValueError as ve:
-            logger.error(f"Could not parse date: {ve}")
-    raise ValueError(f"Could not parse date: {date_string}")
+            logger.debug("Could not parse date: %s", ve)
+    raise ValueError("Could not parse date: %s", date_string)
 
 
 def get_default_start_end_time(time_unit: str) -> (datetime, datetime):
@@ -90,7 +86,6 @@ def get_default_start_end_time(time_unit: str) -> (datetime, datetime):
     elif time_unit == week:
         # If the time unit is a week, set the default end time to the end of the week
         end_of_day += timedelta(days=(6 - end_of_day.weekday()))
-    # Handle other time units as needed
 
     return start_of_day, end_of_day
 
@@ -114,6 +109,6 @@ def init_logging(log_level: str) -> LoggingUtils:
             file_level=log_level,
             console_level=logging.ERROR,
         )
-        return LoggingUtils
+        return logging_utils
     except LogFileCreationError as lfe:
         set_error_and_exit(f"Unable to create log file: {lfe.filespec}")

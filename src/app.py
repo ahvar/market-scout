@@ -1,15 +1,9 @@
 """
 scout app
 """
-
-__version__ = "1.0.0"
-__copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
-__Application__ = "MarketScout"
-
-logger_name = f"{__Application__}_{__version__}_driver"
-
-import typer
 import logging
+import typer
+from datetime import datetime
 from src.utils.cli.callbacks import (
     validate_end_time,
     validate_start_time,
@@ -17,7 +11,13 @@ from src.utils.cli.callbacks import (
 )
 from src.utils.cli.cli import init_logging
 from src.api.ib import IBApiClient
+from src.utils.references import __Application__, __version__
 
+__copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
+
+
+logger_name = f"{__Application__}_{__version__}_driver"
+logger = logging.getLogger(logger_name)
 app = typer.Typer()
 
 

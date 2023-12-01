@@ -7,17 +7,21 @@ Command-line callback functions:
  - validate_time_unit
 ------------------------------------------------------------------------------
 """
-import typer
 import logging
+import typer
 from datetime import datetime, timedelta
 from src.utils.cli.cli import parse_date, get_default_start_end_time
-from src.utils.references import date_formats, hour, day, minute, week
+from src.utils.references import (
+    date_formats,
+    hour,
+    day,
+    minute,
+    week,
+    __Application__,
+    __version__,
+)
 
-__version__ = "1.0.0"
-__copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
-__Application__ = "market_scout"
-
-SCOUT_LOGGER_NAME = f"{__Application__}_{__version__}_scout"
+SCOUT_LOGGER_NAME = f"{__Application__}_{__version__}_driver"
 
 logger = logging.getLogger(SCOUT_LOGGER_NAME)
 
@@ -36,12 +40,12 @@ def validate_start_time(ctx: typer.Context, start: str) -> str:
         )
         start_time, _ = get_default_start_end_time(ctx.params["time_unit"])
         return start_time
-    else:
-        try:
-            logger.debug(f"Parsing start date string: {start}")
-            return parse_date(start, date_formats)
-        except ValueError as e:
-            raise typer.BadParameter(str(e))
+    try:
+        logger.debug("%s Parsing start date string", start)
+        return parse_date(start, date_formats)
+    except ValueError as e:
+        logger.error("Could not parse date: %s", e)
+        raise typer.BadParameter(str(e))
 
 
 def validate_end_time(ctx: typer.Context, end: str) -> str:
@@ -58,12 +62,12 @@ def validate_end_time(ctx: typer.Context, end: str) -> str:
         )
         _, end_time = get_default_start_end_time(ctx.params["time_unit"])
         return end_time
-    else:
-        try:
-            logger.debug(f"Parsing end date string: {end}")
-            return parse_date(end, date_formats)
-        except ValueError as e:
-            raise typer.BadParameter(str(e))
+    try:
+        logger.debug("Parsing end date string: %s", end)
+        return parse_date(end, date_formats)
+    except ValueError as e:
+        logger.error("Could not parse date: %s", e)
+        raise typer.BadParameter(str(e))
 
 
 def validate_time_unit(ctx: typer.Context, unit: str) -> str:
@@ -76,6 +80,7 @@ def validate_time_unit(ctx: typer.Context, unit: str) -> str:
     logger.debug("Validating time units...")
     valid_time_units = [hour, minute, day, week]
     if unit not in valid_time_units:
+        logger.error("Invalid time unit. Please choose from %s", valid_time_units)
         raise typer.BadParameter(
             f"Invalid time unit. Please choose from {valid_time_units}."
         )

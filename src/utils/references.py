@@ -25,6 +25,17 @@ class PriceBar:
     volume: str = "volume"
 
 
+@dataclass
+class Tickers:
+    """
+    Tickers dataclass
+    """
+
+    apple: str = "AAPL"
+    tesla: str = "TSLA"
+    microsoft: str = "MSFT"
+
+
 # IB API error codes: https://interactivebrokers.github.io/tws-api/message_codes.html
 
 connection_lost = 1100  # Connectivity between the TWS and the server is lost.
@@ -92,3 +103,6 @@ hist_data_farm_msgs = [
 ]
 # IB API historical data pacing violation
 pacing_violation = [162]
+
+__Application__ = "MarketScout"
+__version__ = "1.0.0"

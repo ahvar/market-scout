@@ -4,12 +4,12 @@ Classes for interacting with the IB API.
 import logging
 import atexit
 import threading
+from concurrent.futures import Future, ThreadPoolExecutor
 import pandas as pd
-import backoff as backoff
+import backoff
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
-from concurrent.futures import ThreadPoolExecutor, Future
 from src.api.ib_utils import ConnectionWatchdog
 from src.utils.references import (
     server_and_system_msgs,
@@ -82,9 +82,9 @@ class IBApiClient(EWrapper, EClient):
             self._client_id,
         )
 
-    def _start_services(self) -> None:
+    def start_services(self) -> None:
         """
-        Start the connection and watchdog threads.
+        Start the connection and watchdog threads. Creates a watchdog thread to monitor the connection to the IB API.
         """
         self._connection_future = self._executor.submit(self._run_connection_thread)
         watchdog = ConnectionWatchdog(
@@ -94,7 +94,7 @@ class IBApiClient(EWrapper, EClient):
         )
         self._watchdog_future = self._executor.submit(watchdog.monitor_connection)
 
-    def _stop_services(self) -> None:
+    def stop_services(self) -> None:
         """
         Stop the connection and watchdog threads.
         """
@@ -119,31 +119,27 @@ class IBApiClient(EWrapper, EClient):
     )
     def connect_to_ib(self) -> None:
         """
-        Connect to the IB Gateway or TWS. This method is called from the main thread. We want to ensure that
-        the connection thread always finishes its tasks and closes the connection gracefully, therefore, we
-        choose not to set the daemon flag of the thread to True, so that the thread is kept alive even if the
-        main thread terminates. This is important because the IBApi.run() method is blocking, and we want to
-        keep the connection alive until we explicitly disconnect. It also ensures that the connection is not
-        terminated when the main thread terminates, which can happen if the user presses Ctrl+C.
+        Connect to the IB Gateway or TWS. This method is decorated with the backoff decorator to retry connection attempts.
+        It attempts to establish a connection to the IB Gateway or TWS, and if successful, starts the connection and watchdog threads.
+        The connection and watchdog threads are started in separate threads to avoid blocking the main thread. The connection thread
+        is started by calling the IBApi.run() method of the EClient class, which is a blocking call. The watchdog thread is started
+        by calling the ConnectionWatchdog.monitor_connection() method, which is a non-blocking call.
         """
-        if not self.isConnected():
-            ib_api_logger.debug(
-                "%s is connecting to IB with host %s, port %s, and client_id %s",
-                self.__class__.__name__,
-                self._host,
-                self._port,
-                self._client_id,
-            )
-            try:
-                self.connect(self._host, self._port, self._client_id)
-                self._start_services()
-            except Exception as e:
-                ib_api_logger.error("Error while connecting to IB: %s", e)
-                raise IBApiConnectionException(
-                    "An error occurred while connecting to IB"
-                ) from e
-        else:
-            ib_api_logger.debug("%s already connected to IB", self.__class__.__name__)
+        ib_api_logger.debug(
+            "%s is connecting to IB with host %s, port %s, and client_id %s",
+            self.__class__.__name__,
+            self._host,
+            self._port,
+            self._client_id,
+        )
+        try:
+            self.connect(self._host, self._port, self._client_id)
+            self.start_services()
+        except Exception as e:
+            ib_api_logger.error("Error while connecting to IB: %s", e)
+            raise IBApiConnectionException(
+                "An error occurred while connecting to IB"
+            ) from e
 
     def disconnect_from_ib(self) -> None:
         """
@@ -154,7 +150,7 @@ class IBApiClient(EWrapper, EClient):
                 self.disconnect()
                 if self._connection_future:
                     self._connection_future = None
-                self._stop_services()
+                self.stop_services()
             except Exception as e:
                 ib_api_logger.error("Error while disconnecting from IB: %s", e)
                 raise IBApiConnectionException(
