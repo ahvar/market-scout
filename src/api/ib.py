@@ -116,7 +116,14 @@ class IBApiClient(EWrapper, EClient):
             "%s is stopping services. Disconnecting from IB and stopping watchdog thread.",
             self.__class__.__name__,
         )
-        self.disconnect_from_ib()
+        if self.isConnected():
+            self.disconnect_from_ib()
+            while self.isConnected():
+                time.sleep(1)
+        ib_api_logger.debug(
+            "%s is disconnected from IB. Stopping watchdog thread.",
+            self.__class__.__name__,
+        )
         if self._watchdog_future:
             self._watchdog_future.cancel()
         if self._connection_future:
@@ -169,19 +176,13 @@ class IBApiClient(EWrapper, EClient):
         """
         Disconnect from the IB Gateway or TWS.
         """
-        if self.isConnected():
-            try:
-                self.disconnect()
-            except Exception as e:
-                ib_api_logger.error("Error while disconnecting from IB: %s", e)
-                raise IBApiConnectionException(
-                    "An error occurred while disconnecting from IB"
-                ) from e
-
-        else:
-            ib_api_logger.debug(
-                "%s is already disconnected from IB", self.__class__.__name__
-            )
+        try:
+            self.disconnect()
+        except Exception as e:
+            ib_api_logger.error("Error while disconnecting from IB: %s", e)
+            raise IBApiConnectionException(
+                "An error occurred while disconnecting from IB"
+            ) from e
 
     def historicalData(self, reqId: int, bar):
         """

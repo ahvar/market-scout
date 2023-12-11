@@ -70,6 +70,10 @@ def quote(
         client.start_services()
         time.sleep(120)
         client.stop_services()
+        time.sleep(30)
+        client.start_services()
+        time.sleep(120)
+        client.stop_services()
         client.executor.shutdown(wait=True)
 
     except Exception as e:
