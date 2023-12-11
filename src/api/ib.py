@@ -4,6 +4,7 @@ Classes for interacting with the IB API.
 import logging
 import atexit
 import threading
+import time
 from concurrent.futures import Future, ThreadPoolExecutor
 import pandas as pd
 import backoff
@@ -24,10 +25,9 @@ from src.api.ib_api_exception import (
     IBApiConnectionException,
     IBApiDataRequestException,
 )
-from src.utils.cli.cli import __Application__, __version__
+from src.utils.references import __Application__, __version__
 
-IB_API_LOGGER_NAME = __Application__ + "__" + __version__
-
+IB_API_LOGGER_NAME = f"{__Application__}_{__version__}_driver"
 ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
@@ -50,17 +50,20 @@ class IBApiClient(EWrapper, EClient):
         :param port: The port on which the TWS or IB Gateway is listening.
         :param client_id: A unique identifier for the client application.
         """
-        ib_api_logger.debug("Initializing %s instance", self.__class__.__name__)
+        ib_api_logger.info("Initializing %s instance", self.__class__.__name__)
         EWrapper.__init__(self)
         EClient.__init__(self, wrapper=self)
         self._host = host
         self._port = port
         self._client_id = client_id
         self._connection_future = None
+        self._run_connection_future = None
         self._request_counter = 0
         self._request_lock = threading.Lock()
         self._watchdog_future = None
-        self._executor = ThreadPoolExecutor(max_workers=2)
+        self._watchdog = None
+        self._executor = None
+        self._making_connection_attempt = False
         self._historical_data = pd.DataFrame(
             columns=[
                 PriceBar.date,
@@ -72,9 +75,8 @@ class IBApiClient(EWrapper, EClient):
             ]
         )
         atexit.register(self.disconnect_from_ib)
-        # Use % formatting instead of f-strings because f-strings are evaluated at runtime, and we want to log the exception as it was at the time of the error.
-        # We save some performance overhead by not evaluating the f-string.
-        ib_api_logger.debug(
+        # Use % formatting instead of f-strings because f-strings are interpolated at runtime. We save some performance overhead by not evaluating the f-string.
+        ib_api_logger.info(
             "%s instance initialized. \nHost: %s\nPort: %s\nClient_ID: %s",
             self.__class__.__name__,
             self._host,
@@ -86,13 +88,29 @@ class IBApiClient(EWrapper, EClient):
         """
         Start the connection and watchdog threads. Creates a watchdog thread to monitor the connection to the IB API.
         """
-        self._connection_future = self._executor.submit(self._run_connection_thread)
-        watchdog = ConnectionWatchdog(
+        self._watchdog = ConnectionWatchdog(
             check_interval=10,
-            connect_method=self.connect_to_ib,
+            start_services_to_connect=self.start_services,
+            stop_services=self.stop_services,
             is_connected_method=self.isConnected,
         )
-        self._watchdog_future = self._executor.submit(watchdog.monitor_connection)
+        self._executor = ThreadPoolExecutor(max_workers=3)
+        ib_api_logger.debug(
+            "%s establishing a connection with IB API", self.__class__.__name__
+        )
+        # Make connection attempt
+        self._making_connection_attempt = True
+        self._connection_future = self.executor.submit(self.connect_to_ib)
+        # Wait for connection to be established
+        while not self.isConnected():
+            time.sleep(1)
+        self._making_connection_attempt = False
+        ib_api_logger.debug(
+            "%s is connected to IB API. Calling run() to continuously listen for messages from IB Gateway and watchdog threads.",
+            self.__class__.__name__,
+        )
+        self._run_connection_future = self._executor.submit(self._run_connection_thread)
+        self._watchdog_future = self._executor.submit(self._watchdog.monitor_connection)
 
     def stop_services(self) -> None:
         """
@@ -100,6 +118,9 @@ class IBApiClient(EWrapper, EClient):
         """
         if self._watchdog_future:
             self._watchdog_future.cancel()
+        if self._run_connection_future:
+            self._run_connection_future.cancel()
+        self._watchdog.stop()
         self._executor.shutdown(wait=True)
 
     def _run_connection_thread(self) -> None:
@@ -122,7 +143,7 @@ class IBApiClient(EWrapper, EClient):
         Connect to the IB Gateway or TWS. This method is decorated with the backoff decorator to retry connection attempts.
         It attempts to establish a connection to the IB Gateway or TWS, and if successful, starts the connection and watchdog threads.
         The connection and watchdog threads are started in separate threads to avoid blocking the main thread. The connection thread
-        is started by calling the IBApi.run() method of the EClient class, which is a blocking call. The watchdog thread is started
+        is started by calling the IBApiClient.run() method of the EClient class, which is a blocking call. The watchdog thread is started
         by calling the ConnectionWatchdog.monitor_connection() method, which is a non-blocking call.
         """
         ib_api_logger.debug(
@@ -134,7 +155,7 @@ class IBApiClient(EWrapper, EClient):
         )
         try:
             self.connect(self._host, self._port, self._client_id)
-            self.start_services()
+
         except Exception as e:
             ib_api_logger.error("Error while connecting to IB: %s", e)
             raise IBApiConnectionException(
@@ -148,8 +169,8 @@ class IBApiClient(EWrapper, EClient):
         if self.isConnected():
             try:
                 self.disconnect()
-                if self._connection_future:
-                    self._connection_future = None
+                if self._run_connection_future:
+                    self._run_connection_future = None
                 self.stop_services()
             except Exception as e:
                 ib_api_logger.error("Error while disconnecting from IB: %s", e)
@@ -229,10 +250,28 @@ class IBApiClient(EWrapper, EClient):
         # This indicates the end of historical data transmission for the request with id `reqId`
         # You can now finalize the processing for this data set, e.g., writing to a file or sending a signal that data is ready.
         try:
-            pass
+            ib_api_logger.debug(
+                "%s received historical data end signal. ReqId: %s, Start: %s, End: %s",
+                self.__class__.__name__,
+                reqId,
+                start,
+                end,
+            )
+            self._historical_data.set_index(PriceBar.date, inplace=True)
+            self._historical_data.index = pd.to_datetime(
+                self._historical_data.index, unit="s"
+            )
+            self._historical_data.sort_index(inplace=True)
+            ib_api_logger.debug(
+                "%s is sending historical data to the app logic. ReqId: %s, Data: %s",
+                self.__class__.__name__,
+                reqId,
+                self._historical_data,
+            )
         except Exception as e:
             ib_api_logger.error(
-                "Error at the end of historical data transmission. ReqId: %s, Error: %s",
+                "%s encountered an unexpected error while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
                 reqId,
                 e,
             )
@@ -373,14 +412,14 @@ class IBApiClient(EWrapper, EClient):
         """
         Get the connection thread.
         """
-        return self._connection_future
+        return self._run_connection_future
 
     @connection_thread.setter
     def connection_thread(self, connection_thread: threading.Thread) -> None:
         """
         Set the connection thread.
         """
-        self._connection_future = connection_thread
+        self._run_connection_future = connection_thread
 
     @property
     def executor(self) -> ThreadPoolExecutor:
@@ -395,3 +434,17 @@ class IBApiClient(EWrapper, EClient):
         Set the executor.
         """
         self._executor = executor
+
+    @property
+    def making_connection_attempt(self) -> bool:
+        """
+        Returns True if Watchdog is attempting a connection.
+        """
+        return self._making_connection_attempt
+
+    @making_connection_attempt.setter
+    def making_connection_attempt(self, value: bool) -> None:
+        """
+        Sets the value of making_connection_attempt.
+        """
+        self._making_connection_attempt = value

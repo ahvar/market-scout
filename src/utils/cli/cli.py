@@ -44,6 +44,8 @@ def set_error_and_exit(error):
             The error message to report.
     """
     sys.stderr.write(f"Error: {error} \n")
+    sys.stderr.write("Program exiting.\n")
+    sys.exit(1)
 
 
 def parse_date(date_string: str, formats: list) -> datetime:
@@ -100,7 +102,7 @@ def init_logging(log_level: str) -> LoggingUtils:
     try:
         timestamp = time.strftime("%Y%m%d%H%M%S")
         log_dir = Path("/opt/eon/log") / __Application__ / timestamp
-        log_file = f"{__Application__}_driver.log"
+        log_file = log_dir / "app.log"
         log_dir.mkdir(exist_ok=True, parents=True)
 
         logging_utils = LoggingUtils(

@@ -2,6 +2,7 @@
 scout app
 """
 import logging
+import time
 import typer
 from datetime import datetime
 from src.utils.cli.callbacks import (
@@ -9,7 +10,7 @@ from src.utils.cli.callbacks import (
     validate_start_time,
     validate_time_unit,
 )
-from src.utils.cli.cli import init_logging
+from src.utils.cli.cli import init_logging, set_error_and_exit
 from src.api.ib import IBApiClient
 from src.utils.references import __Application__, __version__
 
@@ -32,13 +33,21 @@ def quote(
         "-u",
         "--time-unit",
         callback=validate_time_unit,
-        help="Time unit for the quote -  hour, minute, day, week",
+        help="Time unit for the quote. Valid units: hour, minute, day, week",
     ),
     start_time: str = typer.Option(
-        None, "-s", "--start-time", callback=validate_start_time, help="The start time"
+        None,
+        "-s",
+        "--start-time",
+        callback=validate_start_time,
+        help="The start time. Valid formats: YYYY-MM-DD, YYYY/MM/DD",
     ),
     end_time: str = typer.Option(
-        None, "-e", "--end-time", callback=validate_end_time, help="The end time"
+        None,
+        "-e",
+        "--end-time",
+        callback=validate_end_time,
+        help="The end time. Valid formats: YYYY-MM-DD, YYYY/MM/DD",
     ),
     debug: bool = typer.Option(
         False,
@@ -54,14 +63,16 @@ def quote(
         log_level = logging.DEBUG
     else:
         log_level = logging.INFO
-    typer.echo(
-        f"Fetching data for {ticker} from {start_time} to {end_time} in {time_unit} intervals."
-    )
-    # Connect to IB API and fetch data based on the above parameters
-    # Handle possible errors with try-except blocks.
     try:
-        # Mock the process of fetching data
-        data = "Sample data for demonstration purposes."
-        typer.echo(data)
+        app_log = init_logging(log_level)
+        app_log.log_application_start()
+        client = IBApiClient(host="localhost", port=4002, client_id=1)
+        client.start_services()
+        time.sleep(60)
+        client.stop_services()
+
     except Exception as e:
-        typer.echo(f"An error occurred: {e}")
+        logger.error("An error occurred: %s", e)
+        set_error_and_exit(e)
+    finally:
+        app_log.log_application_finish()

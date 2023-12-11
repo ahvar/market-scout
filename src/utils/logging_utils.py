@@ -63,7 +63,7 @@ class LoggingUtils:
         self._hostname = platform.node()
         # The start time for this program.
         self._start_date_time = datetime.now()
-        # The time this program is finished. This is set by calling logApplicationFinish().
+        # The time this program is finished. This is set by calling log_application_finish().
         self._finish_date_time = None
         # Date and time formats
         self._full_date_time_format = "%d%b%Y %H:%M:%S"
@@ -112,23 +112,18 @@ class LoggingUtils:
 
     def log_application_start(self):
         """
-        Log the start of an application. This inserts a standard set of information:
-            * User name
-            * Host name
-            * Command used to run the application
-            * Application name
-            * Start time
+        Log the start of an application. This inserts a standard set of information into the log file.
         """
         command = " ".join(sys.argv)
         start = self._format_date_time(self._start_date_time)
         self._logger.info(
             "**************************************************************"
         )
-        self._logger.info(f"  User         = {self._username}")
-        self._logger.info(f"  Hostname     = {self._hostname}")
-        self._logger.info(f"  Command      = {command}")
-        self._logger.info(f"  Application  = {self._app_Name}")
-        self._logger.info(f"  Start        = {start}")
+        self._logger.info("  User         = %s", self._username)
+        self._logger.info("  Hostname     = %s", self._hostname)
+        self._logger.info("  Command      = %s", command)
+        self._logger.info("  Application  = %s", self._app_Name)
+        self._logger.info("  Start        = %s", start)
         self._logger.info(
             "**************************************************************"
         )
