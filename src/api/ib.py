@@ -61,9 +61,13 @@ class IBApiClient(EWrapper, EClient):
         self._request_counter = 0
         self._request_lock = threading.Lock()
         self._watchdog_future = None
-        self._watchdog = None
+        self._watchdog = ConnectionWatchdog(
+            check_interval=10,
+            start_services=self.start_services,
+            stop_services=self.stop_services,
+            is_connected_method=self.isConnected,
+        )
         self._executor = None
-        self._making_connection_attempt = False
         self._historical_data = pd.DataFrame(
             columns=[
                 PriceBar.date,
@@ -88,23 +92,15 @@ class IBApiClient(EWrapper, EClient):
         """
         Start the connection and watchdog threads. Creates a watchdog thread to monitor the connection to the IB API.
         """
-        self._watchdog = ConnectionWatchdog(
-            check_interval=10,
-            start_services_to_connect=self.start_services,
-            stop_services=self.stop_services,
-            is_connected_method=self.isConnected,
-        )
+        self._watchdog.start_dog()
         self._executor = ThreadPoolExecutor(max_workers=3)
         ib_api_logger.debug(
             "%s establishing a connection with IB API", self.__class__.__name__
         )
-        # Make connection attempt
-        self._making_connection_attempt = True
         self._connection_future = self.executor.submit(self.connect_to_ib)
         # Wait for connection to be established
         while not self.isConnected():
             time.sleep(1)
-        self._making_connection_attempt = False
         ib_api_logger.debug(
             "%s is connected to IB API. Calling run() to continuously listen for messages from IB Gateway and watchdog threads.",
             self.__class__.__name__,
@@ -116,12 +112,19 @@ class IBApiClient(EWrapper, EClient):
         """
         Stop the connection and watchdog threads.
         """
+        ib_api_logger.debug(
+            "%s is stopping services. Disconnecting from IB and stopping watchdog thread.",
+            self.__class__.__name__,
+        )
+        self.disconnect_from_ib()
         if self._watchdog_future:
             self._watchdog_future.cancel()
+        if self._connection_future:
+            self._connection_future.cancel()
         if self._run_connection_future:
             self._run_connection_future.cancel()
-        self._watchdog.stop()
-        self._executor.shutdown(wait=True)
+        self._watchdog.stop_dog()
+        # self._executor.shutdown(wait=True)
 
     def _run_connection_thread(self) -> None:
         """
@@ -169,9 +172,6 @@ class IBApiClient(EWrapper, EClient):
         if self.isConnected():
             try:
                 self.disconnect()
-                if self._run_connection_future:
-                    self._run_connection_future = None
-                self.stop_services()
             except Exception as e:
                 ib_api_logger.error("Error while disconnecting from IB: %s", e)
                 raise IBApiConnectionException(

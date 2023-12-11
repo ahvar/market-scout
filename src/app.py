@@ -68,8 +68,9 @@ def quote(
         app_log.log_application_start()
         client = IBApiClient(host="localhost", port=4002, client_id=1)
         client.start_services()
-        time.sleep(60)
+        time.sleep(120)
         client.stop_services()
+        client.executor.shutdown(wait=True)
 
     except Exception as e:
         logger.error("An error occurred: %s", e)

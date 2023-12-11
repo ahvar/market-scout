@@ -19,7 +19,7 @@ class ConnectionWatchdog:
     def __init__(
         self,
         check_interval: int,
-        start_services_to_connect: Callable[[], None],
+        start_services: Callable[[], None],
         stop_services: Callable[[], None],
         is_connected_method: Callable[[], bool],
     ):
@@ -31,12 +31,12 @@ class ConnectionWatchdog:
         watchdog_logger.info("Initializing %s instance", self.__class__.__name__)
         super().__init__()
         self._check_interval = check_interval  # seconds
-        self._start_services_to_connect = start_services_to_connect
+        self._start_services = start_services
         self._stop_services = stop_services
         self._is_connected_method = (
             is_connected_method  # method to call to check if the connection is alive
         )
-        self._running = True
+        self._running = None
         watchdog_logger.info("%s initialized", self.__class__.__name__)
 
     def monitor_connection(self):
@@ -46,32 +46,25 @@ class ConnectionWatchdog:
         shorter sleeps in a loop, each time checking the _running flag.
         """
         while self._running:
-            if not self._is_connected_method() and not self._making_connection_attempt:
+            if not self._is_connected_method():
                 self._stop_services()
                 watchdog_logger.debug("Connection lost. Reconnecting...")
-                self._start_services_to_connect()
+                self._start_services()
             for _ in range(0, self._check_interval, 1):
                 if not self._running:
                     break
                 time.sleep(1)
 
-    def stop(self):
+    def stop_dog(self):
         """
         Stops the watchdog thread.
         """
         watchdog_logger.debug("Stopping %s instance", self.__class__.__name__)
         self._running = False
 
-    @property
-    def making_connection_attempt(self) -> bool:
+    def start_dog(self):
         """
-        Returns True if Watchdog is attempting a connection.
+        Starts the watchdog thread.
         """
-        return self._making_connection_attempt
-
-    @making_connection_attempt.setter
-    def making_connection_attempt(self, value: bool) -> None:
-        """
-        Sets the value of making_connection_attempt.
-        """
-        self._making_connection_attempt = value
+        watchdog_logger.debug("Starting %s instance", self.__class__.__name__)
+        self._running = True
