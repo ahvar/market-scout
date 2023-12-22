@@ -44,7 +44,7 @@ def set_error_and_exit(error):
             The error message to report.
     """
     sys.stderr.write(f"Error: {error} \n")
-    sys.stderr.write("Program exiting.\n")
+    sys.stderr.write("scout exiting.\n")
     sys.exit(1)
 
 

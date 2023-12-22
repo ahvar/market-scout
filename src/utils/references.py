@@ -72,21 +72,20 @@ mkt_data_farm_inactive = 2108  # A market data farm connection is inactive but s
 hist_data_farm_disabled = 2109  # A historical data farm is permanently disconnected.
 mkt_data_farm_disabled = 2110  # A market data farm is permanently disconnected.
 
-server_and_system_msgs = [
+socket_drop = [
+    tws_socket_reset,
+]
+
+tws_ib_gate_way_errors = [
     tws_ib_gateway_config_error,
     tws_ib_gateway_not_running,
-    order_router_down,
     mem_error,
-    tws_ib_gateway_already_in_use,
-    tws_ib_gateway_version_outdated,
-    api_disconnection,
 ]
-connection_disruptions = [
+
+connection_broken = [
     connection_lost,
-    connection_restored,
-    connection_restored_data_retained,
     connection_rejected,
-    tws_socket_reset,
+    api_client_not_connected,
 ]
 mkt_data_farm_msgs = [
     mkt_data_farm_disconnected,

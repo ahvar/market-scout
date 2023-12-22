@@ -12,9 +12,10 @@ from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
 from src.api.ib_utils import ConnectionWatchdog
+from src.utils.cli.cli import set_error_and_exit
 from src.utils.references import (
-    server_and_system_msgs,
-    connection_disruptions,
+    socket_drop,
+    connection_broken,
     pacing_violation,
     mkt_data_farm_msgs,
     hist_data_farm_msgs,
@@ -285,20 +286,27 @@ class IBApiClient(EWrapper, EClient):
         :param errorCode: The error code.
         :param errorString: A description of the error.
         """
-        if errorCode in server_and_system_msgs:  # Server and system messages
+        if errorCode in socket_drop:  # Server and system messages
             ib_api_logger.critical(
-                "Server or system message. Code: %s, Msg: %s", errorCode, errorString
-            )
-            # TODO: Implement connection retry logic here if necessary.
-        elif (
-            errorCode in connection_disruptions
-        ):  # Connection lost/restored without API
-            ib_api_logger.warning(
-                "Connection lost/restored without API. Code: %s, Msg: %s",
+                "Socket port was reset. %s will stop services and exit. Code: %s, Msg: %s",
+                self.__class__.__name__,
                 errorCode,
                 errorString,
             )
-            # TODO: Decide whether to pause operations or wait for reconnection.
+            self.stop_services()
+            set_error_and_exit(errorString)
+        elif errorCode in connection_broken:  # Connection lost/restored without API
+            ib_api_logger.debug(
+                "Connection lost. Code: %s, Msg: %s",
+                errorCode,
+                errorString,
+            )
+            ib_api_logger.debug(
+                "%s is attempting to reconnect to IB", self.__class__.__name__
+            )
+            # NOTE: potential for this to be an infinite loop if the connection is never restored
+            self.stop_services()
+            self.start_services()
         elif errorCode in pacing_violation:  # Historical data request pacing violation
             ib_api_logger.warning(
                 "Historical data request pacing violation. Code: %s, Msg: %s",
