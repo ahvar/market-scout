@@ -105,3 +105,4 @@ pacing_violation = [162]
 
 __Application__ = "MarketScout"
 __version__ = "1.0.0"
+IB_API_LOGGER_NAME = f"{__Application__}_{__version__}_driver"

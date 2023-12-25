@@ -26,9 +26,8 @@ from src.api.ib_api_exception import (
     IBApiConnectionException,
     IBApiDataRequestException,
 )
-from src.utils.references import __Application__, __version__
+from src.utils.references import IB_API_LOGGER_NAME
 
-IB_API_LOGGER_NAME = f"{__Application__}_{__version__}_driver"
 ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 

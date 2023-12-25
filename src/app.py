@@ -12,13 +12,12 @@ from src.utils.cli.callbacks import (
 )
 from src.utils.cli.cli import init_logging, set_error_and_exit
 from src.api.ib import IBApiClient
-from src.utils.references import __Application__, __version__
+from src.utils.references import IB_API_LOGGER_NAME
 
 __copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
 
 
-logger_name = f"{__Application__}_{__version__}_driver"
-logger = logging.getLogger(logger_name)
+logger = logging.getLogger(IB_API_LOGGER_NAME)
 app = typer.Typer()
 
 
