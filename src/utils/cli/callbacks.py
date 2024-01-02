@@ -13,42 +13,44 @@ from datetime import datetime, timedelta
 from src.utils.cli.cli import parse_date, get_default_start_end_time
 from src.utils.references import (
     date_formats,
-    hour,
-    day,
-    minute,
-    week,
-    __Application__,
-    __version__,
+    bar_sizes,
+    IB_API_LOGGER_NAME,
+    duration_units,
 )
 
-SCOUT_LOGGER_NAME = f"{__Application__}_{__version__}_driver"
-
-logger = logging.getLogger(SCOUT_LOGGER_NAME)
+logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
-def validate_start_time(ctx: typer.Context, start: str) -> str:
+def validate_duration(ctx: typer.Context, duration: str) -> str:
     """
-    The start time
-    :params  ctx: the typer context object
-    :params start: the beginning of the target time period
-    :return start: the beginning of the target time period
+    The duration is <int> + <valid_duration_string>
+    :params      ctx: the typer context object
+    :params duration: the amount of time to go back from the end date and time
+    :return duration: the amount of time to go back from the end date and time
     """
-    logger.debug("Validating start time...")
-    if start is None:
+    logger.debug("Validating duration...")
+    if duration is None:
         logger.debug(
-            "No start date provided, default to the first time unit current day"
+            "No duration provided, default to '1 D' (1 day) from the end date and time"
         )
-        start_time, _ = get_default_start_end_time(ctx.params["time_unit"])
-        return start_time
+        return "1 D"
     try:
-        logger.debug("%s Parsing start date string", start)
-        return parse_date(start, date_formats)
-    except ValueError as e:
+        if int(duration.split(" ")[0]) <= 0:
+            raise typer.BadParameter("Duration must be an integer > 0")
+        logger.debug("Parsing duration string: %s", duration)
+        duration_unit = duration.split(" ")[1]
+        for short, long in duration_units:
+            if duration_unit in (short, long):
+                return duration
+        raise typer.BadParameter(
+            f"Invalid duration unit. Please choose from {', '.join(f'{short}, ({long})' for short, long in duration_units)}."
+        )
+    except (ValueError, IndexError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
         raise typer.BadParameter(str(e))
 
 
-def validate_end_time(ctx: typer.Context, end: str) -> str:
+def validate_end_date(ctx: typer.Context, end: str) -> str:
     """
     The end time
     :params  ctx: the typer context object
@@ -70,18 +72,42 @@ def validate_end_time(ctx: typer.Context, end: str) -> str:
         raise typer.BadParameter(str(e))
 
 
-def validate_time_unit(ctx: typer.Context, unit: str) -> str:
+def validate_bar_size(ctx: typer.Context, bar_size: str) -> str:
     """
-    A valid time measurement
-    :params  ctx: the typer context object
-    :params unit: the unit of time
-    :return unit: a valid unit of time
+    A valid bar size. If none is provided, default to 1 min.
+    :params       ctx: the typer context object
+    :params  bar_size: the bar size
+    :return  bar_size: the bar size
     """
-    logger.debug("Validating time units...")
-    valid_time_units = [hour, minute, day, week]
-    if unit not in valid_time_units:
-        logger.error("Invalid time unit. Please choose from %s", valid_time_units)
+    if bar_size is None:
+        logger.debug("No bar size provided, default to 1 min")
+        return "1 min"
+    logger.debug("Validating bar size...")
+    if bar_size not in bar_sizes:
+        logger.error("Invalid time unit. Please choose from %s", ", ".join(bar_sizes))
         raise typer.BadParameter(
-            f"Invalid time unit. Please choose from {valid_time_units}."
+            f"Invalid time unit. Please choose from {', '.join(bar_sizes)}."
         )
-    return unit
+    return bar_size
+
+
+def validate_end_time(ctx: typer.Context, end: str) -> str:
+    """
+    The end time
+    :params  ctx: the typer context object
+    :params end: the end of the target time period
+    :return end: the end of the target time period
+    """
+    logger.debug("Validate end time...")
+    if end is None:
+        logger.debug(
+            "No end time provided, default to the last time unit of the current day"
+        )
+        _, end_time = get_default_start_end_time(ctx.params["time_unit"])
+        return end_time
+    try:
+        logger.debug("Parsing end date string: %s", end)
+        return parse_date(end, date_formats)
+    except ValueError as e:
+        logger.error("Could not parse date: %s", e)
+        raise typer.BadParameter(str(e))

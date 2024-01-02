@@ -27,7 +27,7 @@ class ContractFactory:
         :return: Contract object.
         """
         contract = Contract()
-        contract.symbol = ticker
+        contract.symbol = ticker.upper()
         contract.secType = "STK"
         contract.exchange = "SMART"
         contract.currency = "USD"

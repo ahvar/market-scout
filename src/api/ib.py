@@ -385,6 +385,58 @@ class IBApiClient(EWrapper, EClient):
                 "An error occurred while requesting data from IB"
             ) from e
 
+    def historicalDataUpdate(self, reqId: int, bar):
+        """
+        This callback is invoked for every data point/bar received from the IB API.
+        """
+        try:
+            new_row = {
+                PriceBar.date: bar.date,
+                PriceBar.open: bar.open,
+                PriceBar.high: bar.high,
+                PriceBar.low: bar.low,
+                PriceBar.close: bar.close,
+                PriceBar.volume: bar.volume,
+            }
+            self._historical_data = self._historical_data.append(
+                new_row, ignore_index=True
+            )
+        except KeyError as e:
+            ib_api_logger.error(
+                "%s encountered a KeyError while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+        except pd.errors.ParserError as e:
+            ib_api_logger.error(
+                "%s encountered Pandas error while parsing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+        except pd.errors.EmptyDataError as e:
+            ib_api_logger.error(
+                "%s encountered a Pandas EmptyDataError while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+        except ValueError as e:
+            ib_api_logger.error(
+                "%s encountered a ValueError while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+        except Exception as e:
+            ib_api_logger.error(
+                "%s encountered an unexpected error while processing historical data. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+
     def _get_next_request_id(self) -> int:
         """
         Get the next request ID for the IB API. The IB API requires a unique request ID for each request.

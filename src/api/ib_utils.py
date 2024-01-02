@@ -6,9 +6,9 @@ import time
 from typing import Any, Callable
 
 from src.utils.references import __Application__, __version__
+from src.utils.references import IB_API_LOGGER_NAME
 
-logger_name = f"{__Application__}_{__version__}_driver"
-watchdog_logger = logging.getLogger(logger_name)
+watchdog_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
 class ConnectionWatchdog:
