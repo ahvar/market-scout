@@ -62,12 +62,18 @@ def validate_end_date(ctx: typer.Context, end: str) -> str:
         logger.debug(
             "No end date provided, default to the last time unit of the current day"
         )
-        _, end_time = get_default_start_end_time(ctx.params["time_unit"])
-        return end_time
+        default_time_unit = "D" if ctx is None else ctx.params["time_unit"]
+        _, end_time = get_default_start_end_time(default_time_unit)
+        return end_time if isinstance(end_time, str) else end_time.strftime("%Y-%m-%d")
     try:
         logger.debug("Parsing end date string: %s", end)
-        return parse_date(end, date_formats)
-    except ValueError as e:
+        parsed_date = parse_date(end, date_formats)
+        return (
+            parse_date
+            if isinstance(parsed_date, str)
+            else parsed_date.strftime("%Y-%m-%d")
+        )
+    except (ValueError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
         raise typer.BadParameter(str(e))
 
@@ -107,7 +113,12 @@ def validate_end_time(ctx: typer.Context, end: str) -> str:
         return end_time
     try:
         logger.debug("Parsing end date string: %s", end)
-        return parse_date(end, date_formats)
-    except ValueError as e:
+        parsed_time = parse_date(end, date_formats)
+        return (
+            parsed_time
+            if isinstance(parsed_time, str)
+            else parsed_time.strftime("%H:%M:%S")
+        )
+    except (ValueError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
         raise typer.BadParameter(str(e))

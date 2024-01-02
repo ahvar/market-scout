@@ -3,7 +3,7 @@ Unit tests for the callbacks module.
 """
 import unittest
 import pytest
-
+from datetime import datetime
 from typer import BadParameter
 from src.utils.cli.callbacks import (
     validate_duration,
@@ -80,4 +80,4 @@ class TestCallbacks(unittest.TestCase):
         Test the validate_end_date callback with no input.
         """
         # Replace with expected default end date
-        assert validate_end_date(None, None) == "expected_default_end_date"
+        assert validate_end_date(None, None) == datetime.now().strftime("%Y-%m-%d")
