@@ -9,6 +9,7 @@ from src.utils.cli.callbacks import (
     validate_end_date,
     validate_duration,
     validate_bar_size,
+    validate_end_time,
 )
 from src.utils.cli.cli import init_logging, set_error_and_exit
 from src.api.ib import IBApiClient
@@ -30,32 +31,32 @@ def historical_quote(
     ticker: str = typer.Argument(..., help="Ticker symbol for the stock"),
     bar_size: str = typer.Option(
         None,
-        "-b",
+        "-br",
         "--bar-size",
         callback=validate_bar_size,
         help=f"Data granularity. Valid bars: {', '.join(bar_sizes)}",
     ),
     duration: str = typer.Option(
         None,
-        "-d",
+        "-dr",
         "--duration",
         callback=validate_duration,
         help=f"The amount of time to go back from the end date and time. \
-            Provide an integer and a valid duration string unit. Valid units: {', '.join(f'{short} ({long})' for short, long in duration_units)}",
+            Provide an integer and a valid duration unit. Valid units: {', '.join(f'{short} ({long})' for short, long in duration_units)}",
     ),
     end_date: str = typer.Option(
         None,
         "-ed",
         "--end-date",
         callback=validate_end_date,
-        help="The end time. Valid formats: YYYY-MM-DD, YYYY/MM/DD",
+        help="The request's end date. Default is the current date. Valid formats: YYYY-MM-DD, YYYY/MM/DD",
     ),
     end_time: str = typer.Option(
         None,
         "-et",
         "--end-time",
-        callback=validate_end_date,
-        help="The end time in 24-hour clock format. Valid formats: HH:MM:SS",
+        callback=validate_end_time,
+        help="The request's end time in 24-hour clock. Default is the current time. Valid formats: HH:MM:SS",
     ),
     debug: bool = typer.Option(
         False,
@@ -78,11 +79,28 @@ def historical_quote(
         app_log.log_application_start()
         # Create the IB API client
         client = IBApiClient(host="localhost", port=4002, client_id=1)
+        print("starting services...")
         client.start_services()
+        time.sleep(5)
         # Create the contract
+        print("creating contract...")
         contract_factory = ContractFactory()
         contract = contract_factory.get_contract(ticker)
-
+        print("waiting for 10 seconds before making historical data request...")
+        time.sleep(10)
+        # Create the request
+        client.request_historical_data(
+            contract=contract,
+            bar_size=bar_size,
+            duration=duration,
+            end_datetime=f"{end_date.replace('-', '')}-{end_time}",
+            use_rth=1,
+        )
+        print(
+            "historical data request completed, waiting a few seconds before printing results..."
+        )
+        time.sleep(3)
+        print(client.historical_data)
         client.stop_services()
         client.executor.shutdown(wait=True)
 

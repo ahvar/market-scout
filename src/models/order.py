@@ -18,6 +18,7 @@ class ContractFactory:
         """
         Constructs the factory.
         """
+        contract_logger.debug("Initializing contract factory...")
         self._contract_history = []
 
     def get_contract(self, ticker: str) -> Contract:
@@ -26,11 +27,13 @@ class ContractFactory:
         :param ticker: The ticker symbol of the stock.
         :return: Contract object.
         """
+        contract_logger.debug("Creating contract for %s", ticker)
         contract = Contract()
         contract.symbol = ticker.upper()
         contract.secType = "STK"
         contract.exchange = "SMART"
         contract.currency = "USD"
+        contract_logger.debug("Contract created: %s", contract)
         # Record the contract creation in history
         self._record_contract_history(ticker, contract)
         return contract
@@ -41,6 +44,7 @@ class ContractFactory:
         :param ticker: The ticker symbol of the stock.
         :param contract: The created contract object.
         """
+        contract_logger.debug("Recording contract history...")
         self.contract_history.append({"ticker": ticker, "contract": contract})
 
     @property

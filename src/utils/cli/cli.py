@@ -9,6 +9,7 @@ Contains useful functions for commands:
 """
 import sys
 import time
+import pytz
 import logging
 import typer
 from datetime import datetime, timedelta
@@ -60,18 +61,42 @@ def parse_date(date_string: str, formats: list) -> datetime:
     for fmt in formats:
         try:
             logger.debug("Trying to parse date string: %s", date_string)
-            return datetime.strptime(date_string, fmt)
+            central = pytz.timezone("US/Central")
+            local_datetime = central.localize(datetime.now())
+            utc_datetime = local_datetime.astimezone(pytz.utc)
+            return utc_datetime.strptime(date_string, fmt)
         except ValueError as ve:
             logger.debug("Could not parse date: %s", ve)
-    raise ValueError("Could not parse date: %s", date_string)
+    raise ValueError(f"Could not parse date: {date_string}")
 
 
-def get_default_start_end_time(time_unit: str) -> (datetime, datetime):
+def parse_time(time_string: str, formats: list) -> datetime:
     """
-    Calculates the default start and end times based on the current day
-    and the specified time unit. It assumes the smallest time unit is a minute.
+    Parses a time from a string using the 'HH:MM:SS' format.
+    If the format doesn't match, it raises a ValueError.
+
+    :params time_string: string representation of the time
+    :params     formats: valid formats
+    """
+    for fmt in formats:
+        try:
+            logger.debug("Trying to parse time string: %s", time_string)
+            central = pytz.timezone("US/Central")
+            local_datetime = central.localize(datetime.now())
+            utc_datetime = local_datetime.astimezone(pytz.utc)
+            return utc_datetime.strptime(time_string, fmt)
+        except ValueError as ve:
+            logger.debug("Could not parse time: %s", ve)
+    raise ValueError(f"Could not parse time: {time_string}")
+
+
+def get_default_end_date(time_unit: str, time_length: int) -> (datetime, datetime):
+    """
+    Calculates a default end date based on the current day
+    and the specified time unit.
 
     :params time_unit: time unit
+    :params time_length: time length
     :return datetime: the time unit as datetime
     """
     # Assuming the smallest time unit is a minute

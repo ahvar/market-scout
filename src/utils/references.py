@@ -5,6 +5,8 @@ date_formats = [
     "%Y-%m-%d",
 ]
 
+time_formats = ["%H:%M:%S"]
+
 hour = "hour"
 day = "day"
 week = "week"
@@ -96,6 +98,9 @@ hist_data_farm_inactive = 2107  # A historical data farm connection has become i
 mkt_data_farm_inactive = 2108  # A market data farm connection is inactive but should be available upon demand.
 hist_data_farm_disabled = 2109  # A historical data farm is permanently disconnected.
 mkt_data_farm_disabled = 2110  # A market data farm is permanently disconnected.
+sec_def_data_farm_ok = (
+    2158  # The security definition market data farm connection is OK.
+)
 
 socket_drop = [
     tws_socket_reset,
@@ -117,6 +122,7 @@ mkt_data_farm_msgs = [
     mkt_data_farm_connected,
     mkt_data_farm_inactive,
     mkt_data_farm_disabled,
+    sec_def_data_farm_ok,
 ]
 
 hist_data_farm_msgs = [

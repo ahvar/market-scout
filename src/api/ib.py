@@ -200,8 +200,9 @@ class IBApiClient(EWrapper, EClient):
                 PriceBar.close: bar.close,
                 PriceBar.volume: bar.volume,
             }
-            self._historical_data = self._historical_data.append(
-                new_row, ignore_index=True
+
+            self._historical_data = pd.concat(
+                [self._historical_data, pd.DataFrame([new_row])], ignore_index=True
             )
         except KeyError as e:
             ib_api_logger.error(
@@ -313,6 +314,18 @@ class IBApiClient(EWrapper, EClient):
                 errorString,
             )
             # TODO: Implement logic to slow down historical data requests.
+        elif errorCode in mkt_data_farm_msgs:  # Market data farm messages
+            ib_api_logger.warning(
+                "Market data farm message. Code: %s, Msg: %s",
+                errorCode,
+                errorString,
+            )
+        elif errorCode in hist_data_farm_msgs:  # Historical data farm messages
+            ib_api_logger.warning(
+                "Historical data farm message. Code: %s, Msg: %s",
+                errorCode,
+                errorString,
+            )
         else:
             # General error handling
             ib_api_logger.error(
@@ -442,8 +455,16 @@ class IBApiClient(EWrapper, EClient):
         Get the next request ID for the IB API. The IB API requires a unique request ID for each request.
         Locks counter increment to ensure thread safety.
         """
+        ib_api_logger.debug(
+            "%s is getting the next request ID for the IB API", self.__class__.__name__
+        )
         with self._request_lock:
             self._request_counter += 1
+            ib_api_logger.debug(
+                "%s is returning the next request ID for the IB API: %s",
+                self.__class__.__name__,
+                self._request_counter,
+            )
             return self._request_counter
 
     @property
@@ -508,3 +529,10 @@ class IBApiClient(EWrapper, EClient):
         Sets the value of making_connection_attempt.
         """
         self._making_connection_attempt = value
+
+    @property
+    def historical_data(self) -> pd.DataFrame:
+        """
+        Returns the historical data.
+        """
+        return self._historical_data

@@ -5,7 +5,7 @@ Tests for command-line utility functions
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
-from src.utils.cli.cli import parse_date, get_default_start_end_time
+from src.utils.cli.cli import parse_date, get_default_end_date
 from src.utils.references import date_formats, hour, day, week, minute
 
 
@@ -58,24 +58,24 @@ class TestTimes(unittest.TestCase):
 
         # Test for 'minute' time unit
         time_unit = minute
-        start, end = get_default_start_end_time(time_unit)
+        start, end = get_default_end_date(time_unit)
         self.assertEqual(start, start_of_day)
         self.assertEqual(end, end_of_day)
 
         # Test for 'hour' time unit
         time_unit = hour
-        start, end = get_default_start_end_time(time_unit)
+        start, end = get_default_end_date(time_unit)
         self.assertEqual(start, start_of_day)
         self.assertEqual(end, end_of_hour)  # End of the current hour
 
         # Test for 'day' time unit
         time_unit = day
-        start, end = get_default_start_end_time(time_unit)
+        start, end = get_default_end_date(time_unit)
         self.assertEqual(start, start_of_day)
         self.assertEqual(end, end_of_day)
 
         # Test for 'week' time unit
         time_unit = week
-        start, end = get_default_start_end_time(time_unit)
+        start, end = get_default_end_date(time_unit)
         self.assertEqual(start, start_of_day)
         self.assertEqual(end, end_of_week)

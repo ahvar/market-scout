@@ -15,7 +15,7 @@ class TestCLI(unittest.TestCase):
         """
         self.runner = CliRunner()
 
-    def test_quote_command(self):
+    def test_historical_quote_valid(self):
         """
         Test the 'quote' command.
         """
@@ -23,43 +23,16 @@ class TestCLI(unittest.TestCase):
         result = self.runner.invoke(
             app,
             [
-                "quote",
+                "historical-quote",
                 "appl",
-                "-u",
-                "minute",
-                "-s",
-                "2023-01-01",
-                "-e",
-                "2023-01-01",
+                "-b",
+                "1 hour",
+                "-d",
+                "1 D",
+                "-ed",
+                "3 D",
+                "-et",
+                "12:00:00",
             ],
         )
         self.assertEqual(result.exit_code, 0)
-
-    def test_quote_command_with_callbacks(self):
-        """
-        Test the 'quote' command with callbacks for start and end times validation.
-        """
-        start_time = "2023-01-01"
-        end_time = "2023-01-01"
-        result = self.runner.invoke(
-            app,
-            [
-                "quote",
-                "your_quote_argument",
-                "-u",
-                "minute",
-                "-s",
-                start_time,
-                "-e",
-                end_time,
-            ],
-        )
-
-        # You should replace the following lines with checks relevant to what your callbacks do.
-        # This is just an example assuming the callbacks might throw an error on invalid input.
-        self.assertEqual(result.exit_code, 0)
-        self.assertNotIn(
-            "Error:", result.stdout
-        )  # Assuming an error would be printed with 'Error:' in the message.
-
-        # Here you would add more test scenarios, especially edge cases, to make sure all code paths in your callbacks are being tested properly.

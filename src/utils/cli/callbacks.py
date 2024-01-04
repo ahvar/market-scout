@@ -8,11 +8,13 @@ Command-line callback functions:
 ------------------------------------------------------------------------------
 """
 import logging
+import pytz
 import typer
 from datetime import datetime, timedelta
-from src.utils.cli.cli import parse_date, get_default_start_end_time
+from src.utils.cli.cli import parse_date, get_default_end_date, parse_time
 from src.utils.references import (
     date_formats,
+    time_formats,
     bar_sizes,
     IB_API_LOGGER_NAME,
     duration_units,
@@ -52,19 +54,19 @@ def validate_duration(ctx: typer.Context, duration: str) -> str:
 
 def validate_end_date(ctx: typer.Context, end: str) -> str:
     """
-    The end time
+    If no end date was provided the previous day is used.
     :params  ctx: the typer context object
     :params end: the end of the target time period
     :return end: the end of the target time period
     """
-    logger.debug("Validate end time...")
+    logger.debug("Validate end date...")
     if end is None:
-        logger.debug(
-            "No end date provided, default to the last time unit of the current day"
-        )
-        default_time_unit = "D" if ctx is None else ctx.params["time_unit"]
-        _, end_time = get_default_start_end_time(default_time_unit)
-        return end_time if isinstance(end_time, str) else end_time.strftime("%Y-%m-%d")
+        logger.debug("No end date provided. Default to previous day")
+        one_day_before_now = datetime.now() - timedelta(days=1)
+        central = pytz.timezone("US/Central")
+        local_datetime = central.localize(one_day_before_now)
+        utc_datetime = local_datetime.astimezone(pytz.utc)
+        return utc_datetime.strftime("%Y-%m-%d")
     try:
         logger.debug("Parsing end date string: %s", end)
         parsed_date = parse_date(end, date_formats)
@@ -99,21 +101,21 @@ def validate_bar_size(ctx: typer.Context, bar_size: str) -> str:
 
 def validate_end_time(ctx: typer.Context, end: str) -> str:
     """
-    The end time
+    If no end time is provided the current end time is used.
     :params  ctx: the typer context object
     :params end: the end of the target time period
     :return end: the end of the target time period
     """
     logger.debug("Validate end time...")
     if end is None:
-        logger.debug(
-            "No end time provided, default to the last time unit of the current day"
-        )
-        _, end_time = get_default_start_end_time(ctx.params["time_unit"])
-        return end_time
+        logger.debug("No end time provided, default to the current time")
+        central = pytz.timezone("US/Central")
+        local_datetime = central.localize(datetime.now())
+        utc_datetime = local_datetime.astimezone(pytz.utc)
+        return utc_datetime.strftime("%H:%M:%S")
     try:
-        logger.debug("Parsing end date string: %s", end)
-        parsed_time = parse_date(end, date_formats)
+        logger.debug("Parsing end time string: %s", end)
+        parsed_time = parse_time(end, time_formats)
         return (
             parsed_time
             if isinstance(parsed_time, str)
