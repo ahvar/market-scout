@@ -11,7 +11,7 @@ from src.utils.cli.callbacks import (
     validate_bar_size,
     validate_end_time,
 )
-from src.utils.cli.cli import init_logging, set_error_and_exit
+from src.utils.cli.cli import init_logging, set_error_and_exit, convert_to_utc
 from src.api.ib import IBApiClient
 from src.models.order import ContractFactory
 from src.utils.references import IB_API_LOGGER_NAME, bar_sizes, duration_units
@@ -69,14 +69,10 @@ def historical_quote(
     This command tells Market Scout to get the historical data for a ticker within a given timeframe. The values passed to
     command options are used directly in a call to the Interactive Brokers method IBPI.EClient.reqHistoricalData().
     """
-    if debug:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.INFO
     try:
-        # Initialize logging
-        app_log = init_logging(log_level)
-        app_log.log_application_start()
+        if not debug:
+            for handler in logger.handlers:
+                handler.setLevel(logging.INFO)
         # Create the IB API client
         client = IBApiClient(host="localhost", port=4002, client_id=1)
         print("starting services...")
@@ -93,19 +89,19 @@ def historical_quote(
             contract=contract,
             bar_size=bar_size,
             duration=duration,
-            end_datetime=f"{end_date.replace('-', '')}-{end_time}",
+            end_datetime=convert_to_utc(end_date, end_time).strftime("%Y%m%d-%H:%M:%S"),
             use_rth=1,
         )
         print(
             "historical data request completed, waiting a few seconds before printing results..."
         )
         time.sleep(3)
-        print(client.historical_data)
+
+        client.historical_data.to_csv(f"{ticker}.csv")
         client.stop_services()
         client.executor.shutdown(wait=True)
-
     except Exception as e:
         logger.error("An error occurred: %s", e)
-        set_error_and_exit(e)
-    finally:
-        app_log.log_application_finish()
+        client.stop_services()
+        client.executor.shutdown(wait=True)
+        raise Exception(e) from e

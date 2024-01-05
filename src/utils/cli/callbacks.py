@@ -11,13 +11,17 @@ import logging
 import pytz
 import typer
 from datetime import datetime, timedelta
-from src.utils.cli.cli import parse_date, get_default_end_date, parse_time
+from src.utils.cli.cli import (
+    parse_datetime,
+    convert_to_utc,
+)
 from src.utils.references import (
     date_formats,
     time_formats,
     bar_sizes,
     IB_API_LOGGER_NAME,
     duration_units,
+    DateTimeType,
 )
 
 logger = logging.getLogger(IB_API_LOGGER_NAME)
@@ -52,29 +56,16 @@ def validate_duration(ctx: typer.Context, duration: str) -> str:
         raise typer.BadParameter(str(e))
 
 
-def validate_end_date(ctx: typer.Context, end: str) -> str:
+def validate_end_date(ctx: typer.Context, end: str) -> datetime:
     """
     If no end date was provided the previous day is used.
     :params  ctx: the typer context object
     :params end: the end of the target time period
     :return end: the end of the target time period
     """
-    logger.debug("Validate end date...")
-    if end is None:
-        logger.debug("No end date provided. Default to previous day")
-        one_day_before_now = datetime.now() - timedelta(days=1)
-        central = pytz.timezone("US/Central")
-        local_datetime = central.localize(one_day_before_now)
-        utc_datetime = local_datetime.astimezone(pytz.utc)
-        return utc_datetime.strftime("%Y-%m-%d")
     try:
-        logger.debug("Parsing end date string: %s", end)
-        parsed_date = parse_date(end, date_formats)
-        return (
-            parse_date
-            if isinstance(parsed_date, str)
-            else parsed_date.strftime("%Y-%m-%d")
-        )
+        logger.debug("Validate end date...")
+        return parse_datetime(end, date_formats, DateTimeType.DATE)
     except (ValueError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
         raise typer.BadParameter(str(e))
@@ -106,21 +97,9 @@ def validate_end_time(ctx: typer.Context, end: str) -> str:
     :params end: the end of the target time period
     :return end: the end of the target time period
     """
-    logger.debug("Validate end time...")
-    if end is None:
-        logger.debug("No end time provided, default to the current time")
-        central = pytz.timezone("US/Central")
-        local_datetime = central.localize(datetime.now())
-        utc_datetime = local_datetime.astimezone(pytz.utc)
-        return utc_datetime.strftime("%H:%M:%S")
     try:
-        logger.debug("Parsing end time string: %s", end)
-        parsed_time = parse_time(end, time_formats)
-        return (
-            parsed_time
-            if isinstance(parsed_time, str)
-            else parsed_time.strftime("%H:%M:%S")
-        )
+        logger.debug("Validate end time...")
+        return parse_datetime(end, time_formats, DateTimeType.TIME)
     except (ValueError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
         raise typer.BadParameter(str(e))

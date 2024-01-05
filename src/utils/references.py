@@ -1,4 +1,15 @@
 from dataclasses import dataclass
+from enum import Enum
+
+
+class DateTimeType(Enum):
+    """
+    Enum class for date and time
+    """
+
+    DATE = 1
+    TIME = 2
+
 
 date_formats = [
     "%Y/%m/%d",

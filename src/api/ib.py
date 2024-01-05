@@ -193,14 +193,16 @@ class IBApiClient(EWrapper, EClient):
         """
         try:
             new_row = {
-                PriceBar.date: bar.date,
+                # standardize date format
+                PriceBar.date: pd.to_datetime(bar.date),  # , format="%Y%m%d %H:%M:%S"),
                 PriceBar.open: bar.open,
                 PriceBar.high: bar.high,
                 PriceBar.low: bar.low,
                 PriceBar.close: bar.close,
                 PriceBar.volume: bar.volume,
             }
-
+            # Filter out columns with all-NA entries before concatenation
+            self._historical_data = self._historical_data.dropna(how="all", axis=1)
             self._historical_data = pd.concat(
                 [self._historical_data, pd.DataFrame([new_row])], ignore_index=True
             )
@@ -386,7 +388,7 @@ class IBApiClient(EWrapper, EClient):
                 use_rth,
                 1,
                 False,
-                [],
+                None,
             )
         except Exception as e:
             ib_api_logger.error(

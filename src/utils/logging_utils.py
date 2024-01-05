@@ -138,12 +138,20 @@ class LoggingUtils:
         self._logger.info(
             "**************************************************************"
         )
-        self._logger.info(f"{self._app_Name} finished.")
-        self._logger.info(f"  Finish time  = {finish}")
-        self._logger.info(f"  Elapsed time = {str(elapsed_time)}")
+        self._logger.info("%s finished.", self._app_Name)
+        self._logger.info("  Finish time  = %s", finish)
+        self._logger.info("  Elapsed time = %s", str(elapsed_time))
         self._logger.info(
             "**************************************************************"
         )
+
+    def update_file_handler_log_level(self, level):
+        """
+        Update the log level for the file handler.
+        """
+        for handler in self._logger.handlers:
+            if isinstance(handler, logging.FileHandler):
+                handler.setLevel(level)
 
     def _format_date_time(self, raw_date_time):
         """
