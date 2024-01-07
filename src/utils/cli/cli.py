@@ -69,6 +69,12 @@ def parse_datetime(
     :params           formats: valid formats
     :params     datetime_type: specifies whether to parse a date or time
     """
+    if datetime_type not in (DateTimeType.DATE, DateTimeType.TIME):
+        raise ValueError(
+            f"Invalid datetime type: {datetime_type}. Must be {DateTimeType.DATE} or {DateTimeType.TIME}."
+        )
+    if not formats:
+        raise ValueError("No formats provided.")
     logger.debug("Parsing datetime string: %s", datetime_string)
     if not datetime_string:
         logger.debug("No datetime string provided, defaulting to previous period")
@@ -88,8 +94,12 @@ def parse_datetime(
                 if datetime_type == DateTimeType.DATE
                 else parsed_datetime.time()
             )
-        except ValueError:
-            continue  # try next format
+        except (ValueError, TypeError, IndexError, AttributeError):
+            logger.debug("Format not recognized: %s", fmt)
+            continue
+        except Exception as e:
+            logger.error("Error parsing datetime: %s", e)
+            continue
 
     raise ValueError(f"Format not recognized: {datetime_string}")
 

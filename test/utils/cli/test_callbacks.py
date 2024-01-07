@@ -3,12 +3,15 @@ Unit tests for the callbacks module.
 """
 import unittest
 import pytest
-from datetime import datetime
-from typer import BadParameter
+from datetime import datetime, timedelta, date
+from pathlib import Path
+from unittest.mock import patch, MagicMock
+from typer import BadParameter, Context
 from src.utils.cli.callbacks import (
     validate_duration,
     validate_end_date,
     validate_bar_size,
+    validate_out_dir,
 )
 
 
@@ -16,6 +19,13 @@ class TestCallbacks(unittest.TestCase):
     """
     Test the callbacks module.
     """
+
+    def setUp(self):
+        """
+        Set up the test case.
+        """
+        with patch("src.utils.cli.callbacks.logging") as mock_logging:
+            mock_logging.getLogger.return_value = MagicMock()
 
     def test_validate_duration_with_valid_input(self):
         """
@@ -66,7 +76,7 @@ class TestCallbacks(unittest.TestCase):
         """
         Test the validate_end_date callback with valid input.
         """
-        assert validate_end_date(None, "2023-01-01") == "2023-01-01"
+        assert validate_end_date(None, "2023-01-01") == date(2023, 1, 1)
 
     def test_validate_end_date_with_invalid_input(self):
         """
@@ -80,4 +90,49 @@ class TestCallbacks(unittest.TestCase):
         Test the validate_end_date callback with no input.
         """
         # Replace with expected default end date
-        assert validate_end_date(None, None) == datetime.now().strftime("%Y-%m-%d")
+        day_before = datetime.now().date() - timedelta(days=1)
+        assert validate_end_date(None, None) == day_before
+
+    @patch("src.utils.cli.callbacks.Path")
+    @patch("src.utils.cli.callbacks.Context")
+    def test_validate_out_dir_with_valid_dir(self, mock_ctx, mock_path):
+        """
+        Test the validate_out_dir function with a valid directory.
+        :param mock_ctx: the typer context object
+        :param mock_path: the Path object
+        """
+        mock_path_obj = MagicMock()
+        mock_path_obj.is_dir.return_value = True
+        mock_path_obj.resolve.return_value = Path("/valid/directory").resolve()
+        mock_path.return_value = mock_path_obj
+
+        result = validate_out_dir(mock_ctx, "/valid/directory")
+        self.assertEqual(result, Path("/valid/directory").resolve())
+
+    @patch("src.utils.cli.callbacks.Path")
+    @patch("src.utils.cli.callbacks.Context")
+    def test_validate_out_dir_with_none_dir(self, mock_ctx, mock_path):
+        """
+        Test the validate_out_dir function with None as directory (should use cwd).
+        :param mock_ctx: the typer context object
+        :param mock_path: the Path object
+        """
+        mock_path.cwd.return_value = Path("/current/working/directory")
+
+        result = validate_out_dir(mock_ctx, None)
+        self.assertEqual(result, Path("/current/working/directory"))
+
+    @patch("src.utils.cli.callbacks.Path")
+    @patch("src.utils.cli.callbacks.Context")
+    def test_validate_out_dir_with_invalid_dir(self, mock_ctx, mock_path):
+        """
+        Test the validate_out_dir function with an invalid directory.
+        :param mock_ctx: the typer context object
+        :param mock_path: the Path object
+        """
+        mock_path_obj = MagicMock()
+        mock_path_obj.is_dir.return_value = False
+        mock_path.return_value = mock_path_obj
+
+        with self.assertRaises(BadParameter):
+            validate_out_dir(mock_ctx, "/invalid/directory")

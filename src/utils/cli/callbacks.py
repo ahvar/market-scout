@@ -9,8 +9,9 @@ Command-line callback functions:
 """
 import logging
 import pytz
-import typer
+from typer import Context, BadParameter
 from datetime import datetime, timedelta
+from pathlib import Path
 from src.utils.cli.cli import (
     parse_datetime,
     convert_to_utc,
@@ -27,7 +28,7 @@ from src.utils.references import (
 logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
-def validate_duration(ctx: typer.Context, duration: str) -> str:
+def validate_duration(ctx: Context, duration: str) -> str:
     """
     The duration is <int> + <valid_duration_string>
     :params      ctx: the typer context object
@@ -42,21 +43,21 @@ def validate_duration(ctx: typer.Context, duration: str) -> str:
         return "1 D"
     try:
         if int(duration.split(" ")[0]) <= 0:
-            raise typer.BadParameter("Duration must be an integer > 0")
+            raise BadParameter("0 < duration")
         logger.debug("Parsing duration string: %s", duration)
         duration_unit = duration.split(" ")[1]
         for short, long in duration_units:
             if duration_unit in (short, long):
                 return duration
-        raise typer.BadParameter(
+        raise BadParameter(
             f"Invalid duration unit. Please choose from {', '.join(f'{short}, ({long})' for short, long in duration_units)}."
         )
     except (ValueError, IndexError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
-        raise typer.BadParameter(str(e))
+        raise BadParameter(str(e))
 
 
-def validate_end_date(ctx: typer.Context, end: str) -> datetime:
+def validate_end_date(ctx: Context, end: str) -> datetime:
     """
     If no end date was provided the previous day is used.
     :params  ctx: the typer context object
@@ -68,10 +69,10 @@ def validate_end_date(ctx: typer.Context, end: str) -> datetime:
         return parse_datetime(end, date_formats, DateTimeType.DATE)
     except (ValueError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
-        raise typer.BadParameter(str(e))
+        raise BadParameter(str(e))
 
 
-def validate_bar_size(ctx: typer.Context, bar_size: str) -> str:
+def validate_bar_size(ctx: Context, bar_size: str) -> str:
     """
     A valid bar size. If none is provided, default to 1 min.
     :params       ctx: the typer context object
@@ -82,15 +83,37 @@ def validate_bar_size(ctx: typer.Context, bar_size: str) -> str:
         logger.debug("No bar size provided, default to 1 min")
         return "1 min"
     logger.debug("Validating bar size...")
-    if bar_size not in bar_sizes:
+    if bar_size.lower() not in bar_sizes:
         logger.error("Invalid time unit. Please choose from %s", ", ".join(bar_sizes))
-        raise typer.BadParameter(
+        raise BadParameter(
             f"Invalid time unit. Please choose from {', '.join(bar_sizes)}."
         )
     return bar_size
 
 
-def validate_end_time(ctx: typer.Context, end: str) -> str:
+def validate_out_dir(ctx: Context, out_dir: str) -> Path:
+    """
+    If no output directory is provided, the current working directory is used.
+    :params    ctx: the typer context object
+    :params out_dir: the output directory
+    :return out_dir: the output directory
+    """
+    if out_dir is None:
+        logger.debug(
+            "No output directory provided, default to current working directory"
+        )
+        return Path.cwd()
+
+    logger.debug("Validating output directory...")
+    out_path = Path(out_dir)
+    if not out_path.is_dir():
+        logger.error("Invalid output directory. Please choose a valid directory")
+        raise BadParameter("Invalid output directory. Please choose a valid directory")
+
+    return out_path.resolve()
+
+
+def validate_end_time(ctx: Context, end: str) -> str:
     """
     If no end time is provided the current end time is used.
     :params  ctx: the typer context object
@@ -102,4 +125,4 @@ def validate_end_time(ctx: typer.Context, end: str) -> str:
         return parse_datetime(end, time_formats, DateTimeType.TIME)
     except (ValueError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
-        raise typer.BadParameter(str(e))
+        raise BadParameter(str(e))

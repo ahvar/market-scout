@@ -10,6 +10,7 @@ from src.utils.cli.callbacks import (
     validate_duration,
     validate_bar_size,
     validate_end_time,
+    validate_out_dir,
 )
 from src.utils.cli.cli import init_logging, set_error_and_exit, convert_to_utc
 from src.api.ib import IBApiClient
@@ -57,6 +58,13 @@ def historical_quote(
         "--end-time",
         callback=validate_end_time,
         help="The request's end time in 24-hour clock. Default is the current time. Valid formats: HH:MM:SS",
+    ),
+    out_dir: str = typer.Option(
+        None,
+        "-o",
+        "--outdir",
+        callback=validate_out_dir,
+        help="The name of the output file. Default is <ticker>.csv",
     ),
     debug: bool = typer.Option(
         False,

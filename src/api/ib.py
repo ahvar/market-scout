@@ -193,15 +193,18 @@ class IBApiClient(EWrapper, EClient):
         """
         try:
             new_row = {
-                # standardize date format
-                PriceBar.date: pd.to_datetime(bar.date),  # , format="%Y%m%d %H:%M:%S"),
+                # NOTE: letting Pandas handle the conversion to datetime rather than applying the conversion here
+                # IB API says bar date format="%Y%m%d %H:%M:%S" but this was not working consistently
+                PriceBar.date: pd.to_datetime(bar.date),
                 PriceBar.open: bar.open,
                 PriceBar.high: bar.high,
                 PriceBar.low: bar.low,
                 PriceBar.close: bar.close,
                 PriceBar.volume: bar.volume,
             }
-            # Filter out columns with all-NA entries before concatenation
+            # NOTE: encountered error where multiple NA rows were being appended to the historical data
+            # So filter out columns with all-NA entries before concatenation
+            # NOTE: this is a big risk to data integrity
             self._historical_data = self._historical_data.dropna(how="all", axis=1)
             self._historical_data = pd.concat(
                 [self._historical_data, pd.DataFrame([new_row])], ignore_index=True
