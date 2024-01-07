@@ -20,72 +20,75 @@ class TestCallbacks(unittest.TestCase):
     Test the callbacks module.
     """
 
-    def setUp(self):
-        """
-        Set up the test case.
-        """
-        with patch("src.utils.cli.callbacks.logging") as mock_logging:
-            mock_logging.getLogger.return_value = MagicMock()
-
-    def test_validate_duration_with_valid_input(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_duration_with_valid_input(self, mock_logger):
         """
         Test the validate_duration callback with valid input.
         """
         assert validate_duration(None, "1 D") == "1 D"
 
-    def test_validate_duration_with_invalid_unit(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_duration_with_invalid_unit(self, mock_logger):
         """
         Test the validate_duration callback with invalid input.
         """
         with pytest.raises(BadParameter):
             validate_duration(None, "1 X")
 
-    def test_validate_duration_with_zero_duration(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_duration_with_zero_duration(self, mock_logger):
         """
         Test the validate_duration callback with invalid input.
         """
         with pytest.raises(BadParameter):
             validate_duration(None, "0 D")
 
-    def test_validate_duration_with_no_input(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_duration_with_no_input(self, mock_logger):
         """
         Test the validate_duration callback with no input.
         """
         assert validate_duration(None, None) == "1 D"
 
-    def test_validate_bar_size_with_valid_input(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_bar_size_with_valid_input(self, mock_logger):
         """
         Test the validate_bar_size callback with valid input.
         """
         assert validate_bar_size(None, "1 min") == "1 min"
 
-    def test_validate_bar_size_with_invalid_input(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_bar_size_with_invalid_input(self, mock_logger):
         """
         Test the validate_bar_size callback with invalid input.
         """
         with pytest.raises(BadParameter):
             validate_bar_size(None, "invalid_size")
 
-    def test_validate_bar_size_with_no_input(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_bar_size_with_no_input(self, mock_logger):
         """
         Test the validate_bar_size callback with no input.
         """
         assert validate_bar_size(None, None) == "1 min"
 
-    def test_validate_end_date_with_valid_input(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_end_date_with_valid_input(self, mock_logger):
         """
         Test the validate_end_date callback with valid input.
         """
         assert validate_end_date(None, "2023-01-01") == date(2023, 1, 1)
 
-    def test_validate_end_date_with_invalid_input(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_end_date_with_invalid_input(self, mock_logger):
         """
         Test the validate_end_date callback with invalid input.
         """
         with pytest.raises(BadParameter):
             validate_end_date(None, "invalid_date")
 
-    def test_validate_end_date_with_no_input(self):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_end_date_with_no_input(self, mock_logger):
         """
         Test the validate_end_date callback with no input.
         """
@@ -95,7 +98,8 @@ class TestCallbacks(unittest.TestCase):
 
     @patch("src.utils.cli.callbacks.Path")
     @patch("src.utils.cli.callbacks.Context")
-    def test_validate_out_dir_with_valid_dir(self, mock_ctx, mock_path):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_out_dir_with_valid_dir(self, mock_logger, mock_ctx, mock_path):
         """
         Test the validate_out_dir function with a valid directory.
         :param mock_ctx: the typer context object
@@ -111,7 +115,8 @@ class TestCallbacks(unittest.TestCase):
 
     @patch("src.utils.cli.callbacks.Path")
     @patch("src.utils.cli.callbacks.Context")
-    def test_validate_out_dir_with_none_dir(self, mock_ctx, mock_path):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_out_dir_with_none_dir(self, mock_logger, mock_ctx, mock_path):
         """
         Test the validate_out_dir function with None as directory (should use cwd).
         :param mock_ctx: the typer context object
@@ -124,7 +129,8 @@ class TestCallbacks(unittest.TestCase):
 
     @patch("src.utils.cli.callbacks.Path")
     @patch("src.utils.cli.callbacks.Context")
-    def test_validate_out_dir_with_invalid_dir(self, mock_ctx, mock_path):
+    @patch("src.utils.cli.callbacks.logger")
+    def test_validate_out_dir_with_invalid_dir(self, mock_logger, mock_ctx, mock_path):
         """
         Test the validate_out_dir function with an invalid directory.
         :param mock_ctx: the typer context object
