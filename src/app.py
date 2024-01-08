@@ -100,12 +100,7 @@ def historical_quote(
             end_datetime=convert_to_utc(end_date, end_time).strftime("%Y%m%d-%H:%M:%S"),
             use_rth=1,
         )
-        print(
-            "historical data request completed, waiting a few seconds before printing results..."
-        )
-        time.sleep(3)
 
-        client.historical_data.to_csv(f"{ticker}.csv")
         client.stop_services()
         client.executor.shutdown(wait=True)
     except Exception as e:

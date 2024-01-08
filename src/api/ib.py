@@ -33,7 +33,7 @@ ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 class IBApiClient(EWrapper, EClient):
     """
-    Serves as the intermediary between the IB API and the app logic. Handles connecting/reconnecting, errors, formatting responses.
+    Interface for other system components to access IB API. Handles connection, data requests, errors, formatting responses.
 
     Callbacks: https://interactivebrokers.github.io/tws-api/callbacks.html
     ---------------------------------------------------------------------------------------------------------------------------------
@@ -44,11 +44,11 @@ class IBApiClient(EWrapper, EClient):
 
     def __init__(self, host: str, port: int, client_id: int):
         """
-        Initialize the IBApi instance.
+        Initialize the IBApiClient instance.
 
         :param host: The hostname or IP address of the machine on which the TWS or IB Gateway is running.
         :param port: The port on which the TWS or IB Gateway is listening.
-        :param client_id: A unique identifier for the client application.
+        :param client_id: A unique identifier for the client application and used in communication with the TWS or IB Gateway.
         """
         ib_api_logger.info("Initializing %s instance", self.__class__.__name__)
         EWrapper.__init__(self)
@@ -58,7 +58,9 @@ class IBApiClient(EWrapper, EClient):
         self._client_id = client_id
         self._connection_future = None
         self._run_connection_future = None
-        self._request_counter = 0
+        self._ticker_id = 0
+        self._current_ticker = None
+        self._temp_hist_data = {}
         self._request_lock = threading.Lock()
         self._watchdog_future = None
         self._watchdog = ConnectionWatchdog(
@@ -68,16 +70,7 @@ class IBApiClient(EWrapper, EClient):
             is_connected_method=self.isConnected,
         )
         self._executor = None
-        self._historical_data = pd.DataFrame(
-            columns=[
-                PriceBar.date,
-                PriceBar.open,
-                PriceBar.high,
-                PriceBar.low,
-                PriceBar.close,
-                PriceBar.volume,
-            ]
-        )
+        self._historical_data = {}
         atexit.register(self.disconnect_from_ib)
         # Use % formatting instead of f-strings because f-strings are interpolated at runtime. We save some performance overhead by not evaluating the f-string.
         ib_api_logger.info(
@@ -152,9 +145,9 @@ class IBApiClient(EWrapper, EClient):
         """
         Connect to the IB Gateway or TWS. This method is decorated with the backoff decorator to retry connection attempts.
         It attempts to establish a connection to the IB Gateway or TWS, and if successful, starts the connection and watchdog threads.
-        The connection and watchdog threads are started in separate threads to avoid blocking the main thread. The connection thread
-        is started by calling the IBApiClient.run() method of the EClient class, which is a blocking call. The watchdog thread is started
-        by calling the ConnectionWatchdog.monitor_connection() method, which is a non-blocking call.
+        The connection and watchdog threads are separate to avoid blocking the main thread. The connection thread is started by calling
+        the IBApiClient.run() method of the EClient class, which is a blocking call. The watchdog thread is started by calling the
+        ConnectionWatchdog.monitor_connection() method, which is a non-blocking call.
         """
         ib_api_logger.debug(
             "%s is connecting to IB with host %s, port %s, and client_id %s",
@@ -186,7 +179,8 @@ class IBApiClient(EWrapper, EClient):
 
     def historicalData(self, reqId: int, bar):
         """
-        This callback is invoked for every data point/bar received from the IB API.
+        This callback is invoked for every data point/bar received from the IB API. The reqID is set
+        by IBApiClient.request_historical_data().
 
         :params reqId: The request ID that this bar data is associated with.
         :params   bar: The bar data that was received.
@@ -194,7 +188,8 @@ class IBApiClient(EWrapper, EClient):
         try:
             new_row = {
                 # NOTE: letting Pandas handle the conversion to datetime rather than applying the conversion here
-                # IB API says bar date format="%Y%m%d %H:%M:%S" but this was not working consistently
+                # IB API says bar date format="%Y%m%d %H:%M:%S" but found this not to work consistently
+                PriceBar.ticker: self._current_ticker,
                 PriceBar.date: pd.to_datetime(bar.date),
                 PriceBar.open: bar.open,
                 PriceBar.high: bar.high,
@@ -205,10 +200,25 @@ class IBApiClient(EWrapper, EClient):
             # NOTE: encountered error where multiple NA rows were being appended to the historical data
             # So filter out columns with all-NA entries before concatenation
             # NOTE: this is a big risk to data integrity
-            self._historical_data = self._historical_data.dropna(how="all", axis=1)
-            self._historical_data = pd.concat(
-                [self._historical_data, pd.DataFrame([new_row])], ignore_index=True
+            if reqId not in self._temp_hist_data:
+                self._temp_hist_data[reqId] = []
+            self._temp_hist_data[reqId].append(new_row)
+
+            if len(self._temp_hist_data[reqId]) == 100:
+                new_data_df = pd.DataFrame(self._temp_hist_data[reqId])
+                self._historical_data[reqId] = pd.concat(
+                    [self._historical_data[reqId], new_data_df], ignore_index=True
+                )
+                self._temp_hist_data[reqId] = []
+
+            self._historical_data[reqId] = self._historical_data[reqId].dropna(
+                how="all", axis=1
             )
+            self._historical_data[reqId] = pd.concat(
+                [self._historical_data[reqId], pd.DataFrame([new_row])],
+                ignore_index=True,
+            )
+
         except KeyError as e:
             ib_api_logger.error(
                 "%s encountered a KeyError while processing historical data. ReqId: %s, Error: %s",
@@ -363,13 +373,33 @@ class IBApiClient(EWrapper, EClient):
     ) -> None:
         """
         Requests historical data from IB.
-        :param contract: The contract for which historical data is requested.
         :param end_datetime: The end date and time for the data request.
         :param duration: The duration for which data is requested (e.g., '2 D' for 2 days).
         :param bar_size: The size of the bars in the data request (e.g., '1 hour').
         :param use_rth: Whether to use regular trading hours only (1 for Yes, 0 for No).
         """
-        req_id = self._get_next_request_id()
+        ticker_id = self._get_next_ticker_id()
+        if ticker_id in self._historical_data:
+            ib_api_logger.debug(
+                "%s is clearing historical data for ticker ID %s",
+                self.__class__.__name__,
+                ticker_id,
+            )
+            self._historical_data[ticker_id].drop(
+                self._historical_data[ticker_id].index, inplace=True
+            )
+        self._historical_data[ticker_id] = pd.DataFrame(
+            columns=[
+                PriceBar.ticker,
+                PriceBar.date,
+                PriceBar.open,
+                PriceBar.high,
+                PriceBar.low,
+                PriceBar.close,
+                PriceBar.volume,
+            ]
+        )
+        self._current_ticker = contract.symbol
         ib_api_logger.debug(
             "%s is requesting historical data from IB for %s with end_datetime %s, duration %s, bar_size %s, use_rth %s, and req_id %s",
             self.__class__.__name__,
@@ -378,11 +408,11 @@ class IBApiClient(EWrapper, EClient):
             duration,
             bar_size,
             use_rth,
-            req_id,
+            ticker_id,
         )
         try:
             self.reqHistoricalData(
-                req_id,
+                ticker_id,
                 contract,
                 end_datetime,
                 duration,
@@ -455,29 +485,36 @@ class IBApiClient(EWrapper, EClient):
                 e,
             )
 
-    def _get_next_request_id(self) -> int:
+    def _get_next_ticker_id(self) -> int:
         """
-        Get the next request ID for the IB API. The IB API requires a unique request ID for each request.
-        Locks counter increment to ensure thread safety.
+        Get the next ticker ID for an IB API request. The IB API requires a unique ticker ID which will identify incoming data.
+        Locks ticker increment to ensure thread safety.
         """
         ib_api_logger.debug(
-            "%s is getting the next request ID for the IB API", self.__class__.__name__
+            "%s is getting the next ticker ID for the IB API", self.__class__.__name__
         )
         with self._request_lock:
-            self._request_counter += 1
+            self._ticker_id += 1
             ib_api_logger.debug(
-                "%s is returning the next request ID for the IB API: %s",
+                "%s is returning the next ticker ID for the IB API: %s",
                 self.__class__.__name__,
-                self._request_counter,
+                self._ticker_id,
             )
-            return self._request_counter
+            return self._ticker_id
 
     @property
-    def request_counter(self) -> int:
+    def ticker_id(self) -> int:
         """
         Get the current request counter.
         """
-        return self._request_counter
+        return self._ticker_id
+
+    @property
+    def current_ticker(self) -> str:
+        """
+        Get the current ticker.
+        """
+        return self._current_ticker
 
     @property
     def watchdog_future(self) -> Future:

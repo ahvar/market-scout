@@ -55,6 +55,7 @@ class PriceBar:
     PriceBar dataclass
     """
 
+    ticker: str = "ticker"
     date: str = "date"
     open: str = "open"
     high: str = "high"
