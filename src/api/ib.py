@@ -4,6 +4,7 @@ Classes for interacting with the IB API.
 import logging
 import atexit
 import threading
+from datetime import datetime, timedelta
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 import pandas as pd
@@ -20,6 +21,7 @@ from src.utils.references import (
     mkt_data_farm_msgs,
     hist_data_farm_msgs,
     PriceBar,
+    bar_sizes,
 )
 from src.api.ib_api_exception import (
     IBApiException,
@@ -56,11 +58,13 @@ class IBApiClient(EWrapper, EClient):
         self._host = host
         self._port = port
         self._client_id = client_id
+        self._bar_size = ""
         self._connection_future = None
         self._run_connection_future = None
         self._ticker_id = 0
         self._current_ticker = None
         self._temp_hist_data = {}
+        self._missing_hist_data = {}
         self._request_lock = threading.Lock()
         self._watchdog_future = None
         self._watchdog = ConnectionWatchdog(
@@ -177,7 +181,7 @@ class IBApiClient(EWrapper, EClient):
                 "An error occurred while disconnecting from IB"
             ) from e
 
-    def historicalData(self, reqId: int, bar):
+    def historicalData(self, reqId: int, bar: object):
         """
         This callback is invoked for every data point/bar received from the IB API. The reqID is set
         by IBApiClient.request_historical_data().
@@ -186,6 +190,52 @@ class IBApiClient(EWrapper, EClient):
         :params   bar: The bar data that was received.
         """
         try:
+            if self._all_bar_data_missing(bar):
+                ib_api_logger.debug(
+                    "%s received historical data with all bar data missing. ReqId: %s, Bar: %s",
+                    self.__class__.__name__,
+                    reqId,
+                    bar,
+                )
+                ib_api_logger.debug(
+                    "%s will use the date from the last delivered bar to determine the correct date for the current bar.",
+                    self.__class__.__name__,
+                )
+                if self._temp_hist_data[reqId]:
+                    index = len(self._temp_hist_data[reqId]) - 1
+                    while index >= 0:
+                        if self._temp_hist_data[reqId][index].get(PriceBar.date):
+                            ib_api_logger.debug(
+                                "%s got the date for the last delivered bar from the temporary historical data cache to be %s",
+                                self.__class__.__name__,
+                                bar.date,
+                            )
+                            bar.date = self._temp_hist_data[reqId][index].get(
+                                PriceBar.date
+                            )
+                            break
+                    ib_api_logger.debug(
+                        "%s will use the bar size for %s and the date of the last delivered bar to determine the date for the current bar.",
+                        self.__class__.__name__,
+                        reqId,
+                    )
+                elif reqId in self._historical_data:
+                    index = len(self._historical_data[reqId]) - 1
+                    while index >= 0:
+                        if self._historical_data[reqId].iloc[index].get(PriceBar.date):
+                            ib_api_logger.debug(
+                                "%s got the date for the last delivered bar from the historical data cache to be %s",
+                                self.__class__.__name__,
+                                bar.date,
+                            )
+                            bar.date = (
+                                self._historical_data[reqId]
+                                .iloc[index]
+                                .get(PriceBar.date)
+                            )
+                            break
+                bar.date = self._compute_current_bar_date(bar.date, reqId)
+                return
             new_row = {
                 # NOTE: letting Pandas handle the conversion to datetime rather than applying the conversion here
                 # IB API says bar date format="%Y%m%d %H:%M:%S" but found this not to work consistently
@@ -196,20 +246,17 @@ class IBApiClient(EWrapper, EClient):
                 PriceBar.low: bar.low,
                 PriceBar.close: bar.close,
                 PriceBar.volume: bar.volume,
+                PriceBar.some_bar_data_missing: self._some_bar_data_missing(bar),
             }
-            # NOTE: encountered error where multiple NA rows were being appended to the historical data
-            # So filter out columns with all-NA entries before concatenation
-            # NOTE: this is a big risk to data integrity
-            if reqId not in self._temp_hist_data:
-                self._temp_hist_data[reqId] = []
-            self._temp_hist_data[reqId].append(new_row)
+            # If any of the bar data is missing, add it to the missing data list, otherwise add it to the temp hist data list
+            if new_row.get(PriceBar.some_bar_data_missing):
+                self._add_missing_data(reqId, new_row)
+            # TODO: only want to omit from temp_hist_data if entire bar is missing
+            self._add_temp_hist_data(reqId, new_row)
 
+            # If the temp hist data list has 100 items, add it to the historical data list and clear the temp hist data list
             if len(self._temp_hist_data[reqId]) == 100:
-                new_data_df = pd.DataFrame(self._temp_hist_data[reqId])
-                self._historical_data[reqId] = pd.concat(
-                    [self._historical_data[reqId], new_data_df], ignore_index=True
-                )
-                self._temp_hist_data[reqId] = []
+                self._add_bulk_temp_hist_data(reqId)
 
             self._historical_data[reqId] = self._historical_data[reqId].dropna(
                 how="all", axis=1
@@ -254,6 +301,103 @@ class IBApiClient(EWrapper, EClient):
                 reqId,
                 e,
             )
+
+    def _compute_current_bar_date(self, date_of_prev_bar: object, reqId: int) -> str:
+        """
+        The date for the current bar is computed by first parsing the bar size (e.g. '1 hour')
+        for this request for the bar size time unit and the number of units, and then using these
+        values to calculate what the date of the next bar would have been. This is done by adding
+        the bar size time unit to the date of the previous bar.
+
+        Notes:
+        - time period unit of measurement passed to timedelta must be plural
+
+        :params     date_of_prev_bar: The bar data pulled from temporary historical cache or historical data cache.
+        :params                reqId: The request ID that this bar data is associated with.
+        :return datetime_of_next_bar: String representation of the date of the next bar.
+        """
+        try:
+            bar_size_int = int(self._bar_size.split()[0])
+            bar_size_unit = self._bar_size.split()[1]
+            if bar_size_unit[-1] != "s":
+                bar_size_unit += "s"
+            time_delta = timedelta(f"{bar_size_unit.lower()}={bar_size_int}")
+            datetime_of_prev_bar = datetime.strptime(
+                date_of_prev_bar, "%Y%m%d %H:%M:%S"
+            )
+            datetime_of_next_bar = datetime_of_prev_bar + time_delta
+            return datetime_of_next_bar.strftime("%Y%m%d %H:%M:%S")
+        except Exception as e:
+            ib_api_logger.error(
+                "%s encountered an error while converting bar date to datetime. ReqId: %s, Error: %s",
+                self.__class__.__name__,
+                reqId,
+                e,
+            )
+
+    def _some_bar_data_missing(self, bar_data: object) -> bool:
+        """
+        Determine if the given bar is missing data.
+
+        :params bar_data: The bar data that was received.
+        """
+        return (
+            bar_data.date is None
+            or bar_data.open is None
+            or bar_data.high is None
+            or bar_data.low is None
+            or bar_data.close is None
+            or bar_data.volume is None
+        )
+
+    def _all_bar_data_missing(self, bar_data: object) -> bool:
+        """
+        Determine if the given bar is missing data.
+
+        :params bar_data: The bar data that was received.
+        """
+        return (
+            bar_data.date is None
+            and bar_data.open is None
+            and bar_data.high is None
+            and bar_data.low is None
+            and bar_data.close is None
+            and bar_data.volume is None
+        )
+
+    def _add_missing_data(self, reqId: int, bar_with_missing_data: {}) -> None:
+        """
+        Add missing data to the historical data.
+
+        :params reqId: The request ID that this bar data is associated with.
+        :params bar_with_missing_data: The bar data that was received.
+        """
+        if reqId not in self._missing_hist_data:
+            self._missing_hist_data[reqId] = []
+        self._missing_hist_data[reqId].append(bar_with_missing_data)
+
+    def _add_temp_hist_data(self, reqId: int, bar_with_hist_data: {}) -> None:
+        """
+        Add historical data to the historical data.
+
+        :params reqId: The request ID that this bar data is associated with.
+        :params bar_with_hist_data: The bar data that was received.
+        """
+        if reqId not in self._temp_hist_data:
+            self._temp_hist_data[reqId] = []
+        self._temp_hist_data[reqId].append(bar_with_hist_data)
+
+    def _add_bulk_temp_hist_data(self, reqId: int) -> None:
+        """
+        Add historical data to the historical data and clear the temp hist data.
+
+        :params reqId: The request ID that this bar data is associated with.
+        """
+        new_data_df = pd.DataFrame(self._temp_hist_data[reqId])
+        self._historical_data[reqId] = pd.concat(
+            [self._historical_data[reqId], new_data_df], ignore_index=True
+        )
+        self._temp_hist_data[reqId] = []
 
     def historicalDataEnd(self, reqId: int, start: str, end: str) -> None:
         """
@@ -400,6 +544,7 @@ class IBApiClient(EWrapper, EClient):
             ]
         )
         self._current_ticker = contract.symbol
+        self._bar_size = bar_size
         ib_api_logger.debug(
             "%s is requesting historical data from IB for %s with end_datetime %s, duration %s, bar_size %s, use_rth %s, and req_id %s",
             self.__class__.__name__,
