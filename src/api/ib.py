@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 import pandas as pd
+import numpy as np
 import backoff
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
@@ -184,26 +185,40 @@ class IBApiClient(EWrapper, EClient):
 
     def historicalData(self, reqId: int, bar: object):
         """
-        This callback is invoked for every data point/bar received from the IB API.
-        The reqID is set by IBApiClient.request_historical_data(). For more
-        efficient processing, the data is stored in a temporary historical data cache,
-        and then bulk added to the historical data cache when the temp hist data cache
-        reaches 100 items. This is done to avoid the overhead of adding each item to the
-        historical data cache individually.
+        Invoked for every data point/bar received from the IB API. The reqID
+        is set in IBApiClient.request_historical_data(). To avoid overhead of
+        adding each delivered bar to historical cache, data is stored in a
+        temporary historical cache, and then bulk added to the historical cache
+        when temp hist reaches 100 items.
 
-        NOTE:
+        NOTE: Expected Bar Data Structure
         -----------------------------------------------------------------
-        - In instances where this bar data may be entirely unavailable,
-          an error may occur during the concatenation of empty data rows,
-          characterized by all values being N/A.
-        - To address this issue, the client implements a workaround for cases
-          of entirely missing bar data. It utilizes the date from the last
-          accessible bar in either the historical, or temporary historical, data
-          cache(s) and the specified bar size to calculate the anticipated
-          date for the missing bar.
+        - The bar data received from the IB API is expected to be in the
+            following format:
+            BarData(date, open, high, low, close, volume, barCount, average, hasGaps, WAP, hasGaps)
+        - The bar data is converted to a dictionary with the following keys:
+            {
+                "ticker": ticker,
+                "date": date,
+                "open": open,
+                "high": high,
+                "low": low,
+                "close": close,
+                "volume": volume,
+                "data_partially_missing": True/False
+            }
+        - The dictionary is added to the temp hist data cache.
+        -----------------------------------------------------------------
+
+        NOTE: Handling Missing Bar Data
+        -----------------------------------------------------------------
+        - Pandas may error if attempts are made to concatenate multiple
+          empty rows, which occurs if all bar data is unavailable.
+        - This is handled by utilizing the date from the last accessible bar
+          in either historical, or temporary historical, data cache(s) and the
+          specified bar size to calculate the anticipated date for the missing bar.
         - Consequently, a record is generated for this missing data, with all
           fields except for the ticker and date being marked as N/A.
-
         -----------------------------------------------------------------
 
         :params reqId: The request ID that this bar data is associated with.
@@ -240,10 +255,6 @@ class IBApiClient(EWrapper, EClient):
             # If the temp hist data list has 100 items, add it to the historical data list and clear the temp hist data list
             if len(self._temp_hist_data[reqId]) == 100:
                 self._add_bulk_temp_hist_data(reqId)
-
-            self._historical_data[reqId] = self._historical_data[reqId].dropna(
-                how="all", axis=1
-            )
 
         except KeyError as e:
             ib_api_logger.error(
@@ -308,24 +319,19 @@ class IBApiClient(EWrapper, EClient):
                 reqId, use_temp_data=False
             )
         if not last_available_date:
-            ib_api_logger.error(
-                "%s could not find the date for the last available bar from the temporary historical data cache or historical data cache",
-                self.__class__.__name__,
-            )
             raise HistoricalDatatMissingException(
-                "Could not find the date for the last available bar from the temporary historical data cache or historical data cache"
+                f"{self.__class__.__name__} could not find the date for the last available bar from the temporary historical data cache or historical data cache"
             )
-        bar.date = self._compute_missing_bar_date_from_last_available(
-            last_available_date, reqId
-        )
         return {
             PriceBar.ticker: self._current_ticker,
-            PriceBar.date: bar.date,
-            PriceBar.open: "NaN",
-            PriceBar.high: "NaN",
-            PriceBar.low: "NaN",
-            PriceBar.close: "NaN",
-            PriceBar.volume: "NaN",
+            PriceBar.date: self._compute_missing_bar_date_from_last_available(
+                last_available_date, reqId
+            ),
+            PriceBar.open: np.NAN,
+            PriceBar.high: np.NAN,
+            PriceBar.low: np.NAN,
+            PriceBar.close: np.NAN,
+            PriceBar.volume: np.NAN,
             PriceBar.data_partially_missing: True,
         }
 
@@ -347,19 +353,14 @@ class IBApiClient(EWrapper, EClient):
                     "%s got the date for the last available bar from the %s data cache to be %s",
                     self.__class__.__name__,
                     "temporary historical" if use_temp_data else "historical",
-                    last_available_date.date().strftime("%Y-%m-%d"),
+                    last_available_date.strftime("%Y-%m-%d %H:%M:%S"),
                 )
                 return last_available_date
             index -= 1
-
-        ib_api_logger.debug(
-            "%s could not find the date for the last available bar from the %s data cache",
-            self.__class__.__name__,
-            "temporary historical" if use_temp_data else "historical",
-        )
+        return None
 
     def _compute_missing_bar_date_from_last_available(
-        self, date_of_prev_bar: object, reqId: int
+        self, last_available_date: datetime, reqId: int
     ) -> datetime:
         """
         The date for the current bar is computed by first parsing the bar size (e.g. '1 hour')
@@ -370,32 +371,26 @@ class IBApiClient(EWrapper, EClient):
         Notes:
         - time period unit of measurement passed to timedelta must be plural
 
-        :params     date_of_prev_bar: The bar data pulled from temporary historical cache or historical data cache.
-        :params                reqId: The request ID that this bar data is associated with.
-        :return datetime_of_next_bar: datetime representation of the date of the next bar.
+        :params        last_availale_date: The bar data pulled from temporary historical cache or historical data cache.
+        :params                     reqId: The request ID that this bar data is associated with.
+        :return   datetime_of_missing_bar: datetime representation of the date of the next bar.
         """
         try:
             bar_size_int = int(self._bar_size.split()[0])
             bar_size_unit = self._bar_size.split()[1]
             if bar_size_unit[-1] != "s":
                 bar_size_unit += "s"
-            time_delta = timedelta(f"{bar_size_unit.lower()}={bar_size_int}")
-            datetime_of_prev_bar = datetime.strptime(
-                date_of_prev_bar, "%Y%m%d %H:%M:%S"
-            )
-            datetime_of_next_bar = datetime_of_prev_bar + time_delta
-            return datetime_of_next_bar
+            time_delta = timedelta(**{bar_size_unit.lower(): bar_size_int})
+            datetime_of_missing_bar = last_available_date + time_delta
+            return datetime_of_missing_bar
         except Exception as e:
-            ib_api_logger.error(
-                "%s encountered an error while converting bar date to datetime. ReqId: %s, Error: %s",
-                self.__class__.__name__,
-                reqId,
-                e,
-            )
+            raise HistoricalDatatMissingException(
+                f"{self.__class__.__name__} encountered an error while computing the date of the missing bar. ReqId: {reqId}, Error: {e}"
+            ) from e
 
     def _data_partially_missing(self, bar_data: object) -> bool:
         """
-        Determine if the given bar is missing data.
+        Determine if the given bar has any missing data.
 
         :params bar_data: The bar data that was received.
         """
@@ -410,7 +405,7 @@ class IBApiClient(EWrapper, EClient):
 
     def _all_bar_data_missing(self, bar_data: object) -> bool:
         """
-        Determine if the given bar is missing data.
+        Determine if all bar data is missing.
 
         :params bar_data: The bar data that was received.
         """
