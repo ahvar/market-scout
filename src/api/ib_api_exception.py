@@ -22,3 +22,9 @@ class IBApiDataRequestException(IBApiException):
     """
     Thrown when there is a problem requesting data from IB
     """
+
+
+class HistoricalDatatMissingException(IBApiDataRequestException):
+    """
+    Thrown when requested historical data is partially or entirely missing
+    """

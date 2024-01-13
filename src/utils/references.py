@@ -62,7 +62,7 @@ class PriceBar:
     low: str = "low"
     close: str = "close"
     volume: str = "volume"
-    some_bar_data_missing: bool = False
+    data_partially_missing: bool = False
 
 
 @dataclass
