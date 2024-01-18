@@ -4,7 +4,10 @@ scout app
 import logging
 import time
 import typer
+import openai
 from datetime import datetime
+from dotenv import load_dotenv
+from openai import OpenAI
 from src.utils.cli.callbacks import (
     validate_end_date,
     validate_duration,
@@ -28,6 +31,7 @@ __copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
 
 logger = logging.getLogger(IB_API_LOGGER_NAME)
 app = typer.Typer()
+load_dotenv()
 
 
 @app.command(
@@ -76,6 +80,11 @@ def market_summary(
     This command tells Market Scout to get the market summary for a ticker within a given timeframe. The values passed to
     command options are used in requests to OpenAI API for GPT chat service.
     """
+    client = OpenAI()
+    response = openai.Completion.create(
+        engine="text-davinci-003", prompt="Hello, world!", max_tokens=5
+    )
+    print(response.json())
 
 
 @app.command(
