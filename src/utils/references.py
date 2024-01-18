@@ -47,6 +47,7 @@ bar_sizes = [
     "1 month",
 ]
 duration_units = [("S", "Seconds"), ("D", "Days"), ("W", "Weeks"), ("M", "Months")]
+report_types = ["ReportsFinStatements", "ReportsOwnership", "ReportsFinSummary"]
 
 
 @dataclass

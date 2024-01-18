@@ -28,6 +28,35 @@ from src.utils.references import (
 logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
+def validate_report_type(ctx: Context, report_type: str) -> str:
+    """
+    The duration is <int> + <valid_duration_string>
+    :params      ctx: the typer context object
+    :params duration: the amount of time to go back from the end date and time
+    :return duration: the amount of time to go back from the end date and time
+    """
+    logger.debug("Validating report type...")
+    if report_type is None:
+        logger.debug(
+            "No report type provided, default to '1 D' (1 day) from the end date and time"
+        )
+        return "1 D"
+    try:
+        if int(report_type.split(" ")[0]) <= 0:
+            raise BadParameter("0 < duration")
+        logger.debug("Parsing report type string: %s", report_type)
+        report_type_unit = report_type.split(" ")[1]
+        for short, long in duration_units:
+            if report_type_unit in (short, long):
+                return report_type
+        raise BadParameter(
+            f"Invalid duration unit. Please choose from {', '.join(f'{short}, ({long})' for short, long in duration_units)}."
+        )
+    except (ValueError, IndexError, TypeError) as e:
+        logger.error("Could not parse date: %s", e)
+        raise BadParameter(str(e))
+
+
 def validate_duration(ctx: Context, duration: str) -> str:
     """
     The duration is <int> + <valid_duration_string>

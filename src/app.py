@@ -11,17 +11,71 @@ from src.utils.cli.callbacks import (
     validate_bar_size,
     validate_end_time,
     validate_out_dir,
+    validate_report_type,
 )
 from src.utils.cli.cli import init_logging, set_error_and_exit, convert_to_utc
 from src.api.ib import IBApiClient
 from src.models.order import ContractFactory
-from src.utils.references import IB_API_LOGGER_NAME, bar_sizes, duration_units
+from src.utils.references import (
+    IB_API_LOGGER_NAME,
+    bar_sizes,
+    duration_units,
+    report_types,
+)
 
 __copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
 
 
 logger = logging.getLogger(IB_API_LOGGER_NAME)
 app = typer.Typer()
+
+
+@app.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def market_summary(
+    ctx: typer.Context,
+    ticker: str = typer.Argument(..., help="Ticker symbol for the stock"),
+    duration: str = typer.Option(
+        None,
+        "-dr",
+        "--duration",
+        callback=validate_duration,
+        help=f"The amount of time to go back from the end date and time. \
+            Provide an integer and a valid duration unit. Valid units: {', '.join(f'{short} ({long})' for short, long in duration_units)}",
+    ),
+    end_date: str = typer.Option(
+        None,
+        "-ed",
+        "--end-date",
+        callback=validate_end_date,
+        help="The request's end date. Default is the current date. Valid formats: YYYY-MM-DD, YYYY/MM/DD",
+    ),
+    out_dir: str = typer.Option(
+        None,
+        "-o",
+        "--outdir",
+        callback=validate_out_dir,
+        help="The name of the output file. Default is <ticker>.csv",
+    ),
+    report_type: str = typer.Option(
+        None,
+        "-rt",
+        "--report-type",
+        callback=validate_report_type,
+        help=f"The type of report to generate. Valid types: {', '.join(f'{report}' for report in report_types)}",
+    ),
+    debug: bool = typer.Option(
+        False,
+        "-b",
+        "--debug",
+        help="Set log level to debug",
+    ),
+):
+    """
+    This command tells Market Scout to get the market summary for a ticker within a given timeframe. The values passed to
+    command options are used in requests to OpenAI API for GPT chat service.
+    """
 
 
 @app.command(
