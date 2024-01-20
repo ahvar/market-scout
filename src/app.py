@@ -4,7 +4,6 @@ scout app
 import logging
 import time
 import typer
-import openai
 from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -81,10 +80,22 @@ def market_summary(
     command options are used in requests to OpenAI API for GPT chat service.
     """
     client = OpenAI()
-    response = openai.Completion.create(
-        engine="text-davinci-003", prompt="Hello, world!", max_tokens=5
+
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a poetic assistant, skilled in explaining complex programming concepts with creative flair.",
+            },
+            {
+                "role": "user",
+                "content": "Compose a poem that explains the concept of recursion in programming.",
+            },
+        ],
     )
-    print(response.json())
+
+    print(completion.choices[0].message)
 
 
 @app.command(
