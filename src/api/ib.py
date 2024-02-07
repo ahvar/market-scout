@@ -1,6 +1,7 @@
 """
 Classes for interacting with the IB API.
 """
+
 import logging
 import atexit
 import threading
@@ -37,21 +38,24 @@ ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 class IBApiClient(EWrapper, EClient):
     """
-    Interface for other system components to access IB API. Handles connection, data requests, errors, formatting responses.
+    Interface for other system components to access IB API.
+     - Handles connection
+     - data requests
 
     Callbacks: https://interactivebrokers.github.io/tws-api/callbacks.html
     ---------------------------------------------------------------------------------------------------------------------------------
-    When working with Interactive Brokers, one of the main concepts to understand is that it works in an asynchronous way. This means
-    that when you request data, you don't get it immediately. Instead, you get it through a callback. For example, when you request
-    historical data, you get it through the historicalData() callback.
+    Interactive Brokers API works in an asynchronously, returning the requested data through a callback.
+    The callback methods are defined in the EWrapper class, and the EClient class. The EClient class is
+    responsible for sending requests to the TWS or IB Gateway, and the EWrapper class is responsible for
+    receiving the data from the TWS or IB Gateway and processing it.
     """
 
     def __init__(self, host: str, port: int, client_id: int):
         """
         Initialize the IBApiClient instance.
 
-        :param host: The hostname or IP address of the machine on which the TWS or IB Gateway is running.
-        :param port: The port on which the TWS or IB Gateway is listening.
+        :param      host: The hostname or IP address of the machine on which the TWS or IB Gateway is running.
+        :param      port: The port on which the TWS or IB Gateway is listening.
         :param client_id: A unique identifier for the client application and used in communication with the TWS or IB Gateway.
         """
         ib_api_logger.info("Initializing %s instance", self.__class__.__name__)
