@@ -2,12 +2,16 @@
 Classes for establishing and maintaining a connection with the broker's API.
 """
 
+# standard library
 import logging
 import time
 import threading
-import pandas as pd
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, Future
+
+# third-party
+import pandas as pd
+from ibapi.contract import Contract
 from src.api.ib_utils import ConnectionWatchdog
 from src.utils.references import IB_API_LOGGER_NAME
 
@@ -17,6 +21,7 @@ broker_logger = logging.getLogger(IB_API_LOGGER_NAME)
 class BrokerApiClient(ABC):
     """
     Abstract base class for brokerage API clients.
+    - Handles connection to the brokerage API.
     """
 
     def __init__(self, host: str, port: int, client_id: int):
@@ -32,7 +37,9 @@ class BrokerApiClient(ABC):
         self._connection_future = None
         self._run_connection_future = None
         self._executor = None
+        self._historical_data = {}
         self._request_lock = threading.Lock()
+        self._watchdog_future = None
         self._watchdog = ConnectionWatchdog(
             check_interval=10,
             start_services=self.start_services,
@@ -74,7 +81,7 @@ class BrokerApiClient(ABC):
             while self._verify_connection():
                 time.sleep(1)
         broker_logger.debug(
-            "%s is disconnected from IB. Stopping watchdog thread.",
+            "%s is disconnected from API. Stopping watchdog thread.",
             self.__class__.__name__,
         )
         if self._watchdog_future:
@@ -112,15 +119,77 @@ class BrokerApiClient(ABC):
         """
 
     @abstractmethod
-    def request_historical_data(self, **kwargs):
+    def request_historical_data(
+        self,
+        contract: Contract,
+        end_datetime: str,
+        duration: str,
+        bar_size: str,
+        use_rth: int,
+    ) -> None:
         """
         Request historical data.
         """
-        pass
 
-    @abstractmethod
-    def error(self, reqId: int, errorCode: int, errorString: str):
+    @property
+    def connection_thread(self) -> threading.Thread:
         """
-        Handle errors received from the brokerage API.
+        Get the connection thread.
         """
-        pass
+        return self._run_connection_future
+
+    @connection_thread.setter
+    def connection_thread(self, connection_thread: threading.Thread) -> None:
+        """
+        Set the connection thread.
+        """
+        self._run_connection_future = connection_thread
+
+    @property
+    def executor(self) -> ThreadPoolExecutor:
+        """
+        Get the executor.
+        """
+        return self._executor
+
+    @executor.setter
+    def executor(self, executor: ThreadPoolExecutor) -> None:
+        """
+        Set the executor.
+        """
+        self._executor = executor
+
+    @property
+    def watchdog_future(self) -> Future:
+        """
+        Get the watchdog future.
+        """
+        return self._watchdog_future
+
+    @watchdog_future.setter
+    def watchdog_future(self, watchdog_future: Future) -> None:
+        """
+        Set the watchdog future.
+        """
+        self._watchdog_future = watchdog_future
+
+    @property
+    def making_connection_attempt(self) -> bool:
+        """
+        Returns True if Watchdog is attempting a connection.
+        """
+        return self._making_connection_attempt
+
+    @making_connection_attempt.setter
+    def making_connection_attempt(self, value: bool) -> None:
+        """
+        Sets the value of making_connection_attempt.
+        """
+        self._making_connection_attempt = value
+
+    @property
+    def historical_data(self) -> pd.DataFrame:
+        """
+        Returns the historical data.
+        """
+        return self._historical_data

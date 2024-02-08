@@ -14,7 +14,6 @@ import backoff
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
-from src.api.ib_utils import ConnectionWatchdog
 from src.utils.cli.cli import set_error_and_exit
 from src.utils.references import (
     socket_drop,
@@ -31,20 +30,19 @@ from src.api.ib_api_exception import (
     IBApiDataRequestException,
     HistoricalDatatMissingException,
 )
+from src.api.brokerage.brokerage_client import BrokerApiClient
 from src.utils.references import IB_API_LOGGER_NAME
 
 ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
-class IBApiClient(EWrapper, EClient):
+class IBApiClient(BrokerApiClient, EWrapper, EClient):
     """
-    Interface for other system components to access IB API.
-     - Handles connection
-     - data requests
+    Concrete class for accessing Interactive Brokers API.
 
     Callbacks: https://interactivebrokers.github.io/tws-api/callbacks.html
-    ---------------------------------------------------------------------------------------------------------------------------------
-    Interactive Brokers API works in an asynchronously, returning the requested data through a callback.
+    ---------------------------------------------------------------------------------------------------
+    Interactive Brokers API works asynchronously, returning the requested data through a callback.
     The callback methods are defined in the EWrapper class, and the EClient class. The EClient class is
     responsible for sending requests to the TWS or IB Gateway, and the EWrapper class is responsible for
     receiving the data from the TWS or IB Gateway and processing it.
@@ -58,31 +56,18 @@ class IBApiClient(EWrapper, EClient):
         :param      port: The port on which the TWS or IB Gateway is listening.
         :param client_id: A unique identifier for the client application and used in communication with the TWS or IB Gateway.
         """
+        super().__init__(host, port, client_id)
         ib_api_logger.info("Initializing %s instance", self.__class__.__name__)
         EWrapper.__init__(self)
         EClient.__init__(self, wrapper=self)
-        self._host = host
-        self._port = port
-        self._client_id = client_id
         self._bar_size = ""
-        self._connection_future = None
-        self._run_connection_future = None
         self._ticker_id = 0
         self._current_ticker = None
         self._temp_hist_data = {}
         self._missing_hist_data = {}
-        self._request_lock = threading.Lock()
-        self._watchdog_future = None
-        self._watchdog = ConnectionWatchdog(
-            check_interval=10,
-            start_services=self.start_services,
-            stop_services=self.stop_services,
-            is_connected_method=self.isConnected,
-        )
-        self._executor = None
-        self._historical_data = {}
-        atexit.register(self.disconnect_from_ib)
-        # Use % formatting instead of f-strings because f-strings are interpolated at runtime. We save some performance overhead by not evaluating the f-string.
+        atexit.register(self._disconnect_from_broker_api)
+        # Use % formatting instead of f-strings because f-strings are interpolated at runtime.
+        # We save some performance overhead by not evaluating the f-string.
         ib_api_logger.info(
             "%s instance initialized. \nHost: %s\nPort: %s\nClient_ID: %s",
             self.__class__.__name__,
@@ -90,51 +75,6 @@ class IBApiClient(EWrapper, EClient):
             self._port,
             self._client_id,
         )
-
-    def start_services(self) -> None:
-        """
-        Start the connection and watchdog threads. Creates a watchdog thread to monitor the connection to the IB API.
-        """
-        self._watchdog.start_dog()
-        self._executor = ThreadPoolExecutor(max_workers=3)
-        ib_api_logger.debug(
-            "%s establishing a connection with IB API", self.__class__.__name__
-        )
-        self._connection_future = self.executor.submit(self.connect_to_ib)
-        # Wait for connection to be established
-        while not self.isConnected():
-            time.sleep(1)
-        ib_api_logger.debug(
-            "%s is connected to IB API. Calling run() to continuously listen for messages from IB Gateway and watchdog threads.",
-            self.__class__.__name__,
-        )
-        self._run_connection_future = self._executor.submit(self._run_connection_thread)
-        self._watchdog_future = self._executor.submit(self._watchdog.monitor_connection)
-
-    def stop_services(self) -> None:
-        """
-        Stop the connection and watchdog threads.
-        """
-        ib_api_logger.debug(
-            "%s is stopping services. Disconnecting from IB and stopping watchdog thread.",
-            self.__class__.__name__,
-        )
-        if self.isConnected():
-            self.disconnect_from_ib()
-            while self.isConnected():
-                time.sleep(1)
-        ib_api_logger.debug(
-            "%s is disconnected from IB. Stopping watchdog thread.",
-            self.__class__.__name__,
-        )
-        if self._watchdog_future:
-            self._watchdog_future.cancel()
-        if self._connection_future:
-            self._connection_future.cancel()
-        if self._run_connection_future:
-            self._run_connection_future.cancel()
-        self._watchdog.stop_dog()
-        # self._executor.shutdown(wait=True)
 
     def _run_connection_thread(self) -> None:
         """
@@ -151,7 +91,7 @@ class IBApiClient(EWrapper, EClient):
         max_time=300,
         jitter=backoff.full_jitter,
     )
-    def connect_to_ib(self) -> None:
+    def _connect_to_broker_api(self) -> None:
         """
         Connect to the IB Gateway or TWS. This method is decorated with the backoff decorator to retry connection attempts.
         It attempts to establish a connection to the IB Gateway or TWS, and if successful, starts the connection and watchdog threads.
@@ -175,7 +115,7 @@ class IBApiClient(EWrapper, EClient):
                 "An error occurred while connecting to IB"
             ) from e
 
-    def disconnect_from_ib(self) -> None:
+    def _disconnect_from_broker_api(self) -> None:
         """
         Disconnect from the IB Gateway or TWS.
         """
@@ -709,66 +649,3 @@ class IBApiClient(EWrapper, EClient):
         Get the current ticker.
         """
         return self._current_ticker
-
-    @property
-    def watchdog_future(self) -> Future:
-        """
-        Get the watchdog future.
-        """
-        return self._watchdog_future
-
-    @watchdog_future.setter
-    def watchdog_future(self, watchdog_future: Future) -> None:
-        """
-        Set the watchdog future.
-        """
-        self._watchdog_future = watchdog_future
-
-    @property
-    def connection_thread(self) -> threading.Thread:
-        """
-        Get the connection thread.
-        """
-        return self._run_connection_future
-
-    @connection_thread.setter
-    def connection_thread(self, connection_thread: threading.Thread) -> None:
-        """
-        Set the connection thread.
-        """
-        self._run_connection_future = connection_thread
-
-    @property
-    def executor(self) -> ThreadPoolExecutor:
-        """
-        Get the executor.
-        """
-        return self._executor
-
-    @executor.setter
-    def executor(self, executor: ThreadPoolExecutor) -> None:
-        """
-        Set the executor.
-        """
-        self._executor = executor
-
-    @property
-    def making_connection_attempt(self) -> bool:
-        """
-        Returns True if Watchdog is attempting a connection.
-        """
-        return self._making_connection_attempt
-
-    @making_connection_attempt.setter
-    def making_connection_attempt(self, value: bool) -> None:
-        """
-        Sets the value of making_connection_attempt.
-        """
-        self._making_connection_attempt = value
-
-    @property
-    def historical_data(self) -> pd.DataFrame:
-        """
-        Returns the historical data.
-        """
-        return self._historical_data
