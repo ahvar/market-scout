@@ -2,15 +2,15 @@
 Classes for interacting with the IB API.
 """
 
+# standard library
 import logging
 import atexit
-import threading
 from datetime import datetime, timedelta
-import time
-from concurrent.futures import Future, ThreadPoolExecutor
 import pandas as pd
 import numpy as np
 import backoff
+
+# third-party
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
@@ -23,6 +23,7 @@ from src.utils.references import (
     hist_data_farm_msgs,
     PriceBar,
     bar_sizes,
+    backoff_params,
 )
 from src.api.ib_api_exception import (
     IBApiException,
@@ -30,7 +31,7 @@ from src.api.ib_api_exception import (
     IBApiDataRequestException,
     HistoricalDatatMissingException,
 )
-from src.api.brokerage.brokerage_client import BrokerApiClient
+from src.api.brokerage.client import BrokerApiClient
 from src.utils.references import IB_API_LOGGER_NAME
 
 ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
@@ -78,26 +79,27 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
 
     def _run_connection_thread(self) -> None:
         """
-        Run the connection thread to keep the IB connection alive. To do this we call the IBApi.run() method
-        of the EClient class, which is a blocking call. To avoid blocking the main thread, we run it in a
-        separate thread.
+        Inherited from BrokerApiClient. For Interactive Brokers, EClient.run(), which is a blocking call,
+        keeps the IB connection alive. To avoid blocking the main thread, we run it in a separate thread.
         """
         self.run()
 
-    @backoff.on_exception(
-        backoff.expo,
-        IBApiException,
-        max_tries=8,
-        max_time=300,
-        jitter=backoff.full_jitter,
-    )
+    def _verify_connection(self) -> bool:
+        """
+        Inherited from BrokerApiClient.
+        Verify that the connection to the IB Gateway or TWS is alive.
+        """
+        return self.isConnected()
+
+    @backoff.on_exception(backoff.expo, IBApiException, **backoff_params)
     def _connect_to_broker_api(self) -> None:
         """
-        Connect to the IB Gateway or TWS. This method is decorated with the backoff decorator to retry connection attempts.
-        It attempts to establish a connection to the IB Gateway or TWS, and if successful, starts the connection and watchdog threads.
-        The connection and watchdog threads are separate to avoid blocking the main thread. The connection thread is started by calling
-        the IBApiClient.run() method of the EClient class, which is a blocking call. The watchdog thread is started by calling the
-        ConnectionWatchdog.monitor_connection() method, which is a non-blocking call.
+        Inherited from BrokerApiClient.
+        Connect to the IB Gateway or TWS. We add a backoff decorator to retry connection attempts.
+        It attempts to establish a connection to the IB Gateway or TWS, and if successful, starts
+        the connection and watchdog threads. The connection and watchdog threads are separate to
+        avoid blocking the main thread. The watchdog thread is started by calling the ConnectionWatchdog.monitor_connection()
+        method, which is a non-blocking call.
         """
         ib_api_logger.debug(
             "%s is connecting to IB with host %s, port %s, and client_id %s",
@@ -129,11 +131,11 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
 
     def historicalData(self, reqId: int, bar: object):
         """
-        Invoked for every data point/bar received from the IB API. The reqID
-        is set in IBApiClient.request_historical_data(). To avoid overhead of
-        adding each delivered bar to historical cache, data is stored in a
-        temporary historical cache, and then bulk added to the historical cache
-        when temp hist reaches 100 items.
+        Invoked for every bar received from the IB API. The reqID is set in
+        IBApiClient.request_historical_data(). To avoid overhead of adding
+        each delivered bar to historical cache, data is stored in a temporary
+        historical cache, and then bulk added to the historical cache when temp
+        hist reaches 100 items.
 
         NOTE: Expected Bar Data Structure
         -----------------------------------------------------------------
@@ -158,11 +160,11 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         -----------------------------------------------------------------
         - Pandas may error if attempts are made to concatenate multiple
           empty rows, which occurs if all bar data is unavailable.
-        - This is handled by utilizing the date from the last accessible bar
-          in either historical, or temporary historical, data cache(s) and the
-          specified bar size to calculate the anticipated date for the missing bar.
+        - To handle empty rows, the date from the last accessible bar
+          in either historical, or temporary historical, data cache(s) is used
+          with and specified bar size to calculate the date for the missing bar.
         - Consequently, a record is generated for this missing data, with all
-          fields except for the ticker and date being marked as N/A.
+          fields except for the ticker and date being N/A.
         -----------------------------------------------------------------
 
         :params reqId: The request ID that this bar data is associated with.
@@ -200,34 +202,22 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
             if len(self._temp_hist_data[reqId]) == 100:
                 self._add_bulk_temp_hist_data(reqId)
 
-        except KeyError as e:
+        except (pd.errors.ParserError, pd.errors.EmptyDataError) as e:
             ib_api_logger.error(
-                "%s encountered a KeyError while processing historical data. ReqId: %s, Error: %s",
+                "%s encountered a Pandas error while parsing historical data. ReqId: %s, Error: %s",
                 self.__class__.__name__,
                 reqId,
                 e,
             )
-        except pd.errors.ParserError as e:
+
+        except (KeyError, ValueError) as e:
             ib_api_logger.error(
-                "%s encountered Pandas error while parsing historical data. ReqId: %s, Error: %s",
+                "%s encountered an error while processing historical data. ReqId: %s, Error: %s",
                 self.__class__.__name__,
                 reqId,
                 e,
             )
-        except pd.errors.EmptyDataError as e:
-            ib_api_logger.error(
-                "%s encountered a Pandas EmptyDataError while processing historical data. ReqId: %s, Error: %s",
-                self.__class__.__name__,
-                reqId,
-                e,
-            )
-        except ValueError as e:
-            ib_api_logger.error(
-                "%s encountered a ValueError while processing historical data. ReqId: %s, Error: %s",
-                self.__class__.__name__,
-                reqId,
-                e,
-            )
+
         except Exception as e:
             ib_api_logger.error(
                 "%s encountered an unexpected error while processing historical data. ReqId: %s, Error: %s",
@@ -583,30 +573,17 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
             self._historical_data = self._historical_data.append(
                 new_row, ignore_index=True
             )
-        except KeyError as e:
+
+        except (pd.errors.ParserError, pd.errors.EmptyDataError) as e:
             ib_api_logger.error(
-                "%s encountered a KeyError while processing historical data. ReqId: %s, Error: %s",
+                "%s encountered a Pandas error while parsing historical data. ReqId: %s, Error: %s",
                 self.__class__.__name__,
                 reqId,
                 e,
             )
-        except pd.errors.ParserError as e:
+        except (KeyError, ValueError) as e:
             ib_api_logger.error(
-                "%s encountered Pandas error while parsing historical data. ReqId: %s, Error: %s",
-                self.__class__.__name__,
-                reqId,
-                e,
-            )
-        except pd.errors.EmptyDataError as e:
-            ib_api_logger.error(
-                "%s encountered a Pandas EmptyDataError while processing historical data. ReqId: %s, Error: %s",
-                self.__class__.__name__,
-                reqId,
-                e,
-            )
-        except ValueError as e:
-            ib_api_logger.error(
-                "%s encountered a ValueError while processing historical data. ReqId: %s, Error: %s",
+                "%s encountered an error while processing historical data. ReqId: %s, Error: %s",
                 self.__class__.__name__,
                 reqId,
                 e,

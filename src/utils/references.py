@@ -1,5 +1,14 @@
+import backoff
+import os
 from dataclasses import dataclass
 from enum import Enum
+
+is_test_mode = os.getenv("TEST_MODE", "False").lower() == "true"
+backoff_params = {
+    "max_tries": 1 if is_test_mode else 8,
+    "max_time": 300,
+    "jitter": backoff.full_jitter,
+}
 
 
 class DateTimeType(Enum):

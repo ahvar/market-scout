@@ -14,6 +14,7 @@ import pandas as pd
 from ibapi.contract import Contract
 from src.api.ib_utils import ConnectionWatchdog
 from src.utils.references import IB_API_LOGGER_NAME
+from src.api.ib_api_exception import IBApiConnectionException
 
 broker_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
@@ -40,6 +41,8 @@ class BrokerApiClient(ABC):
         self._historical_data = {}
         self._request_lock = threading.Lock()
         self._watchdog_future = None
+        self._max_attempts_to_verify_connection = 8
+        self._count_attempts_to_verify_connection = 0
         self._watchdog = ConnectionWatchdog(
             check_interval=10,
             start_services=self.start_services,
@@ -59,8 +62,22 @@ class BrokerApiClient(ABC):
         broker_logger.debug("%s establishing a connection", self.__class__.__name__)
         self._connection_future = self._executor.submit(self._connect_to_broker_api)
         # Wait for connection to be established
-        while not self._verify_connection():
+        while (
+            not self._verify_connection()
+            and self._count_attempts_to_verify_connection
+            < self._max_attempts_to_verify_connection
+        ):
             time.sleep(1)
+            self._count_attempts_to_verify_connection += 1
+        if (
+            self._count_attempts_to_verify_connection
+            >= self._max_attempts_to_verify_connection
+        ):
+            raise IBApiConnectionException(
+                "Failed to establish a connection to the broker's API after "
+                f"{self._max_attempts_to_verify_connection} attempts."
+            )
+        self._count_attempts_to_verify_connection = 0
         broker_logger.debug(
             "%s is connected to the API. Assigning self._run_connection_future...",
             self.__class__.__name__,

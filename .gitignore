@@ -2,3 +2,4 @@ envs/*
 .vscode/*
 .env
 __pycache__
+.coverage
