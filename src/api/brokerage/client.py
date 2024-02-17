@@ -41,8 +41,8 @@ class BrokerApiClient(ABC):
         self._historical_data = {}
         self._request_lock = threading.Lock()
         self._watchdog_future = None
-        self._max_attempts_to_verify_connection = 8
-        self._count_attempts_to_verify_connection = 0
+        self._max_attempts_to_verify = 8
+        self._count_attempts_to_verify = 0
         self._watchdog = ConnectionWatchdog(
             check_interval=10,
             start_services=self.start_services,
@@ -64,20 +64,16 @@ class BrokerApiClient(ABC):
         # Wait for connection to be established
         while (
             not self._verify_connection()
-            and self._count_attempts_to_verify_connection
-            < self._max_attempts_to_verify_connection
+            and self._count_attempts_to_verify < self._max_attempts_to_verify
         ):
             time.sleep(1)
-            self._count_attempts_to_verify_connection += 1
-        if (
-            self._count_attempts_to_verify_connection
-            >= self._max_attempts_to_verify_connection
-        ):
+            self._count_attempts_to_verify += 1
+        if self._count_attempts_to_verify >= self._max_attempts_to_verify:
             raise IBApiConnectionException(
                 "Failed to establish a connection to the broker's API after "
-                f"{self._max_attempts_to_verify_connection} attempts."
+                f"{self._max_attempts_to_verify} attempts."
             )
-        self._count_attempts_to_verify_connection = 0
+        self._count_attempts_to_verify = 0
         broker_logger.debug(
             "%s is connected to the API. Assigning self._run_connection_future...",
             self.__class__.__name__,
@@ -95,8 +91,18 @@ class BrokerApiClient(ABC):
         )
         if self._verify_connection():
             self._disconnect_from_broker_api()
-            while self._verify_connection():
+            while (
+                self._verify_connection()
+                and self._count_attempts_to_verify < self._max_attempts_to_verify
+            ):
                 time.sleep(1)
+                self._count_attempts_to_verify += 1
+        if self._count_attempts_to_verify >= self._max_attempts_to_verify:
+            raise IBApiConnectionException(
+                "Failed to disconnect from the broker's API after "
+                f"{self._max_attempts_to_verify} attempts."
+            )
+        self._count_attempts_to_verify = 0
         broker_logger.debug(
             "%s is disconnected from API. Stopping watchdog thread.",
             self.__class__.__name__,
@@ -107,7 +113,8 @@ class BrokerApiClient(ABC):
             self._connection_future.cancel()
         if self._run_connection_future:
             self._run_connection_future.cancel()
-        self._watchdog.stop_dog()
+        if self._watchdog.running:
+            self._watchdog.stop_dog()
         # self._executor.shutdown(wait=True)
 
     @abstractmethod

@@ -93,47 +93,71 @@ class TestIBApiClient(unittest.TestCase):
         """
         self.ib_api_client._verify_connection.side_effect = [False, False, True]
         self.ib_api_client.start_services()
-
-        # Verify that _connect_to_broker_api was eventually called
         mock_connect_to_broker_api.assert_called()
-        # Ensure _verify_connection was called three times
         self.assertEqual(self.ib_api_client._verify_connection.call_count, 3)
+        self.assertEqual(self.ib_api_client._count_attempts_to_verify, 0)
 
-    @patch("src.api.ib.IBApiClient._verify_connection", return_value=True)
-    @patch("src.api.ib.ConnectionWatchdog.start_dog")
     @patch("src.api.ib.IBApiClient._connect_to_broker_api")
-    def test_start_services(self, mock_connect, mock_start_dog, mock_verify) -> None:
+    def test_start_services_continuous_connection_failure(
+        self, mock_connect_to_broker_api
+    ):
         """
-        Test the IBApiClient start_services and stop_services methods.
-        :param mock_connect: Mock the IBApiClient._connect_to_broker_api() method
-        :param mock_start_dog: Mock the ConnectionWatchdog.start_dog() method
-        :param mock_verify: Mock the IBApiClient._verify_connection() method
+        Test that start_services attempts to connect but ultimately raises an exception
+        after failing to verify the connection continuously up to the maximum retry limit.
+        :param mock_connect_to_broker_api: Mock the IBApiClient._connect_to_broker_api() method
         """
-        self.ib_api_client.start_services()
-        self.ib_api_client._verify_connection.assert_called()
-        mock_start_dog.assert_called()
-        self.mock_logger.debug.assert_called_with(
-            "%s establishing a connection", self.ib_api_client.__class__.__name__
+        self.ib_api_client._verify_connection.return_value = False
+        self.ib_api_client._max_attempts_to_verify = 3
+        with self.assertRaises(IBApiConnectionException) as context:
+            self.ib_api_client.start_services()
+        self.assertIn(
+            "Failed to establish a connection to the broker's API after 3 attempts",
+            str(context.exception),
         )
+        mock_connect_to_broker_api.assert_called_once()
+        self.assertEqual(self.ib_api_client._verify_connection.call_count, 4)
+
+    @patch("src.api.ib.IBApiClient._disconnect_from_broker_api")
+    def test_stop_services_disconnection_failure(self, mock_disconnect_from_broker_api):
+        """
+        Test that stop_services attempts to disconnect but ultimately raises an exception
+        :param mock_disconnect_from_broker_api: Mock the IBApiClient._disconnect_from_broker_api() method
+        """
+        self.ib_api_client._verify_connection.return_value = True
+        self.ib_api_client._connection_future = MagicMock()
+        self.ib_api_client._run_connection_future = MagicMock()
+        self.mock_watchdog.return_value.stop_dog = MagicMock()
+        self.ib_api_client._watchdog_future = MagicMock()
+        self.ib_api_client._max_attempts_to_verify = 3
+        with self.assertRaises(IBApiConnectionException) as context:
+            self.ib_api_client.stop_services()
+        self.ib_api_client._watchdog_future.cancel.assert_not_called()
+        self.ib_api_client._connection_future.cancel.assert_not_called()
+        self.ib_api_client._run_connection_future.cancel.assert_not_called()
+        self.mock_watchdog.return_value.stop_dog.assert_not_called()
+
+    @patch("src.api.ib.IBApiClient._disconnect_from_broker_api")
+    def test_stop_services_eventual_disconnection_success(
+        self, mock_disconnect_from_broker_api
+    ):
+        """
+        Test that stop_services makes more than one attempt and successfully disconnects from the broker API.
+        :param mock_disconnect_from_broker_api: Mock the IBApiClient._disconnect_from_broker_api() method
+        """
+        # Simulate a successful disconnection after 3 attempts
+        self.ib_api_client._verify_connection.side_effect = [True, True, False]
+        # We expect calls to cancel the futures and stop the watchdog
+        self.ib_api_client._connection_future = MagicMock()
+        self.ib_api_client._run_connection_future = MagicMock()
+        self.mock_watchdog.return_value.stop_dog = MagicMock()
+        self.ib_api_client._watchdog_future = MagicMock()
+        self.ib_api_client._max_attempts_to_verify = 3
+        # Call the method and assert
         self.ib_api_client.stop_services()
-        self.mock_logger.debug.assert_called_with(
-            "%s is stopping services. Disconnecting from API and stopping watchdog thread.",
-            self.ib_api_client.__class__.__name__,
-        )
-
-    @patch("src.api.ib.IBApiClient._verify_connection", return_value=True)
-    @patch("src.api.ib.IBApiClient.executor")
-    @patch("src.api.ib.ConnectionWatchdog.start_dog")
-    @patch("src.api.ib.IBApiClient._connect_to_broker_api")
-    def test_start_services_thread_submission(
-        self, mock_start_dog, mock_verify
-    ) -> None:
-        """
-        Test the IBApiClient start_services submits execution to the ThreadPoolExecutor.
-        :param mock_start_dog: Mock the ConnectionWatchdog.start_dog() method
-        :param mock_verify: Mock the IBApiClient._verify_connection() method
-        """
-        self.ib_api_client.start_services()
+        self.ib_api_client._watchdog_future.cancel.assert_called()
+        self.ib_api_client._connection_future.cancel.assert_called()
+        self.ib_api_client._run_connection_future.cancel.assert_called()
+        self.mock_watchdog.return_value.stop_dog.assert_called()
 
     @patch("src.api.ib.IBApiClient._connect_to_broker_api")
     def test_connect_to_ib_successful(self, mock_connect_to_broker_api):

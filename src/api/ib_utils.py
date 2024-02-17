@@ -1,6 +1,7 @@
 """
 Utility classes and functions for the IB API.
 """
+
 import logging
 import time
 from typing import Any, Callable
@@ -68,3 +69,10 @@ class ConnectionWatchdog:
         """
         watchdog_logger.debug("Starting %s instance", self.__class__.__name__)
         self._running = True
+
+    @property
+    def running(self):
+        """
+        Returns the state of the watchdog thread.
+        """
+        return self._running
