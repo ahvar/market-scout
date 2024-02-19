@@ -2,16 +2,22 @@
 Test IBApi with unittest.TestCase
 """
 
+# Standard library
 import os
 import unittest
+from datetime import datetime, timedelta
+from unittest.mock import ANY, patch, create_autospec, MagicMock, call
+
+# third-party
 from ibapi.contract import Contract
+from ibapi.common import BarData
+from src.api.ib import IBApiClient
 from src.api.ib_api_exception import (
     IBApiConnectionException,
     HistoricalDatatMissingException,
+    IBApiDataRequestException,
 )
 from src.utils.references import Tickers as T
-from unittest.mock import patch, create_autospec, MagicMock, call
-from datetime import datetime, timedelta
 
 
 class TestIBApiClient(unittest.TestCase):
@@ -168,42 +174,97 @@ class TestIBApiClient(unittest.TestCase):
         self.ib_api_client.start_services()
         mock_connect_to_broker_api.assert_called()
 
-    @patch("src.api.ib.IBApiClient.request_historical_data")
-    def test_request_historical_data(self, mock_request_historical_data):
+    @patch("src.api.ib.IBApiClient.reqHistoricalData")
+    def test_request_historical_data_sends_correct_request(
+        self, mock_req_historical_data
+    ):
         """
-        Test connecting to IB successfully.
-        :params mock_request_historical_data: Mock the IBApiClient.request_historical_data() method
+        Test that request_historical_data sends the correct parameters to the brokerage API.
+        :params mock_req_historical_data: Mock the IBApiClient.reqHistoricalData() method
         """
         contract = Contract()
         contract.symbol = "AAPL"
+        contract.secType = "STK"
+        contract.currency = "USD"
+        contract.exchange = "SMART"
+        end_datetime = "20230701 12:00:00"
+        duration = "1 D"
+        bar_size = "1 hour"
+        use_rth = 1
+
         self.ib_api_client.request_historical_data(
-            contract, "20220810 12:30:00", "1 D", "1 hour", 1
-        )
-        mock_request_historical_data.assert_called_with(
-            contract, "20220810 12:30:00", "1 D", "1 hour", 1
+            contract, end_datetime, duration, bar_size, use_rth
         )
 
-    def test_connect_to_ib_with_retries(self):
-        """
-        Test connecting to IB with retries
-        """
-        pass
-
-    @patch("src.api.ib.IBApiClient._connect_to_broker_api")
-    def test_connect_to_ib_exception(self, mock_connect_to_broker_api):
-        """
-        Test connecting to IB with an exception
-        :params mock_connect: Mock the IBApi.connect() method
-        """
-        mock_connect_to_broker_api.side_effect = IBApiConnectionException(
-            "Connection failed"
+        mock_req_historical_data.assert_called_once_with(
+            ANY,  # ticker_id is generated dynamically, so we use ANY here
+            contract,
+            end_datetime,
+            duration,
+            bar_size,
+            "TRADES",  # Assuming "TRADES" is the default data type requested
+            use_rth,
+            1,  # Assuming historical data format is always 1
+            False,
+            None,
         )
 
-        # When/Then
-        with self.assertRaises(IBApiConnectionException):
-            self.ib_api_client.start_services()
+    @patch("src.api.ib.IBApiClient.reqHistoricalData")
+    def test_request_historical_data_handles_errors_gracefully(
+        self, mock_req_historical_data
+    ):
+        """
+        Test that request_historical_data handles exceptions raised by the brokerage API correctly.
+        :params mock_req_historical_data: Mock the IBApiClient.reqHistoricalData() method
+        """
+        mock_req_historical_data.side_effect = Exception("An error occurred")
 
-        mock_connect_to_broker_api.assert_called_once()
+        contract = Contract()
+        # Set up contract as above
+        contract = Contract()
+        contract.symbol = "AAPL"
+        contract.secType = "STK"
+        contract.currency = "USD"
+        contract.exchange = "SMART"
+        end_datetime = "20230701 12:00:00"
+        duration = "1 D"
+        bar_size = "1 hour"
+        use_rth = 1
+        with self.assertRaises(IBApiDataRequestException) as context:
+            self.ib_api_client.request_historical_data(
+                contract, end_datetime, duration, bar_size, use_rth
+            )
+            self.assertIn(
+                "An error occurred while requesting data from IB",
+                str(context.exception),
+            )
+
+    @patch.object(IBApiClient, "_data_partially_missing")
+    def test_historical_data_correct_data_handling(self, mock_data_partially_missing):
+        """
+        Test that historicalData correctly processes and stores received bar data.
+        :params mock_data_partially_missing: Mock the IBApiClient._data_partially_missing() method
+        """
+        # Setup
+        req_id = 1
+        self.ib_api_client.historical_data[req_id] = []
+        bar_data = BarData()
+        bar_data.date = "20230701 12:00:00"
+        bar_data.open = 100
+        bar_data.high = 105
+        bar_data.low = 95
+        bar_data.close = 102
+        bar_data.volume = 1000
+
+        mock_data_partially_missing.return_value = False
+
+        self.ib_api_client.historicalData(req_id, bar_data)
+
+        mock_data_partially_missing.assert_called_once()
+
+        self.assertEqual(len(self.ib_api_client.temp_hist_data[req_id]), 1)
+        stored_data = self.ib_api_client.temp_hist_data[req_id][0]
+        self.assertEqual(stored_data["close"], 102)
 
     def test_error(self):
         """

@@ -170,10 +170,12 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         :params reqId: The request ID that this bar data is associated with.
         :params   bar: The bar data that was received.
         """
-        if self._all_bar_data_missing(bar):
+        if self._market_memory.all_data_missing(bar):
             try:
-                new_row = self._get_new_row_for_missing_bar(reqId, bar)
-                self._add_bar_data_to_temp_hist_cache(reqId, new_row)
+                new_row = self._market_memory.get_new_data(
+                    reqId, bar, self._current_ticker, self._bar_size
+                )
+                self._market_memory.add_to_temp_hist_cache(reqId, new_row)
             except HistoricalDatatMissingException as e:
                 ib_api_logger.error(
                     "%s encountered an error while processing historical data. ReqId: %s, Error: %s",
@@ -193,14 +195,16 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
             PriceBar.low: bar.low,
             PriceBar.close: bar.close,
             PriceBar.volume: bar.volume,
-            PriceBar.data_partially_missing: self._data_partially_missing(bar),
+            PriceBar.data_partially_missing: self._market_memory.data_partially_missing(
+                bar
+            ),
         }
 
-        self._add_bar_data_to_temp_hist_cache(reqId, new_row)
+        self._market_memory.add_to_temp_hist_cache(reqId, new_row)
         try:
             # If the temp hist data list has 100 items, add it to the historical data list and clear the temp hist data list
             if len(self._temp_hist_data[reqId]) == 100:
-                self._add_bulk_temp_hist_data(reqId)
+                self._market_memory.add_bulk_to_temp_hist_cache(reqId)
 
         except (pd.errors.ParserError, pd.errors.EmptyDataError) as e:
             ib_api_logger.error(
@@ -225,158 +229,6 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                 reqId,
                 e,
             )
-
-    def _get_new_row_for_missing_bar(self, reqId: int, bar: object) -> None:
-        """
-        Add a record for the missing bar data.
-
-        :params reqId: The request ID that this bar data is associated with.
-        :params   bar: The bar data that was received.
-        """
-        ib_api_logger.debug(
-            "%s received historical data with all bar data missing. ReqId: %s, Bar: %s",
-            self.__class__.__name__,
-            reqId,
-            bar,
-        )
-        ib_api_logger.debug(
-            "%s will use the date from the last available bar to determine the correct date for this missing bar.",
-            self.__class__.__name__,
-        )
-        last_available_date = None
-        if self._temp_hist_data[reqId]:
-            last_available_date = self._get_last_available_bar_date(
-                reqId, use_temp_data=True
-            )
-        elif reqId in self._historical_data:
-            last_available_date = self._get_last_available_bar_date(
-                reqId, use_temp_data=False
-            )
-        if not last_available_date:
-            raise HistoricalDatatMissingException(
-                f"{self.__class__.__name__} could not find the date for the last available bar from the temporary historical data cache or historical data cache"
-            )
-        return {
-            PriceBar.ticker: self._current_ticker,
-            PriceBar.date: self._compute_missing_bar_date_from_last_available(
-                last_available_date, reqId
-            ),
-            PriceBar.open: np.NAN,
-            PriceBar.high: np.NAN,
-            PriceBar.low: np.NAN,
-            PriceBar.close: np.NAN,
-            PriceBar.volume: np.NAN,
-            PriceBar.data_partially_missing: True,
-        }
-
-    def _get_last_available_bar_date(self, reqId: int, use_temp_data: bool) -> datetime:
-        """
-        Get the date of the last available bar from the specified data cache.
-
-        :params               reqId: The request ID that this bar data is associated with.
-        :params         use_temp_data: Boolean flag to determine which data structure to access.
-        :return last_available_date: datetime representation of the date from the last available bar in the specified cache.
-        """
-        data_cache = self._temp_hist_data if use_temp_data else self._historical_data
-        index = len(data_cache[reqId]) - 1
-
-        while index >= 0:
-            last_available_date = data_cache[reqId][index].get(PriceBar.date)
-            if last_available_date:
-                ib_api_logger.debug(
-                    "%s got the date for the last available bar from the %s data cache to be %s",
-                    self.__class__.__name__,
-                    "temporary historical" if use_temp_data else "historical",
-                    last_available_date.strftime("%Y-%m-%d %H:%M:%S"),
-                )
-                return last_available_date
-            index -= 1
-        return None
-
-    def _compute_missing_bar_date_from_last_available(
-        self, last_available_date: datetime, reqId: int
-    ) -> datetime:
-        """
-        The date for the current bar is computed by first parsing the bar size (e.g. '1 hour')
-        for this request for the bar size time unit and the number of units, and then using these
-        values to calculate what the date of the next bar would have been. This is done by adding
-        the bar size time unit to the date of the previous bar.
-
-        Notes:
-        - time period unit of measurement passed to timedelta must be plural
-
-        :params        last_availale_date: The bar data pulled from temporary historical cache or historical data cache.
-        :params                     reqId: The request ID that this bar data is associated with.
-        :return   datetime_of_missing_bar: datetime representation of the date of the next bar.
-        """
-        try:
-            bar_size_int = int(self._bar_size.split()[0])
-            bar_size_unit = self._bar_size.split()[1]
-            if bar_size_unit[-1] != "s":
-                bar_size_unit += "s"
-            time_delta = timedelta(**{bar_size_unit.lower(): bar_size_int})
-            datetime_of_missing_bar = last_available_date + time_delta
-            return datetime_of_missing_bar
-        except Exception as e:
-            raise HistoricalDatatMissingException(
-                f"{self.__class__.__name__} encountered an error while computing the date of the missing bar. ReqId: {reqId}, Error: {e}"
-            ) from e
-
-    def _data_partially_missing(self, bar_data: object) -> bool:
-        """
-        Determine if the given bar has any missing data.
-
-        :params bar_data: The bar data that was received.
-        """
-        return (
-            bar_data.date is None
-            or bar_data.open is None
-            or bar_data.high is None
-            or bar_data.low is None
-            or bar_data.close is None
-            or bar_data.volume is None
-        )
-
-    def _all_bar_data_missing(self, bar_data: object) -> bool:
-        """
-        Determine if all bar data is missing.
-
-        :params bar_data: The bar data that was received.
-        """
-        return (
-            bar_data.date is None
-            and bar_data.open is None
-            and bar_data.high is None
-            and bar_data.low is None
-            and bar_data.close is None
-            and bar_data.volume is None
-        )
-
-    def _add_bar_data_to_temp_hist_cache(self, reqId: int, bar_data: {}) -> None:
-        """
-        Add bar data to the temp historical data cache.
-
-        :params                 reqId: The request ID that this bar data is associated with.
-        :params              bar_data: The bar data that was received.
-        """
-        if reqId not in self._temp_hist_data:
-            self._temp_hist_data[reqId] = []
-        self._temp_hist_data[reqId].append(bar_data)
-
-    def _add_bulk_temp_hist_data(self, reqId: int) -> None:
-        """
-        Add historical data to the historical data and clear the temp hist data.
-
-        :params reqId: The request ID that this bar data is associated with.
-        """
-        new_data_df = pd.DataFrame(self._temp_hist_data[reqId])
-        # self._historical_data[reqId] = self._historical_data[reqId].dropna(
-        #    how="all", axis=1
-        # )
-        self._historical_data[reqId] = pd.concat(
-            [self._historical_data[reqId], new_data_df], ignore_index=True
-        )
-        self._temp_hist_data[reqId] = []
 
     def historicalDataEnd(self, reqId: int, start: str, end: str) -> None:
         """
@@ -617,6 +469,7 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
     def ticker_id(self) -> int:
         """
         Get the current request counter.
+        :return: The current request counter.
         """
         return self._ticker_id
 
@@ -624,5 +477,6 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
     def current_ticker(self) -> str:
         """
         Get the current ticker.
+        :return: The current ticker.
         """
         return self._current_ticker

@@ -7,6 +7,7 @@ Command-line callback functions:
  - validate_time_unit
 ------------------------------------------------------------------------------
 """
+
 import logging
 import pytz
 from typer import Context, BadParameter
@@ -136,9 +137,15 @@ def validate_out_dir(ctx: Context, out_dir: str) -> Path:
     logger.debug("Validating output directory...")
     out_path = Path(out_dir)
     if not out_path.is_dir():
-        logger.error("Invalid output directory. Please choose a valid directory")
-        raise BadParameter("Invalid output directory. Please choose a valid directory")
-
+        try:
+            # if out_path is a file, create the file
+            if out_path.suffix:
+                out_path.touch()
+            else:
+                out_path.mkdir(parents=True, exist_ok=True)
+        except (FileNotFoundError, PermissionError) as e:
+            logger.error("Could not create directory: %s", e)
+            raise BadParameter(str(e)) from e
     return out_path.resolve()
 
 
@@ -154,4 +161,4 @@ def validate_end_time(ctx: Context, end: str) -> str:
         return parse_datetime(end, time_formats, DateTimeType.TIME)
     except (ValueError, TypeError) as e:
         logger.error("Could not parse date: %s", e)
-        raise BadParameter(str(e))
+        raise BadParameter(str(e)) from e

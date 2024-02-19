@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 # third-party
 import pandas as pd
 from ibapi.contract import Contract
-from src.api.ib_utils import ConnectionWatchdog
+from src.api.ib_utils import ConnectionWatchdog, IBMarketMemory
 from src.utils.references import IB_API_LOGGER_NAME
 from src.api.ib_api_exception import IBApiConnectionException
 
@@ -38,10 +38,11 @@ class BrokerApiClient(ABC):
         self._connection_future = None
         self._run_connection_future = None
         self._executor = None
-        self._historical_data = {}
+        self._market_memory = IBMarketMemory()
+        self._historical_data = {}  # can remove this after MarketMemory is implemented
         self._request_lock = threading.Lock()
         self._watchdog_future = None
-        self._max_attempts_to_verify = 8
+        self._max_attempts_to_verify = 10
         self._count_attempts_to_verify = 0
         self._watchdog = ConnectionWatchdog(
             check_interval=10,
