@@ -175,8 +175,7 @@ def historical_quote(
             end_datetime=convert_to_utc(end_date, end_time).strftime("%Y%m%d-%H:%M:%S"),
             use_rth=1,
         )
-        with open(out_dir, "w") as f:
-            f.write(str(client.historical_data))
+        client.market_memory.write_to_csv(out_dir)
 
         client.stop_services()
         client.executor.shutdown(wait=True)

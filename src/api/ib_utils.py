@@ -6,6 +6,7 @@ import logging
 import time
 from typing import Any, Callable
 from datetime import datetime, timedelta
+from collections import defaultdict
 from abc import ABC, abstractmethod
 import pandas as pd
 import numpy as np
@@ -52,7 +53,9 @@ class ConnectionWatchdog:
         shorter sleeps in a loop, each time checking the _running flag.
         """
         while self._running:
+
             if not self._is_connected_method():
+                print("if connected conditional...")
                 self._stop_services()
                 utils_logger.debug("Connection lost. Reconnecting...")
                 self._start_services()
@@ -125,7 +128,7 @@ class MarketMemory(ABC):
         """
 
     @abstractmethod
-    def add_bulk_to_temp_hist_cache(self) -> None:
+    def add_bulk_to_hist_cache(self) -> None:
         """
         Add bulk data to the temporary historical cache
         """
@@ -141,9 +144,9 @@ class IBMarketMemory(MarketMemory):
         Initialize the market memory
         """
         super().__init__()
-        self._temp_hist_data = {}
+        self._temp_hist_data = defaultdict(list)
         self._missing_hist_data = {}
-        self._historical_data = {}
+        self._historical_data = defaultdict(pd.DataFrame)
 
     def get_new_data(
         self, reqId: int, bar: object, current_ticker: str, bar_size: str
@@ -287,7 +290,7 @@ class IBMarketMemory(MarketMemory):
             self._temp_hist_data[reqId] = []
         self._temp_hist_data[reqId].append(bar_data)
 
-    def add_bulk_to_temp_hist_cache(self, reqId: int) -> None:
+    def add_bulk_to_hist_cache(self, reqId: int) -> None:
         """
         Add historical data to the historical data and clear the temp hist data.
 
@@ -301,6 +304,19 @@ class IBMarketMemory(MarketMemory):
             [self._historical_data[reqId], new_data_df], ignore_index=True
         )
         self._temp_hist_data[reqId] = []
+
+    def write_to_csv(self, out_dir: str) -> None:
+        """
+        Write the historical data to a CSV file.
+
+        :params out_dir: The name of the output file.
+        """
+        if self._historical_data:
+            for reqId, data in self._historical_data.items():
+                data.to_csv(out_dir, index=False)
+        elif self._temp_hist_data:
+            for reqId, data in self._temp_hist_data.items():
+                data.to_csv(out_dir, index=False)
 
     @property
     def historical_data(self):

@@ -39,7 +39,6 @@ class BrokerApiClient(ABC):
         self._run_connection_future = None
         self._executor = None
         self._market_memory = IBMarketMemory()
-        self._historical_data = {}  # can remove this after MarketMemory is implemented
         self._request_lock = threading.Lock()
         self._watchdog_future = None
         self._max_attempts_to_verify = 10
@@ -211,10 +210,3 @@ class BrokerApiClient(ABC):
         Sets the value of making_connection_attempt.
         """
         self._making_connection_attempt = value
-
-    @property
-    def historical_data(self) -> pd.DataFrame:
-        """
-        Returns the historical data.
-        """
-        return self._historical_data

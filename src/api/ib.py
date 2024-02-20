@@ -64,8 +64,6 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         self._bar_size = ""
         self._ticker_id = 0
         self._current_ticker = None
-        self._temp_hist_data = {}
-        self._missing_hist_data = {}
         atexit.register(self._disconnect_from_broker_api)
         # Use % formatting instead of f-strings because f-strings are interpolated at runtime.
         # We save some performance overhead by not evaluating the f-string.
@@ -203,9 +201,8 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         self._market_memory.add_to_temp_hist_cache(reqId, new_row)
         try:
             # If the temp hist data list has 100 items, add it to the historical data list and clear the temp hist data list
-            if len(self._temp_hist_data[reqId]) == 100:
-                self._market_memory.add_bulk_to_temp_hist_cache(reqId)
-
+            if len(self._market_memory.temp_hist_data[reqId]) == 100:
+                self._market_memory.add_bulk_to_hist_cache(reqId)
         except (pd.errors.ParserError, pd.errors.EmptyDataError) as e:
             ib_api_logger.error(
                 "%s encountered a Pandas error while parsing historical data. ReqId: %s, Error: %s",
@@ -249,16 +246,18 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                 start,
                 end,
             )
-            self._historical_data.set_index(PriceBar.date, inplace=True)
-            self._historical_data.index = pd.to_datetime(
-                self._historical_data.index, unit="s"
+            self._market_memory.historical_data[reqId].set_index(
+                PriceBar.date, inplace=True
             )
-            self._historical_data.sort_index(inplace=True)
+            self._market_memory.historical_data[reqId].index = pd.to_datetime(
+                self._market_memory.historical_data[reqId].index, unit="s"
+            )
+            self._market_memory.historical_data[reqId].sort_index(inplace=True)
             ib_api_logger.debug(
                 "%s is sending historical data to the app logic. ReqId: %s, Data: %s",
                 self.__class__.__name__,
                 reqId,
-                self._historical_data,
+                self._market_memory.historical_data,
             )
         except Exception as e:
             ib_api_logger.error(
@@ -480,3 +479,11 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         :return: The current ticker.
         """
         return self._current_ticker
+
+    @property
+    def market_memory(self):
+        """
+        Get the market memory.
+        :return: The market memory.
+        """
+        return self._market_memory
