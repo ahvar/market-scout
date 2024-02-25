@@ -32,6 +32,7 @@ from src.api.ib_api_exception import (
     HistoricalDatatMissingException,
 )
 from src.api.brokerage.client import BrokerApiClient
+from src.api.ib_utils import MarketMemory
 from src.utils.references import IB_API_LOGGER_NAME
 
 ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
@@ -49,21 +50,23 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
     receiving the data from the TWS or IB Gateway and processing it.
     """
 
-    def __init__(self, host: str, port: int, client_id: int):
+    def __init__(
+        self, market_memory: MarketMemory, host: str, port: int, client_id: int
+    ):
         """
         Initialize the IBApiClient instance.
-
-        :param      host: The hostname or IP address of the machine on which the TWS or IB Gateway is running.
-        :param      port: The port on which the TWS or IB Gateway is listening.
-        :param client_id: A unique identifier for the client application and used in communication with the TWS or IB Gateway.
+        :param market_memory: The market memory instance.
+        :param          host: The hostname or IP address of the machine on which the TWS or IB Gateway is running.
+        :param          port: The port on which the TWS or IB Gateway is listening.
+        :param     client_id: A unique identifier for the client application and used in communication with the TWS or IB Gateway.
         """
-        super().__init__(host, port, client_id)
+        super().__init__(market_memory, host, port, client_id)
         ib_api_logger.info("Initializing %s instance", self.__class__.__name__)
         EWrapper.__init__(self)
         EClient.__init__(self, wrapper=self)
         self._bar_size = ""
-        self._ticker_id = 0
         self._current_ticker = None
+        self._req_id = 0
         atexit.register(self._disconnect_from_broker_api)
         # Use % formatting instead of f-strings because f-strings are interpolated at runtime.
         # We save some performance overhead by not evaluating the f-string.
@@ -352,42 +355,21 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         :param bar_size: The size of the bars in the data request (e.g., '1 hour').
         :param use_rth: Whether to use regular trading hours only (1 for Yes, 0 for No).
         """
-        ticker_id = self._get_next_ticker_id()
-        if ticker_id in self._historical_data:
-            ib_api_logger.debug(
-                "%s is clearing historical data for ticker ID %s",
-                self.__class__.__name__,
-                ticker_id,
-            )
-            self._historical_data[ticker_id].drop(
-                self._historical_data[ticker_id].index, inplace=True
-            )
-        self._historical_data[ticker_id] = pd.DataFrame(
-            columns=[
-                PriceBar.ticker,
-                PriceBar.date,
-                PriceBar.open,
-                PriceBar.high,
-                PriceBar.low,
-                PriceBar.close,
-                PriceBar.volume,
-            ]
-        )
         self._current_ticker = contract.symbol
         self._bar_size = bar_size
+        self._increment_req_id()
         ib_api_logger.debug(
-            "%s is requesting historical data from IB for %s with end_datetime %s, duration %s, bar_size %s, use_rth %s, and req_id %s",
+            "%s is requesting historical data from IB for %s with end_datetime %s, duration %s, bar_size %s, use_rth %s",
             self.__class__.__name__,
             contract.symbol,
             end_datetime,
             duration,
             bar_size,
             use_rth,
-            ticker_id,
         )
         try:
             self.reqHistoricalData(
-                ticker_id,
+                self._req_id,
                 contract,
                 end_datetime,
                 duration,
@@ -421,7 +403,9 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                 PriceBar.close: bar.close,
                 PriceBar.volume: bar.volume,
             }
-            self._historical_data = self._historical_data.append(
+            self._market_memory.historical_data[
+                reqId
+            ] = self._market_memory.historical_data[reqId].append(
                 new_row, ignore_index=True
             )
 
@@ -447,30 +431,18 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                 e,
             )
 
-    def _get_next_ticker_id(self) -> int:
+    def _increment_req_id(self) -> None:
         """
-        Get the next ticker ID for an IB API request. The IB API requires a unique ticker ID which will identify incoming data.
-        Locks ticker increment to ensure thread safety.
+        Increment the request ID.
         """
-        ib_api_logger.debug(
-            "%s is getting the next ticker ID for the IB API", self.__class__.__name__
-        )
-        with self._request_lock:
-            self._ticker_id += 1
-            ib_api_logger.debug(
-                "%s is returning the next ticker ID for the IB API: %s",
-                self.__class__.__name__,
-                self._ticker_id,
-            )
-            return self._ticker_id
+        self._req_id += 1
 
     @property
-    def ticker_id(self) -> int:
+    def get_req_id(self) -> int:
         """
-        Get the current request counter.
-        :return: The current request counter.
+        Property getter for the current request ID.
         """
-        return self._ticker_id
+        return self._req_id
 
     @property
     def current_ticker(self) -> str:
@@ -479,11 +451,3 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         :return: The current ticker.
         """
         return self._current_ticker
-
-    @property
-    def market_memory(self):
-        """
-        Get the market memory.
-        :return: The market memory.
-        """
-        return self._market_memory

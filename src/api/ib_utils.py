@@ -51,11 +51,11 @@ class ConnectionWatchdog:
         Runs the watchdog thread.
         To make ConnectionWatchdog more responsive, there are multiple
         shorter sleeps in a loop, each time checking the _running flag.
+        If _is_connected_method returns False, the watchdog will stop other
+        threads and then restart them.
         """
         while self._running:
-
             if not self._is_connected_method():
-                print("if connected conditional...")
                 self._stop_services()
                 utils_logger.debug("Connection lost. Reconnecting...")
                 self._start_services()
@@ -90,6 +90,13 @@ class MarketMemory(ABC):
     """
     This class handles all historical data
     """
+
+    def __init__(self):
+        """
+        Initialize the market memory
+        """
+        super().__init__()
+        utils_logger.info("Calling the constructor for %s", self.__class__.__name__)
 
     @abstractmethod
     def get_new_data(self) -> None:
@@ -144,6 +151,7 @@ class IBMarketMemory(MarketMemory):
         Initialize the market memory
         """
         super().__init__()
+        utils_logger.info("Initializing an instance of %s", self.__class__.__name__)
         self._temp_hist_data = defaultdict(list)
         self._missing_hist_data = {}
         self._historical_data = defaultdict(pd.DataFrame)

@@ -18,6 +18,7 @@ from src.utils.cli.callbacks import (
 )
 from src.utils.cli.cli import init_logging, set_error_and_exit, convert_to_utc
 from src.api.ib import IBApiClient
+from src.api.ib_utils import IBMarketMemory
 from src.models.order import ContractFactory
 from src.utils.references import (
     IB_API_LOGGER_NAME,
@@ -157,7 +158,10 @@ def historical_quote(
             for handler in logger.handlers:
                 handler.setLevel(logging.INFO)
         # Create the IB API client
-        client = IBApiClient(host="localhost", port=4002, client_id=1)
+        ib_market_memory = IBMarketMemory()
+        client = IBApiClient(
+            market_memory=ib_market_memory, host="localhost", port=4002, client_id=1
+        )
         print("starting services...")
         client.start_services()
         time.sleep(5)

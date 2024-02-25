@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 # third-party
 import pandas as pd
 from ibapi.contract import Contract
-from src.api.ib_utils import ConnectionWatchdog, IBMarketMemory
+from src.api.ib_utils import ConnectionWatchdog, MarketMemory
 from src.utils.references import IB_API_LOGGER_NAME
 from src.api.ib_api_exception import IBApiConnectionException
 
@@ -25,20 +25,27 @@ class BrokerApiClient(ABC):
     - Handles connection to the brokerage API.
     """
 
-    def __init__(self, host: str, port: int, client_id: int):
+    def __init__(
+        self, market_memory: MarketMemory, host: str, port: int, client_id: int
+    ):
         """
         Constructs the BrokerApiClient.
-        :param host: The hostname of the brokerage API.
-        :param port: The port number of the brokerage API.
-        :param client_id: The client ID to use when connecting to the brokerage API.
+        :param market_memory: The market memory instance.
+        :param          host: The hostname of the brokerage API.
+        :param          port: The port number of the brokerage API.
+        :param     client_id: The client ID to use when connecting to the brokerage API.
         """
+        broker_logger.info(
+            "Executing the %s constructor...", BrokerApiClient.__class__.__name__
+        )
         self._host = host
         self._port = port
         self._client_id = client_id
+        self._market_memory = market_memory
+        self._current_req_id = None
         self._connection_future = None
         self._run_connection_future = None
         self._executor = None
-        self._market_memory = IBMarketMemory()
         self._request_lock = threading.Lock()
         self._watchdog_future = None
         self._max_attempts_to_verify = 10
@@ -156,6 +163,27 @@ class BrokerApiClient(ABC):
         """
 
     @property
+    def current_req_id(self) -> int:
+        """
+        Property getter for the current request ID.
+        """
+        return self._current_req_id
+
+    @current_req_id.setter
+    def current_req_id(self, req_id: int) -> None:
+        """
+        Set the current request ID in a thread-safe manner.
+        :param req_id: The new request ID to be set.
+        """
+        with self._request_lock:
+            self._current_req_id = req_id
+            broker_logger.debug(
+                "%s is setting the current request ID to %d",
+                self.__class__.__name__,
+                req_id,
+            )
+
+    @property
     def connection_thread(self) -> threading.Thread:
         """
         Get the connection thread.
@@ -210,3 +238,11 @@ class BrokerApiClient(ABC):
         Sets the value of making_connection_attempt.
         """
         self._making_connection_attempt = value
+
+    @property
+    def market_memory(self):
+        """
+        Get the market memory.
+        :return: The market memory.
+        """
+        return self._market_memory

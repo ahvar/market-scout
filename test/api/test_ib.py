@@ -6,12 +6,14 @@ Test IBApi with unittest.TestCase
 import os
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import ANY, patch, create_autospec, MagicMock, call
+from unittest.mock import ANY, patch, create_autospec, MagicMock, call, PropertyMock
 
 # third-party
+import pandas as pd
 from ibapi.contract import Contract
 from ibapi.common import BarData
 from src.api.ib import IBApiClient
+from src.api.ib_utils import IBMarketMemory
 from src.api.ib_api_exception import (
     IBApiConnectionException,
     HistoricalDatatMissingException,
@@ -45,13 +47,17 @@ class TestIBApiClient(unittest.TestCase):
 
     @patch("src.api.ib.ib_api_logger")
     @patch("src.api.brokerage.client.ConnectionWatchdog")
-    def setUp(self, mock_watchdog, mock_logger):
+    @patch("src.api.ib_utils.IBMarketMemory")
+    def setUp(self, mock_market_memory, mock_watchdog, mock_logger):
         """
         Set up the IBApiClient instance and mocks before each test.
         """
+        self.mock_market_memory = mock_market_memory
         self.mock_logger = mock_logger
         self.mock_watchdog = mock_watchdog
-        self.ib_api_client = self.IBApiClient(host="127.0.0.1", port=4002, client_id=0)
+        self.ib_api_client = self.IBApiClient(
+            market_memory=mock_market_memory, host="127.0.0.1", port=4002, client_id=0
+        )
         self.ib_api_client._verify_connection = MagicMock(return_value=True)
         self.mock_watchdog.return_value.monitor_connection = MagicMock()
 
@@ -239,15 +245,20 @@ class TestIBApiClient(unittest.TestCase):
                 str(context.exception),
             )
 
-    @patch.object(IBApiClient, "_data_partially_missing")
-    def test_historical_data_correct_data_handling(self, mock_data_partially_missing):
+    def test_historical_data_correct_data_handling(self):
         """
         Test that historicalData correctly processes and stores received bar data.
-        :params mock_data_partially_missing: Mock the IBApiClient._data_partially_missing() method
         """
-        # Setup
-        req_id = 1
-        self.ib_api_client.historical_data[req_id] = []
+        self.ib_api_client.market_memory.all_data_missing = MagicMock(
+            return_value=False
+        )
+        self.ib_api_client.market_memory.data_partially_missing = MagicMock(
+            return_value=False
+        )
+        self.ib_api_client.market_memory.add_to_temp_hist_cache = MagicMock()
+        self.ib_api_client.market_memory.add_bulk_to_hist_cache = MagicMock()
+        # self.ib_api_client.market_memory.temp_hist_data = {1: []}
+
         bar_data = BarData()
         bar_data.date = "20230701 12:00:00"
         bar_data.open = 100
@@ -256,15 +267,24 @@ class TestIBApiClient(unittest.TestCase):
         bar_data.close = 102
         bar_data.volume = 1000
 
-        mock_data_partially_missing.return_value = False
+        self.ib_api_client.historicalData(reqId=1, bar=bar_data)
 
-        self.ib_api_client.historicalData(req_id, bar_data)
-
-        mock_data_partially_missing.assert_called_once()
-
-        self.assertEqual(len(self.ib_api_client.temp_hist_data[req_id]), 1)
-        stored_data = self.ib_api_client.temp_hist_data[req_id][0]
-        self.assertEqual(stored_data["close"], 102)
+        self.ib_api_client.market_memory.all_data_missing.assert_called_once()
+        self.ib_api_client.market_memory.data_partially_missing.assert_called_once()
+        self.ib_api_client.market_memory.add_to_temp_hist_cache.assert_called_once_with(
+            1,
+            {
+                "ticker": None,
+                "date": pd.to_datetime(bar_data.date),
+                "open": bar_data.open,
+                "high": bar_data.high,
+                "low": bar_data.low,
+                "close": bar_data.close,
+                "volume": bar_data.volume,
+                False: False,
+            },
+        )
+        self.ib_api_client.market_memory.add_bulk_to_hist_cache.assert_not_called()
 
     def test_error(self):
         """
