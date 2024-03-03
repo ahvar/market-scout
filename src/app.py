@@ -179,12 +179,14 @@ def historical_quote(
             end_datetime=convert_to_utc(end_date, end_time).strftime("%Y%m%d-%H:%M:%S"),
             use_rth=1,
         )
-        client.market_memory.write_to_csv(out_dir)
-
-        client.stop_services()
-        client.executor.shutdown(wait=True)
+        time.sleep(300)
     except Exception as e:
         logger.error("An error occurred: %s", e)
         client.stop_services()
         client.executor.shutdown(wait=True)
         raise Exception(e) from e
+    finally:
+        client.market_memory.write_to_csv(out_dir)
+        client.stop_services()
+        client.executor.shutdown(wait=True)
+        logger.info("Market Scout has stopped.")

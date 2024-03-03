@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 is_test_mode = os.getenv("TEST_MODE", "False").lower() == "true"
+
 backoff_params = {
     "max_tries": 1 if is_test_mode else 8,
     "max_time": 300,
@@ -66,12 +67,12 @@ class PriceBar:
     """
 
     ticker: str = "ticker"
-    date: str = "date"
-    open: str = "open"
-    high: str = "high"
-    low: str = "low"
-    close: str = "close"
-    volume: str = "volume"
+    date: str = ""
+    open: float = 0
+    high: float = 0
+    low: float = 0
+    close: float = 0
+    volume: int = 0
     data_partially_missing: bool = False
 
 

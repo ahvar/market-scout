@@ -42,7 +42,7 @@ class BrokerApiClient(ABC):
         self._port = port
         self._client_id = client_id
         self._market_memory = market_memory
-        self._current_req_id = None
+        self._req_id = 0
         self._connection_future = None
         self._run_connection_future = None
         self._executor = None
@@ -163,20 +163,20 @@ class BrokerApiClient(ABC):
         """
 
     @property
-    def current_req_id(self) -> int:
+    def req_id(self) -> int:
         """
         Property getter for the current request ID.
         """
-        return self._current_req_id
+        return self._req_id
 
-    @current_req_id.setter
-    def current_req_id(self, req_id: int) -> None:
+    @req_id.setter
+    def req_id(self, req_id: int) -> None:
         """
         Set the current request ID in a thread-safe manner.
         :param req_id: The new request ID to be set.
         """
         with self._request_lock:
-            self._current_req_id = req_id
+            self._req_id = req_id
             broker_logger.debug(
                 "%s is setting the current request ID to %d",
                 self.__class__.__name__,

@@ -2,15 +2,20 @@
 Utility classes and functions for the IB API.
 """
 
+# standard
 import logging
 import time
-from typing import Any, Callable
-from datetime import datetime, timedelta
+from typing import Any, Callable, Tuple, Optional
+from datetime import datetime, timedelta, relativedelta
+from dataclasses import fields
 from collections import defaultdict
 from abc import ABC, abstractmethod
+
+# third-party
 import pandas as pd
 import numpy as np
-
+from ibapi.common import BarData
+from src.api.ib import IBApiClient
 from src.utils.references import __Application__, __version__
 from src.api.ib_api_exception import HistoricalDatatMissingException
 from src.utils.references import IB_API_LOGGER_NAME, PriceBar
@@ -99,45 +104,9 @@ class MarketMemory(ABC):
         utils_logger.info("Calling the constructor for %s", self.__class__.__name__)
 
     @abstractmethod
-    def get_new_data(self) -> None:
+    def verify_bar(self, bar_data) -> None:
         """
-        Create a new record when bar data is missing
-        """
-
-    @abstractmethod
-    def get_last_available_date(self) -> datetime:
-        """
-        Get the last available date in the memory
-        """
-
-    @abstractmethod
-    def compute_missing_date(self) -> datetime:
-        """
-        Compute the missing date
-        """
-
-    @abstractmethod
-    def data_partially_missing(self) -> bool:
-        """
-        Check if the data is partially missing
-        """
-
-    @abstractmethod
-    def all_data_missing(self) -> bool:
-        """
-        Check if all data is missing
-        """
-
-    @abstractmethod
-    def add_to_temp_hist_cache(self) -> None:
-        """
-        Add the data to the temporary historical cache
-        """
-
-    @abstractmethod
-    def add_bulk_to_hist_cache(self) -> None:
-        """
-        Add bulk data to the temporary historical cache
+        Verify the bar data
         """
 
 
@@ -156,7 +125,116 @@ class IBMarketMemory(MarketMemory):
         self._missing_hist_data = {}
         self._historical_data = defaultdict(pd.DataFrame)
 
-    def get_new_data(
+    def verify_bar(self, bar_data: BarData, bar_size: str) -> dict:
+        """
+        Verify the bar data and return the verified bar data.
+
+        :params  bar_data: The bar data that was received.
+        :return       bar: The verified bar data.
+        """
+        verified_bar = {}
+        bar_data_attrs = dir(bar_data)
+        bar_data_attrs_lower = {attr.lower(): attr for attr in bar_data_attrs}
+        for field in fields(PriceBar):
+            field_name = field.name.lower()
+            if field_name in bar_data_attrs_lower:
+                value = getattr(bar_data, bar_data_attrs_lower[field_name], None)
+                if value is None and field_name != "date":
+                    utils_logger.debug(
+                        "%s found missing bar data. ReqId: %s, Bar: %s, Missing: %s",
+                        self.__class__.__name__,
+                        bar_data.reqId,
+                        bar_data,
+                        field_name,
+                    )
+                    value = self._retrieve_last_available(field_name)
+                elif field_name == "date" and value is None:
+                    utils_logger.debug(
+                        "%s found missing bar data. ReqId: %s, Bar: %s, Missing: %s",
+                        self.__class__.__name__,
+                        bar_data.reqId,
+                        bar_data,
+                        field_name,
+                    )
+                    _, last_date = self._retrieve_last_available(field_name)
+                    value = self._calculate_next_date(last_date, bar_size)
+                elif field_name == "date" and isinstance(value, pd.Timestamp):
+                    value = value.to_pydatetime()
+                verified_bar[field_name] = value
+        return verified_bar
+
+    def _retrieve_last_available(self, field_name: str) -> Any:
+        """
+        Retrieve the last available data for the given field.
+
+        :params field_name: The name of the field for which to retrieve the last available data.
+        :return last_available: The last available data for the given field.
+        """
+        last_available = None
+        utils_logger.debug(
+            "%s is retrieving the last available data for the field %s",
+            self.__class__.__name__,
+            field_name,
+        )
+        for reqId, data in reversed(list(self._temp_hist_data.items())):
+            for bar in reversed(data):
+                if bar[field_name] is not None:
+                    last_available = bar[field_name]
+                    break
+            if last_available is not None:
+                break
+        if last_available is None:
+            for reqId, df in self._historical_data.items():
+                if not df.empty and field_name in df.columns:
+                    last_available = df[field_name].dropna().iloc[-1]
+                    break
+        return last_available
+
+    def _calculate_next_date(self, last_date: datetime, bar_size: str) -> datetime:
+        """
+        Calculate the date of the next bar.
+        :params last_date: The date of the last bar for this request.
+        :params bar_size: The size of the bar for this request.
+        :return next_date: The date of the next bar.
+        """
+        value, unit = self._parse_bar_size(bar_size)
+        if unit == "second":
+            return last_date + timedelta(seconds=value)
+        elif unit == "minute":
+            return last_date + timedelta(minutes=value)
+        elif unit == "hour":
+            return last_date + timedelta(hours=value)
+        elif unit == "day":
+            return last_date + timedelta(days=value)
+        elif unit == "week":
+            return last_date + timedelta(weeks=value)
+        elif unit == "month":
+            return last_date + relativedelta(months=value)
+        else:
+            raise ValueError(f"Unsupported bar size unit: {unit}")
+
+    def _parse_bar_size(self, bar_size: str) -> Tuple[int, Optional[str]]:
+        """
+        Parse the current bar size string and return the quanity and time unit.
+        :params bar_size: The size of the bar for this request.
+        :return: A tuple containing the quantity and time unit.
+        """
+        utils_logger.debug(
+            "Parsing bar size string %s for quantity and time unit", bar_size
+        )
+        parts = bar_size.split()
+        if len(parts) != 2:
+            return 0, None
+        try:
+            value = int(parts[0])
+            unit = parts[1].lower()
+            if unit.endswith("s"):
+                unit = unit[:-1]
+            return value, unit
+        except ValueError:
+            return 0, None
+
+    def _get_new_data(
         self, reqId: int, bar: object, current_ticker: str, bar_size: str
     ) -> None:
         """
@@ -205,11 +283,11 @@ class IBMarketMemory(MarketMemory):
 
     def get_last_available_date(self, reqId: int, use_temp_data: bool) -> datetime:
         """
-        Get the date of the last available bar from the specified data cache.
+        Check temporary historical data cache and historical data cache for the last available date.
 
-        :params                 reqId: The request ID that this bar data is associated with.
-        :params         use_temp_data: Boolean flag to determine which data structure to access.
-        :return   last_available_date: datetime representation of the date from the last available bar in the specified cache.
+        :params                  reqId: The request ID that this bar data is associated with.
+        :params          use_temp_data: A boolean flag to indicate whether to use the temporary historical data cache or the historical data cache.
+        :return    last_available_date: datetime representation of the date from the last available bar in the specified cache.
         """
         data_cache = self._temp_hist_data if use_temp_data else self._historical_data
         index = len(data_cache[reqId]) - 1
@@ -257,46 +335,16 @@ class IBMarketMemory(MarketMemory):
                 f"{self.__class__.__name__} encountered an error while computing the date of the missing bar. ReqId: {reqId}, Error: {e}"
             ) from e
 
-    def data_partially_missing(self, bar_data: object) -> bool:
+    def _add_to_temp_hist_cache(self, reqId: int, bar_data: dict) -> None:
         """
-        Determine if the given bar has any missing data.
-
+        Add bar data to the temporary historical data cache.
+        :params reqId: The request ID that this bar data is associated with.
         :params bar_data: The bar data that was received.
         """
-        return (
-            bar_data.date is None
-            or bar_data.open is None
-            or bar_data.high is None
-            or bar_data.low is None
-            or bar_data.close is None
-            or bar_data.volume is None
-        )
-
-    def all_data_missing(self, bar_data: object) -> bool:
-        """
-        Determine if all bar data is missing.
-
-        :params bar_data: The bar data that was received.
-        """
-        return (
-            bar_data.date is None
-            and bar_data.open is None
-            and bar_data.high is None
-            and bar_data.low is None
-            and bar_data.close is None
-            and bar_data.volume is None
-        )
-
-    def add_to_temp_hist_cache(self, reqId: int, bar_data: dict) -> None:
-        """
-        Add bar data to the temp historical data cache.
-
-        :params                 reqId: The request ID that this bar data is associated with.
-        :params              bar_data: The bar data that was received.
-        """
-        if reqId not in self._temp_hist_data:
-            self._temp_hist_data[reqId] = []
         self._temp_hist_data[reqId].append(bar_data)
+        self._temp_hist_data[reqId] = sorted(
+            self._temp_hist_data[reqId], key=lambda x: x["date"]
+        )
 
     def add_bulk_to_hist_cache(self, reqId: int) -> None:
         """
@@ -304,6 +352,7 @@ class IBMarketMemory(MarketMemory):
 
         :params reqId: The request ID that this bar data is associated with.
         """
+        print("adding bulk to hist cache...")
         new_data_df = pd.DataFrame(self._temp_hist_data[reqId])
         # self._historical_data[reqId] = self._historical_data[reqId].dropna(
         #    how="all", axis=1
