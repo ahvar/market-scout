@@ -24,7 +24,13 @@ class IBApiDataRequestException(IBApiException):
     """
 
 
-class HistoricalDatatMissingException(IBApiDataRequestException):
+class HistoricalDataMissingException(IBApiDataRequestException):
     """
     Thrown when requested historical data is partially or entirely missing
+    """
+
+
+class UnsupportedBarSizeException(IBApiDataRequestException):
+    """
+    Thrown when the requested bar size is not supported
     """

@@ -31,7 +31,7 @@ from src.api.ib_api_exception import (
     IBApiException,
     IBApiConnectionException,
     IBApiDataRequestException,
-    HistoricalDatatMissingException,
+    HistoricalDataMissingException,
 )
 from src.api.brokerage.client import BrokerApiClient
 from src.api.ib_utils import MarketMemory
@@ -173,40 +173,11 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         :params   bar: The bar data that was received.
         """
         print("entering historicalData")
-        new_row = {}
         try:
-
-            if self._market_memory.all_data_missing(bar):
-                new_row = self._market_memory.get_new_data(
-                    reqId, bar, self._current_ticker, self._bar_size
-                )
-            elif self._market_memory.data_partially_missing(bar):
-                ib_api_logger.warning(
-                    "Partially missing data found in historical data. ReqId: %s, Bar: %s",
-                    reqId,
-                    bar,
-                )
-            else:
-                new_row = {
-                    # NOTE: letting Pandas handle the conversion to datetime rather than applying the conversion here
-                    # IB API says bar date format="%Y%m%d %H:%M:%S" but found this not to work consistently
-                    PriceBar.ticker: self._current_ticker,
-                    PriceBar.date: pd.to_datetime(bar.date),
-                    PriceBar.open: bar.open,
-                    PriceBar.high: bar.high,
-                    PriceBar.low: bar.low,
-                    PriceBar.close: bar.close,
-                    PriceBar.volume: bar.volume,
-                    PriceBar.data_partially_missing: self._market_memory.data_partially_missing(
-                        bar
-                    ),
-                }
-
-            # If the temp hist data list has 100 items, add it to the historical data list and clear the temp hist data list
+            verified_bar = self._market_memory.verify_bar(bar, self._bar_size)
             if len(self._market_memory.temp_hist_data[reqId]) == 100:
                 self._market_memory.add_bulk_to_hist_cache(reqId)
-            else:
-                self._market_memory.add_to_temp_hist_cache(reqId, new_row)
+            self._market_memory.add_to_temp_hist_cache(reqId, verified_bar)
         except (pd.errors.ParserError, pd.errors.EmptyDataError) as e:
             ib_api_logger.error(
                 "%s encountered a Pandas error while parsing historical data. ReqId: %s, Error: %s",
@@ -223,7 +194,7 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                 e,
             )
 
-        except HistoricalDatatMissingException as e:
+        except HistoricalDataMissingException as e:
             ib_api_logger.error(
                 "%s encountered an error while processing historical data. ReqId: %s, Error: %s",
                 self.__class__.__name__,

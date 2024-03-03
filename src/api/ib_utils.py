@@ -17,7 +17,10 @@ import numpy as np
 from ibapi.common import BarData
 from src.api.ib import IBApiClient
 from src.utils.references import __Application__, __version__
-from src.api.ib_api_exception import HistoricalDatatMissingException
+from src.api.ib_api_exception import (
+    HistoricalDataMissingException,
+    UnsupportedBarSizeException,
+)
 from src.utils.references import IB_API_LOGGER_NAME, PriceBar
 
 utils_logger = logging.getLogger(IB_API_LOGGER_NAME)
@@ -104,7 +107,7 @@ class MarketMemory(ABC):
         utils_logger.info("Calling the constructor for %s", self.__class__.__name__)
 
     @abstractmethod
-    def verify_bar(self, bar_data) -> None:
+    def verify_bar(self, bar_data) -> dict:
         """
         Verify the bar data
         """
@@ -137,49 +140,44 @@ class IBMarketMemory(MarketMemory):
         bar_data_attrs_lower = {attr.lower(): attr for attr in bar_data_attrs}
         for field in fields(PriceBar):
             field_name = field.name.lower()
-            if field_name in bar_data_attrs_lower:
-                value = getattr(bar_data, bar_data_attrs_lower[field_name], None)
-                if value is None and field_name != "date":
-                    utils_logger.debug(
-                        "%s found missing bar data. ReqId: %s, Bar: %s, Missing: %s",
-                        self.__class__.__name__,
-                        bar_data.reqId,
-                        bar_data,
-                        field_name,
+            value = getattr(bar_data, bar_data_attrs_lower[field_name], None)
+            if field_name == "date":
+                if value is None:
+                    last_known_date = self._retrieve_last_available(
+                        field_name, bar_data
                     )
-                    value = self._retrieve_last_available(field_name)
-                elif field_name == "date" and value is None:
-                    utils_logger.debug(
-                        "%s found missing bar data. ReqId: %s, Bar: %s, Missing: %s",
-                        self.__class__.__name__,
-                        bar_data.reqId,
-                        bar_data,
-                        field_name,
+                    value = (
+                        self._calculate_next_date(last_known_date, bar_size)
+                        if last_known_date
+                        else None
                     )
-                    _, last_date = self._retrieve_last_available(field_name)
-                    value = self._calculate_next_date(last_date, bar_size)
-                elif field_name == "date" and isinstance(value, pd.Timestamp):
+                elif isinstance(value, pd.Timestamp):
                     value = value.to_pydatetime()
-                verified_bar[field_name] = value
+            else:
+                if value is None:
+                    value = self._retrieve_last_available(field_name, bar_data)
+            verified_bar[field_name] = value
         return verified_bar
 
-    def _retrieve_last_available(self, field_name: str) -> Any:
+    def _retrieve_last_available(self, field_name: str, bar_data: BarData) -> Any:
         """
         Retrieve the last available data for the given field.
 
         :params field_name: The name of the field for which to retrieve the last available data.
         :return last_available: The last available data for the given field.
         """
-        last_available = None
         utils_logger.debug(
-            "%s is retrieving the last available data for the field %s",
+            "%s found missing bar data, attempting to retrieve last available data for ReqId: %s, Bar: %s, Missing: %s",
             self.__class__.__name__,
+            bar_data.reqId,
+            bar_data,
             field_name,
         )
+        last_available = None
         for reqId, data in reversed(list(self._temp_hist_data.items())):
-            for bar in reversed(data):
-                if bar[field_name] is not None:
-                    last_available = bar[field_name]
+            for bar_data in reversed(data):
+                if bar_data[field_name] is not None:
+                    last_available = bar_data[field_name]
                     break
             if last_available is not None:
                 break
@@ -198,6 +196,8 @@ class IBMarketMemory(MarketMemory):
         :return next_date: The date of the next bar.
         """
         value, unit = self._parse_bar_size(bar_size)
+        if last_date is None:
+            return None
         if unit == "second":
             return last_date + timedelta(seconds=value)
         elif unit == "minute":
@@ -211,7 +211,7 @@ class IBMarketMemory(MarketMemory):
         elif unit == "month":
             return last_date + relativedelta(months=value)
         else:
-            raise ValueError(f"Unsupported bar size unit: {unit}")
+            raise UnsupportedBarSizeException(f"Unsupported bar size unit: {unit}")
 
     def _parse_bar_size(self, bar_size: str) -> Tuple[int, Optional[str]]:
         """
@@ -234,114 +234,13 @@ class IBMarketMemory(MarketMemory):
         except ValueError:
             return 0, None
 
-    def _get_new_data(
-        self, reqId: int, bar: object, current_ticker: str, bar_size: str
-    ) -> None:
-        """
-        Add a record for the missing bar data.
-
-        :params reqId: The request ID that this bar data is associated with.
-        :params   bar: The bar data that was received.
-        :params current_ticker: The ticker for which the bar data was received.
-        :params bar_size: The size of the bar for this request.
-        """
-        utils_logger.debug(
-            "%s received historical data with all bar data missing. ReqId: %s, Bar: %s",
-            self.__class__.__name__,
-            reqId,
-            bar,
-        )
-        utils_logger.debug(
-            "%s will use the date from the last available bar to determine the correct date for this missing bar.",
-            self.__class__.__name__,
-        )
-        last_available_date = None
-        if self._temp_hist_data[reqId]:
-            last_available_date = self.get_last_available_date(
-                reqId, use_temp_data=True
-            )
-        elif reqId in self._historical_data:
-            last_available_date = self.get_last_available_date(
-                reqId, use_temp_data=False
-            )
-        if not last_available_date:
-            raise HistoricalDatatMissingException(
-                f"{self.__class__.__name__} could not find the date for the last available bar from the temporary historical data cache or historical data cache"
-            )
-        return {
-            PriceBar.ticker: current_ticker,
-            PriceBar.date: self.compute_missing_date(
-                last_available_date, reqId, bar_size
-            ),
-            PriceBar.open: np.NAN,
-            PriceBar.high: np.NAN,
-            PriceBar.low: np.NAN,
-            PriceBar.close: np.NAN,
-            PriceBar.volume: np.NAN,
-            PriceBar.data_partially_missing: True,
-        }
-
-    def get_last_available_date(self, reqId: int, use_temp_data: bool) -> datetime:
-        """
-        Check temporary historical data cache and historical data cache for the last available date.
-
-        :params                  reqId: The request ID that this bar data is associated with.
-        :params          use_temp_data: A boolean flag to indicate whether to use the temporary historical data cache or the historical data cache.
-        :return    last_available_date: datetime representation of the date from the last available bar in the specified cache.
-        """
-        data_cache = self._temp_hist_data if use_temp_data else self._historical_data
-        index = len(data_cache[reqId]) - 1
-
-        while index >= 0:
-            last_available_date = data_cache[reqId][index].get(PriceBar.date)
-            if last_available_date:
-                utils_logger.debug(
-                    "%s got the date for the last available bar from the %s data cache to be %s",
-                    self.__class__.__name__,
-                    "temporary historical" if use_temp_data else "historical",
-                    last_available_date.strftime("%Y-%m-%d %H:%M:%S"),
-                )
-                return last_available_date
-            index -= 1
-        return None
-
-    def compute_missing_date(
-        self, last_available_date: datetime, reqId: int, bar_size: str
-    ) -> datetime:
-        """
-        The date for the current bar is computed by first parsing the bar size (e.g. '1 hour')
-        for this request for the bar size time unit and the number of units, and then using these
-        values to calculate what the date of the next bar would have been. This is done by adding
-        the bar size time unit to the date of the previous bar.
-
-        Notes:
-        - time period unit of measurement passed to timedelta must be plural
-
-        :params        last_availale_date: The bar data pulled from temporary historical cache or historical data cache.
-        :params                     reqId: The request ID that this bar data is associated with.
-        :params                  bar_size: The size of the bar for this request.
-        :return   datetime_of_missing_bar: datetime representation of the date of the next bar.
-        """
-        try:
-            bar_size_int = int(bar_size.split()[0])
-            bar_size_unit = bar_size.split()[1]
-            if bar_size_unit[-1] != "s":
-                bar_size_unit += "s"
-            time_delta = timedelta(**{bar_size_unit.lower(): bar_size_int})
-            datetime_of_missing_bar = last_available_date + time_delta
-            return datetime_of_missing_bar
-        except Exception as e:
-            raise HistoricalDatatMissingException(
-                f"{self.__class__.__name__} encountered an error while computing the date of the missing bar. ReqId: {reqId}, Error: {e}"
-            ) from e
-
-    def _add_to_temp_hist_cache(self, reqId: int, bar_data: dict) -> None:
+    def _add_to_temp_hist_cache(self, reqId: int, verified_bar: dict) -> None:
         """
         Add bar data to the temporary historical data cache.
-        :params reqId: The request ID that this bar data is associated with.
-        :params bar_data: The bar data that was received.
+        :params        reqId: The request ID that this bar data is associated with.
+        :params verified_bar: The bar data that was received.
         """
-        self._temp_hist_data[reqId].append(bar_data)
+        self._temp_hist_data[reqId].append(verified_bar)
         self._temp_hist_data[reqId] = sorted(
             self._temp_hist_data[reqId], key=lambda x: x["date"]
         )
@@ -352,7 +251,6 @@ class IBMarketMemory(MarketMemory):
 
         :params reqId: The request ID that this bar data is associated with.
         """
-        print("adding bulk to hist cache...")
         new_data_df = pd.DataFrame(self._temp_hist_data[reqId])
         # self._historical_data[reqId] = self._historical_data[reqId].dropna(
         #    how="all", axis=1

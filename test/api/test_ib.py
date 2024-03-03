@@ -16,7 +16,7 @@ from src.api.ib import IBApiClient
 from src.api.ib_utils import IBMarketMemory
 from src.api.ib_api_exception import (
     IBApiConnectionException,
-    HistoricalDatatMissingException,
+    HistoricalDataMissingException,
     IBApiDataRequestException,
 )
 from src.utils.references import Tickers as T
