@@ -6,7 +6,8 @@ Utility classes and functions for the IB API.
 import logging
 import time
 from typing import Any, Callable, Tuple, Optional
-from datetime import datetime, timedelta, relativedelta
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from dataclasses import fields
 from collections import defaultdict
 from abc import ABC, abstractmethod
@@ -15,7 +16,6 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import numpy as np
 from ibapi.common import BarData
-from src.api.ib import IBApiClient
 from src.utils.references import __Application__, __version__
 from src.api.ib_api_exception import (
     HistoricalDataMissingException,
@@ -135,7 +135,7 @@ class IBMarketMemory(MarketMemory):
         :params  bar_data: The bar data that was received.
         :return       bar: The verified bar data.
         """
-        verified_bar = {}
+        verified_bar = {"missing": False}
         bar_data_attrs = dir(bar_data)
         bar_data_attrs_lower = {attr.lower(): attr for attr in bar_data_attrs}
         for field in fields(PriceBar):
@@ -143,6 +143,7 @@ class IBMarketMemory(MarketMemory):
             value = getattr(bar_data, bar_data_attrs_lower[field_name], None)
             if field_name == "date":
                 if value is None:
+                    verified_bar["missing"] = True
                     last_known_date = self._retrieve_last_available(
                         field_name, bar_data
                     )
@@ -155,6 +156,7 @@ class IBMarketMemory(MarketMemory):
                     value = value.to_pydatetime()
             else:
                 if value is None:
+                    verified_bar["missing"] = True
                     value = self._retrieve_last_available(field_name, bar_data)
             verified_bar[field_name] = value
         return verified_bar
@@ -234,12 +236,13 @@ class IBMarketMemory(MarketMemory):
         except ValueError:
             return 0, None
 
-    def _add_to_temp_hist_cache(self, reqId: int, verified_bar: dict) -> None:
+    def add_to_temp_hist_cache(self, reqId: int, verified_bar: dict) -> None:
         """
         Add bar data to the temporary historical data cache.
         :params        reqId: The request ID that this bar data is associated with.
         :params verified_bar: The bar data that was received.
         """
+        print(f"Adding to temp hist cache {verified_bar}")
         self._temp_hist_data[reqId].append(verified_bar)
         self._temp_hist_data[reqId] = sorted(
             self._temp_hist_data[reqId], key=lambda x: x["date"]
@@ -268,10 +271,10 @@ class IBMarketMemory(MarketMemory):
         """
         if self._historical_data:
             for reqId, data in self._historical_data.items():
-                data.to_csv(out_dir, index=False)
+                data.to_csv(out_dir, index=True)
         elif self._temp_hist_data:
             for reqId, data in self._temp_hist_data.items():
-                data.to_csv(out_dir, index=False)
+                data.to_csv(out_dir, index=True)
 
     @property
     def historical_data(self):

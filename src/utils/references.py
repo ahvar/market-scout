@@ -66,14 +66,12 @@ class PriceBar:
     PriceBar dataclass
     """
 
-    ticker: str = "ticker"
     date: str = ""
     open: float = 0
     high: float = 0
     low: float = 0
     close: float = 0
     volume: int = 0
-    data_partially_missing: bool = False
 
 
 @dataclass

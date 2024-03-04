@@ -172,9 +172,9 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
         :params reqId: The request ID that this bar data is associated with.
         :params   bar: The bar data that was received.
         """
-        print("entering historicalData")
         try:
             verified_bar = self._market_memory.verify_bar(bar, self._bar_size)
+            verified_bar["ticker"] = self._current_ticker
             if len(self._market_memory.temp_hist_data[reqId]) == 100:
                 self._market_memory.add_bulk_to_hist_cache(reqId)
             self._market_memory.add_to_temp_hist_cache(reqId, verified_bar)
@@ -229,7 +229,20 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                 start,
                 end,
             )
-            if PriceBar.date in self._market_memory.historical_data[reqId].columns:
+            if (
+                reqId not in self._market_memory.historical_data
+                or self._market_memory.historical_data[reqId].empty
+            ):
+                if (
+                    reqId in self._market_memory.temp_hist_data
+                    and self._market_memory.temp_hist_data[reqId]
+                ):
+                    new_data_frame = pd.DataFrame(
+                        self._market_memory.temp_hist_data[reqId]
+                    )
+                    self._market_memory.historical_data[reqId] = new_data_frame
+                    del self._market_memory.temp_hist_data[reqId]
+            if "date" in self._market_memory.historical_data[reqId].columns:
                 ib_api_logger.debug(
                     "%s is sorting historical data to by date. ReqId: %s, Data: %s",
                     self.__class__.__name__,
@@ -237,7 +250,7 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                     self._market_memory.historical_data,
                 )
                 self._market_memory.historical_data[reqId].set_index(
-                    PriceBar.date, inplace=True
+                    "date", inplace=True
                 )
                 self._market_memory.historical_data[reqId].index = pd.to_datetime(
                     self._market_memory.historical_data[reqId].index, unit="s"

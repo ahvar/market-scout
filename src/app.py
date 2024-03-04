@@ -162,11 +162,9 @@ def historical_quote(
         client = IBApiClient(
             market_memory=ib_market_memory, host="localhost", port=4002, client_id=1
         )
-        print("starting services...")
         client.start_services()
         time.sleep(5)
         # Create the contract
-        print("creating contract...")
         contract_factory = ContractFactory()
         contract = contract_factory.get_contract(ticker)
         print("waiting for 10 seconds before making historical data request...")
@@ -179,7 +177,7 @@ def historical_quote(
             end_datetime=convert_to_utc(end_date, end_time).strftime("%Y%m%d-%H:%M:%S"),
             use_rth=1,
         )
-        time.sleep(300)
+        time.sleep(100)
     except Exception as e:
         logger.error("An error occurred: %s", e)
         client.stop_services()
