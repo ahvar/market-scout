@@ -240,6 +240,9 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                     new_data_frame = pd.DataFrame(
                         self._market_memory.temp_hist_data[reqId]
                     )
+                    new_data_frame["date"] = new_data_frame["date"].apply(
+                        self._parse_date_with_optional_time
+                    )
                     self._market_memory.historical_data[reqId] = new_data_frame
                     del self._market_memory.temp_hist_data[reqId]
             if "date" in self._market_memory.historical_data[reqId].columns:
@@ -253,7 +256,8 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                     "date", inplace=True
                 )
                 self._market_memory.historical_data[reqId].index = pd.to_datetime(
-                    self._market_memory.historical_data[reqId].index, unit="s"
+                    self._market_memory.historical_data[reqId].index,
+                    format="%Y%m%d %H:%M:%S",
                 )
                 self._market_memory.historical_data[reqId].sort_index(inplace=True)
             else:
@@ -268,6 +272,21 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                 reqId,
                 e,
             )
+
+    def _parse_date_with_optional_time(self, date_str: str) -> pd.Timestamp:
+        """
+        Parses a date string that may or may not include a time component.
+
+        :param date_str: A string representing a date, optionally with time.
+        :return: A pandas Timestamp object.
+        """
+        try:
+            if ":" in date_str and " " in date_str:
+                return pd.to_datetime(date_str, format="%Y%m%d %H:%M:%S")
+            return pd.to_datetime(date_str, format="%Y%m%d")
+        except ValueError as e:
+            ib_api_logger.error("Error while parsing date string %s: %s", date_str, e)
+            raise e
 
     def error(self, reqId: int, errorCode: int, errorString: str) -> None:
         """
@@ -379,7 +398,6 @@ class IBApiClient(BrokerApiClient, EWrapper, EClient):
                 keepUpToDate=False,
                 chartOptions=None,
             )
-            print("completed historical data request")
         except Exception as e:
             ib_api_logger.error(
                 "%s encountered an error while requesting historical data from IB: %s",

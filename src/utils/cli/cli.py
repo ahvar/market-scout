@@ -7,14 +7,18 @@ Contains useful functions for commands:
  - make output dirs
 ------------------------------------------------------------------------------
 """
+
+# standard library
 import sys
 import time
-import pytz
 import logging
-import typer
+import pytz
 from datetime import datetime, timedelta
 from pathlib import Path
 
+# third-party
+import typer
+import yaml
 from src.utils.logging_utils import LoggingUtils, LogFileCreationError
 from src.utils.references import (
     hour,
@@ -126,6 +130,12 @@ def init_logging(log_level: str) -> LoggingUtils:
         return logging_utils
     except LogFileCreationError as lfe:
         set_error_and_exit(f"Unable to create log file: {lfe.filespec}")
+
+
+def load_config(config_path: str):
+    """Load and return configuration from a YAML file."""
+    with open(config_path) as file:
+        return yaml.safe_load(file)
 
 
 def convert_to_utc(date_obj: datetime.date, time_obj: datetime.time) -> datetime:

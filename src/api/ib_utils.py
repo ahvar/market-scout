@@ -242,7 +242,6 @@ class IBMarketMemory(MarketMemory):
         :params        reqId: The request ID that this bar data is associated with.
         :params verified_bar: The bar data that was received.
         """
-        print(f"Adding to temp hist cache {verified_bar}")
         self._temp_hist_data[reqId].append(verified_bar)
         self._temp_hist_data[reqId] = sorted(
             self._temp_hist_data[reqId], key=lambda x: x["date"]

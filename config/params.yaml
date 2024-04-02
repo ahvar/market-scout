@@ -1,0 +1,12 @@
+strategy: pairs_trading
+parameters:
+  bar_size: "1 Day"
+  duration: "2 W"
+  end_date: "2023-12-12"
+  end_time: "08:15:00"
+  out_dir: "pairs_trading_output.csv"
+stocks:
+  - AAPL
+  - MSFT
+  - GOOGL
+  - AMZN

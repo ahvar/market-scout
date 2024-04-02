@@ -103,7 +103,7 @@ def market_summary(
 @app.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
 )
-def historical_quote(
+def chart(
     ctx: typer.Context,
     ticker: str = typer.Argument(..., help="Ticker symbol for the stock"),
     bar_size: str = typer.Option(
