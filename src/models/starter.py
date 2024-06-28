@@ -3,10 +3,12 @@ This module is an attempt at the Starter System from Robert Carver's book Levera
 The system is explained in chapters 5-6 of the book.
 """
 
+import numpy as np
 from src.models.strategies.base_strategy import BaseStrategy
+from src.models.indicators.momentum import MovingAverageCrossover
 
 
-class StarterStrategy(BaseStrategy):
+class Starter(BaseStrategy):
     """Starter System from Robert Carver's book Leveraged Trader"""
 
     def __init__(self, data):
@@ -15,6 +17,7 @@ class StarterStrategy(BaseStrategy):
         self._speed_limit = 0.08  # default from ch. 5 of Leveraged Trader
         self._actual_sharpe_ratio = None
         self._actual_speed = None
+        self.signals = None
 
     def _compute_speed_limit(self):
         """
@@ -36,6 +39,13 @@ class StarterStrategy(BaseStrategy):
 
     def execute_trades(self):
         """Execution logic based on generated signals."""
+
+    def generate_signals(self):
+        """
+        Generate trading signals based on the moving average crossover strategy.
+        """
+        mac = MovingAverageCrossover(self.data)
+        self.signals = mac.calculate()
 
     @property
     def expected_sharpe_ratio(self):

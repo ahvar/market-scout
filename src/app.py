@@ -2,10 +2,11 @@
 scout app
 """
 
+from datetime import datetime
+
 import logging
 import time
 import typer
-from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
 from src.utils.cli.callbacks import (

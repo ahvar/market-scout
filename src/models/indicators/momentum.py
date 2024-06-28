@@ -1,10 +1,15 @@
 """
-Momentum or trend-following indicators are generally used to identify the direction of the market and the strength of the trend.
-Moving average crossover, for example, is commonly used by many people. It is easy to calculate
+Momentum or trend-following indicators are generally used to identify the direction
+of the market and the strength of the trend.
 """
 
+from abc import ABC
 
-class MomentumIndicator:
+import pandas as pd
+import numpy as np
+
+
+class MomentumIndicator(ABC):
     """
     Base class for momentum indicators.
     """
@@ -37,7 +42,7 @@ class MovingAverageCrossover(MomentumIndicator):
     Moving Average Crossover indicator class.
     """
 
-    def __init__(self, data, short_period, long_period):
+    def __init__(self, data, short_period=16, long_period=64):
         """
         Initialize the MovingAverageCrossover object.
 
@@ -58,17 +63,22 @@ class MovingAverageCrossover(MomentumIndicator):
         - The trading signals based on the moving average crossover.
         """
         # Calculate the short-term moving average
-        short_ma = self.data.rolling(window=self.short_period).mean()
+        self.data["short_ma"] = (
+            self.data["price"].rolling(window=self.short_period).mean()
+        )
 
         # Calculate the long-term moving average
-        long_ma = self.data.rolling(window=self.long_period).mean()
+        self.data["long_ma"] = (
+            self.data["price"].rolling(window=self.long_period).mean()
+        )
 
         # Generate the trading signals based on the moving average crossover
-        signals = []
-        for i in range(len(self.data)):
-            if short_ma[i] > long_ma[i]:
-                signals.append(1)  # Buy signal
-            else:
-                signals.append(-1)  # Sell signal
+        self.data["signal"] = 0
+        self.data["signal"][self.short_period :] = np.where(
+            self.data["short_ma"][self.short_period :]
+            > self.data["long_ma"][self.short_period :],
+            1,
+            -1,
+        )
 
-        return signals
+        return self.data

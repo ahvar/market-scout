@@ -1,0 +1,14 @@
+RelativeStrengthIndex:
+  period: 14
+
+MovingAverageConvergenceDivergence:
+  short_period: 16
+  long_period: 64
+  signal_period: 9
+
+StochasticOscillator:
+  k_period: 14
+  d_period: 3
+
+CommodityChannelIndex:
+  period: 20
