@@ -4,9 +4,13 @@ of the market and the strength of the trend.
 """
 
 from abc import ABC, abstractmethod
-
+import logging
 import pandas as pd
 import numpy as np
+
+from src.utils.references import IB_API_LOGGER_NAME
+
+indicator_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
 class Indicator(ABC):
@@ -14,14 +18,14 @@ class Indicator(ABC):
     Base class for indicators.
     """
 
-    def __init__(self, data):
+    def __init__(self, prices):
         """
         Initialize the Indicator object.
 
         Parameters:
-        - data: The data used for calculating the indicator.
+        - prices: The price history used for calculating the indicator.
         """
-        self._data = data
+        self._prices = prices
 
     @abstractmethod
     def calculate(self):
@@ -35,14 +39,14 @@ class Indicator(ABC):
         """
 
     @property
-    def data(self):
+    def prices(self):
         """
         Returns the data associated with the indicator.
 
         Returns:
             The data associated with the indicator.
         """
-        return self._data
+        return self._prices
 
 
 class Momentum(Indicator):
@@ -50,14 +54,14 @@ class Momentum(Indicator):
     Base class for momentum indicators.
     """
 
-    def __init__(self, data):
+    def __init__(self, prices):
         """
         Initialize the MomentumIndicator object.
 
         Parameters:
         - data: The data used for calculating the indicator.
         """
-        super().__init__(data)
+        super().__init__(prices)
 
     @abstractmethod
     def calculate(self):
@@ -78,7 +82,7 @@ class MovingAverage(Momentum):
 
     def __init__(self, prices: pd.Series, moving_average_length: int):
         """
-        Initialize the MovingAverageCrossover object.
+        Initialize the MovingAverage object.
 
         Parameters:
         - prices: The data used for calculating the indicator.
@@ -87,6 +91,12 @@ class MovingAverage(Momentum):
         super().__init__(prices)
         self._moving_average_length = moving_average_length
         self._moving_average = None
+        indicator_logger.debug(
+            "%s initialized with moving average length: %s. Prices: %s",
+            self.__class__.__name__,
+            self._moving_average_length,
+            prices.to_string(index=False),
+        )
 
     def calculate(self):
         """
@@ -95,9 +105,25 @@ class MovingAverage(Momentum):
         Returns:
         - The trading signals based on the moving average crossover.
         """
-        self._moving_average = self._data.rolling(
-            window=self._moving_average_length
-        ).mean()
+        if len(self._prices) < self._moving_average_length:
+            indicator_logger.error(
+                "Insufficient prices length for moving average calculation"
+            )
+            raise ValueError(
+                "Insufficient prices length for moving average calculation"
+            )
+        try:
+            self._moving_average = self._prices.rolling(
+                window=self._moving_average_length
+            ).mean()
+        except AttributeError as e:
+            indicator_logger.error("Attribute error in calculate method: %s", e)
+            raise
+        except Exception as e:
+            indicator_logger.error(
+                "Unexpected error occurred while calculating moving average: %s", e
+            )
+            raise
 
     @property
     def moving_average_length(self):
