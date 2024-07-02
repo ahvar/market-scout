@@ -151,8 +151,9 @@ def chart(
     ),
 ):
     """
-    This command tells Market Scout to get the historical data for a ticker within a given timeframe. The values passed to
-    command options are used directly in a call to the Interactive Brokers method IBPI.EClient.reqHistoricalData().
+    This command tells Market Scout to get the historical data for a ticker within a given timeframe.
+    The values passed to command options are used directly in a call to the Interactive Brokers
+    method IBPI.EClient.reqHistoricalData().
     """
     try:
         if not debug:

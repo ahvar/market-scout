@@ -1,0 +1,160 @@
+@startuml classes_marketscout
+set namespaceSeparator none
+class "<color:red>AnotherSpecificCLIException</color>" as src.utils.cli.cli_exceptions.AnotherSpecificCLIException {
+}
+class "BaseModel" as src.models.starter.BaseModel {
+  data
+  {abstract}calculate_metrics()
+  {abstract}execute_trades()
+  {abstract}generate_signals()
+}
+class "BaseStrategy" as src.models.strategies.base_strategy.BaseStrategy {
+  data
+  {abstract}calculate_metrics()
+  {abstract}execute_trades()
+  {abstract}generate_signals()
+}
+class "BrokerApiClient" as src.api.brokerage.client.BrokerApiClient {
+  connection_thread
+  executor
+  making_connection_attempt
+  market_memory
+  req_id
+  watchdog_future
+  {abstract}request_historical_data(contract: Contract, end_datetime: str, duration: str, bar_size: str, use_rth: int) -> None
+  start_services() -> None
+  stop_services() -> None
+}
+class "Close" as src.models.strategies.rule.Close {
+  {abstract}generate_signals()
+}
+class "ConnectionWatchdog" as src.api.ib_utils.ConnectionWatchdog {
+  running
+  monitor_connection()
+  start_dog()
+  stop_dog()
+}
+class "ContractFactory" as src.models.order.ContractFactory {
+  contract_history
+  get_contract(ticker: str) -> Contract
+}
+class "DateTimeType" as src.utils.references.DateTimeType {
+  name
+}
+class "<color:red>HistoricalDataMissingException</color>" as src.api.ib_api_exception.HistoricalDataMissingException {
+}
+class "IBApiClient" as src.api.ib.IBApiClient {
+  current_ticker
+  get_req_id
+  error(reqId: int, errorCode: int, errorString: str) -> None
+  historicalData(reqId: int, bar: BarData)
+  historicalDataEnd(reqId: int, start: str, end: str) -> None
+  historicalDataUpdate(reqId: int, bar)
+  request_historical_data(contract: Contract, end_datetime: str, duration: str, bar_size: str, use_rth: int) -> None
+}
+class "<color:red>IBApiConnectionException</color>" as src.api.ib_api_exception.IBApiConnectionException {
+}
+class "<color:red>IBApiDataRequestException</color>" as src.api.ib_api_exception.IBApiDataRequestException {
+}
+class "<color:red>IBApiException</color>" as src.api.ib_api_exception.IBApiException {
+}
+class "IBHandler" as src.handlers.ib_handler.IBHandler {
+}
+class "IBMarketMemory" as src.api.ib_utils.IBMarketMemory {
+  historical_data
+  missing_hist_data
+  temp_hist_data
+  add_bulk_to_hist_cache(reqId: int) -> None
+  add_to_temp_hist_cache(reqId: int, verified_bar: dict) -> None
+  verify_bar(bar_data: BarData, bar_size: str) -> dict
+  write_to_csv(out_dir: str) -> None
+}
+class "Indicator" as src.models.indicator.Indicator {
+  data
+  {abstract}calculate()
+}
+class "<color:red>LogFileCreationError</color>" as src.utils.logging_utils.LogFileCreationError {
+  filespec
+}
+class "LoggingUtils" as src.utils.logging_utils.LoggingUtils {
+  log_application_finish()
+  log_application_start()
+  update_file_handler_log_level(level)
+}
+class "MarketMemory" as src.api.ib_utils.MarketMemory {
+  {abstract}verify_bar(bar_data) -> dict
+}
+class "Momentum" as src.models.indicator.Momentum {
+  {abstract}calculate()
+}
+class "MovingAverageCrossover" as src.models.indicator.MovingAverageCrossover {
+  long_period : int
+  short_period : int
+  calculate()
+}
+class "Open" as src.models.strategies.rule.Open {
+  {abstract}generate_signals()
+}
+class "PairsTradingStrategy" as src.models.strategies.pairs_trading.PairsTradingStrategy {
+  entry_threshold : float
+  exit_threshold : float
+  spread
+  symbol1
+  symbol2
+  {abstract}calculate_metrics()
+  calculate_spread()
+  {abstract}execute_trades()
+  generate_signals()
+}
+class "PositionSize" as src.models.strategies.rule.PositionSize {
+  {abstract}calculate_position_size()
+}
+class "PriceBar" as src.utils.references.PriceBar {
+  close : float
+  date : str
+  high : float
+  low : float
+  open : float
+  volume : int
+}
+class "<color:red>SomeGeneralCLIException</color>" as src.utils.cli.cli_exceptions.SomeGeneralCLIException {
+}
+class "<color:red>SomeMoreSpecificCLIException</color>" as src.utils.cli.cli_exceptions.SomeMoreSpecificCLIException {
+}
+class "Starter" as src.models.starter.Starter {
+  actual_sharpe_ratio
+  actual_speed
+  expected_sharpe_ratio
+  signals : NoneType
+  {abstract}calculate_metrics()
+  {abstract}execute_trades()
+  generate_signals()
+}
+class "Tickers" as src.utils.references.Tickers {
+  apple : str
+  microsoft : str
+  tesla : str
+}
+class "TradingRule" as src.models.strategies.rule.TradingRule {
+  data
+}
+class "<color:red>UnsupportedBarSizeException</color>" as src.api.ib_api_exception.UnsupportedBarSizeException {
+}
+src.api.ib.IBApiClient --|> src.api.brokerage.client.BrokerApiClient
+src.api.ib_api_exception.HistoricalDataMissingException --|> src.api.ib_api_exception.IBApiDataRequestException
+src.api.ib_api_exception.IBApiConnectionException --|> src.api.ib_api_exception.IBApiException
+src.api.ib_api_exception.IBApiDataRequestException --|> src.api.ib_api_exception.IBApiException
+src.api.ib_api_exception.UnsupportedBarSizeException --|> src.api.ib_api_exception.IBApiDataRequestException
+src.api.ib_utils.IBMarketMemory --|> src.api.ib_utils.MarketMemory
+src.models.indicator.Momentum --|> src.models.indicator.Indicator
+src.models.indicator.MovingAverageCrossover --|> src.models.indicator.Momentum
+src.models.starter.Starter --|> src.models.starter.BaseModel
+src.models.strategies.pairs_trading.PairsTradingStrategy --|> src.models.strategies.base_strategy.BaseStrategy
+src.models.strategies.rule.Close --|> src.models.strategies.rule.TradingRule
+src.models.strategies.rule.Open --|> src.models.strategies.rule.TradingRule
+src.models.strategies.rule.PositionSize --|> src.models.strategies.rule.TradingRule
+src.utils.cli.cli_exceptions.AnotherSpecificCLIException --|> src.utils.cli.cli_exceptions.SomeGeneralCLIException
+src.utils.cli.cli_exceptions.SomeMoreSpecificCLIException --|> src.utils.cli.cli_exceptions.SomeGeneralCLIException
+src.api.ib_utils.ConnectionWatchdog --* src.api.brokerage.client.BrokerApiClient : _watchdog
+src.api.ib_utils.MarketMemory --o src.api.brokerage.client.BrokerApiClient : _market_memory
+@enduml

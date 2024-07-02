@@ -9,7 +9,39 @@ import pandas as pd
 import numpy as np
 
 
-class MomentumIndicator(ABC):
+class Indicator(ABC):
+    """
+    Base class for indicators.
+    """
+
+    def __init__(self, data):
+        """
+        Initialize the Indicator object.
+
+        Parameters:
+        - data: The data used for calculating the indicator.
+        """
+        self._data = data
+
+    def calculate(self):
+        """
+        Calculate the indicator.
+
+        This method should be implemented in derived classes.
+
+        Returns:
+        - The calculated indicator values.
+        """
+        raise NotImplementedError(
+            "calculate method must be implemented in derived classes"
+        )
+
+    @property
+    def data(self):
+        return self._data
+
+
+class Momentum(Indicator):
     """
     Base class for momentum indicators.
     """
@@ -21,7 +53,7 @@ class MomentumIndicator(ABC):
         Parameters:
         - data: The data used for calculating the indicator.
         """
-        self.data = data
+        super().__init__(data)
 
     def calculate(self):
         """
@@ -37,12 +69,12 @@ class MomentumIndicator(ABC):
         )
 
 
-class MovingAverageCrossover(MomentumIndicator):
+class MovingAverage(Momentum):
     """
     Moving Average Crossover indicator class.
     """
 
-    def __init__(self, data, short_period=16, long_period=64):
+    def __init__(self, data):
         """
         Initialize the MovingAverageCrossover object.
 
@@ -52,8 +84,6 @@ class MovingAverageCrossover(MomentumIndicator):
         - long_period: The period for the long-term moving average.
         """
         super().__init__(data)
-        self.short_period = short_period
-        self.long_period = long_period
 
     def calculate(self):
         """
@@ -62,23 +92,9 @@ class MovingAverageCrossover(MomentumIndicator):
         Returns:
         - The trading signals based on the moving average crossover.
         """
-        # Calculate the short-term moving average
-        self.data["short_ma"] = (
-            self.data["price"].rolling(window=self.short_period).mean()
-        )
+        # Calculate the moving average
+        moving_average = self._data.rolling(window=n).mean()
 
-        # Calculate the long-term moving average
-        self.data["long_ma"] = (
-            self.data["price"].rolling(window=self.long_period).mean()
-        )
-
-        # Generate the trading signals based on the moving average crossover
-        self.data["signal"] = 0
-        self.data["signal"][self.short_period :] = np.where(
-            self.data["short_ma"][self.short_period :]
-            > self.data["long_ma"][self.short_period :],
-            1,
-            -1,
-        )
-
-        return self.data
+        # Return the trading signals based on the moving average crossover
+        signals = np.where(self._data > moving_average, 1, -1)
+        return signals

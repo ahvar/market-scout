@@ -4,14 +4,46 @@ The system is explained in chapters 5-6 of the book.
 """
 
 import numpy as np
-from src.models.strategies.base_strategy import BaseStrategy
-from src.models.indicators.momentum import MovingAverageCrossover
+from abc import ABC, abstractmethod
+from src.models.indicator import MovingAverage
 
 
-class Starter(BaseStrategy):
-    """Starter System from Robert Carver's book Leveraged Trader"""
+class BaseModel(ABC):
+    """
+    Abstract base class for trading models.
+    """
 
     def __init__(self, data):
+        """
+        Initialize the model with the necessary data.
+
+        :param data: Historical market data
+        """
+        self.data = data
+
+    @abstractmethod
+    def generate_signals(self):
+        """
+        Generate trading signals based on the strategy.
+        """
+
+    @abstractmethod
+    def calculate_metrics(self):
+        """
+        Calculate and return strategy-specific metrics.
+        """
+
+    @abstractmethod
+    def execute_trades(self):
+        """
+        Execute trades based on the generated signals.
+        """
+
+
+class Starter(BaseModel):
+    """Starter System from Robert Carver's book Leveraged Trader"""
+
+    def __init__(self, data, financial_product):
         super().__init__(data)
         self._expected_sharpe_ratio = 0.24  # default from ch. 5 of Leveraged Trader
         self._speed_limit = 0.08  # default from ch. 5 of Leveraged Trader
@@ -44,7 +76,7 @@ class Starter(BaseStrategy):
         """
         Generate trading signals based on the moving average crossover strategy.
         """
-        mac = MovingAverageCrossover(self.data)
+        mac = MovingAverage(self.data)
         self.signals = mac.calculate()
 
     @property

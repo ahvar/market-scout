@@ -1,0 +1,91 @@
+@startuml packages_marketscout
+set namespaceSeparator none
+package "src" as src {
+}
+package "src.api" as src.api {
+}
+package "src.api.brokerage" as src.api.brokerage {
+}
+package "src.api.brokerage.client" as src.api.brokerage.client {
+}
+package "src.api.ib" as src.api.ib {
+}
+package "src.api.ib_api_exception" as src.api.ib_api_exception {
+}
+package "src.api.ib_app" as src.api.ib_app {
+}
+package "src.api.ib_utils" as src.api.ib_utils {
+}
+package "src.app" as src.app {
+}
+package "src.backtesting" as src.backtesting {
+}
+package "src.backtesting.data_processor" as src.backtesting.data_processor {
+}
+package "src.backtesting.visualization" as src.backtesting.visualization {
+}
+package "src.handlers" as src.handlers {
+}
+package "src.handlers.ib_handler" as src.handlers.ib_handler {
+}
+package "src.ib_async_example" as src.ib_async_example {
+}
+package "src.models" as src.models {
+}
+package "src.models.indicator" as src.models.indicator {
+}
+package "src.models.order" as src.models.order {
+}
+package "src.models.portfolio" as src.models.portfolio {
+}
+package "src.models.position" as src.models.position {
+}
+package "src.models.starter" as src.models.starter {
+}
+package "src.models.strategies" as src.models.strategies {
+}
+package "src.models.strategies.base_strategy" as src.models.strategies.base_strategy {
+}
+package "src.models.strategies.pairs_trading" as src.models.strategies.pairs_trading {
+}
+package "src.models.strategies.rule" as src.models.strategies.rule {
+}
+package "src.utils" as src.utils {
+}
+package "src.utils.cli" as src.utils.cli {
+}
+package "src.utils.cli.callbacks" as src.utils.cli.callbacks {
+}
+package "src.utils.cli.cli" as src.utils.cli.cli {
+}
+package "src.utils.cli.cli_exceptions" as src.utils.cli.cli_exceptions {
+}
+package "src.utils.logging_utils" as src.utils.logging_utils {
+}
+package "src.utils.references" as src.utils.references {
+}
+src.api.brokerage.client --> src.api.ib_api_exception
+src.api.brokerage.client --> src.api.ib_utils
+src.api.brokerage.client --> src.utils.references
+src.api.ib --> src.api.brokerage.client
+src.api.ib --> src.api.ib_api_exception
+src.api.ib --> src.api.ib_utils
+src.api.ib --> src.utils.cli.cli
+src.api.ib --> src.utils.references
+src.api.ib_utils --> src.api.ib_api_exception
+src.api.ib_utils --> src.utils.references
+src.app --> src.api.ib
+src.app --> src.api.ib_utils
+src.app --> src.models.order
+src.app --> src.utils.cli.callbacks
+src.app --> src.utils.cli.cli
+src.app --> src.utils.references
+src.models.order --> src.utils.references
+src.models.starter --> src.models.indicator
+src.models.strategies.pairs_trading --> src.models.strategies.base_strategy
+src.models.strategies.rule --> src.models.indicator
+src.utils.cli.callbacks --> src.utils.cli.cli
+src.utils.cli.callbacks --> src.utils.references
+src.utils.cli.cli --> src.utils.logging_utils
+src.utils.cli.cli --> src.utils.references
+@enduml

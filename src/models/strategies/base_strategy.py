@@ -1,6 +1,7 @@
 """ Base class for trading strategies. """
 
 from abc import ABC, abstractmethod
+from models.indicator import MovingAverage
 
 
 class BaseStrategy(ABC):
