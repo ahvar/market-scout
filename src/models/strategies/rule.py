@@ -36,7 +36,7 @@ class Open(TradingRule):
         - data: The data used for calculating the entry rule.
         """
         super().__init__(data)
-        self.indicator = indicator
+        self._indicator = indicator
 
     @abstractmethod
     def generate_signals(self):
@@ -46,6 +46,16 @@ class Open(TradingRule):
         Returns:
         - The trading signals based on the moving average crossover.
         """
+
+    @property
+    def indicator(self):
+        """
+        Returns the indicator used for generating signals.
+
+        Returns:
+            Indicator: The indicator used for generating signals.
+        """
+        return self._indicator
 
 
 class Close(TradingRule):

@@ -3,7 +3,7 @@ Momentum or trend-following indicators are generally used to identify the direct
 of the market and the strength of the trend.
 """
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import pandas as pd
 import numpy as np
@@ -23,6 +23,7 @@ class Indicator(ABC):
         """
         self._data = data
 
+    @abstractmethod
     def calculate(self):
         """
         Calculate the indicator.
@@ -32,12 +33,15 @@ class Indicator(ABC):
         Returns:
         - The calculated indicator values.
         """
-        raise NotImplementedError(
-            "calculate method must be implemented in derived classes"
-        )
 
     @property
     def data(self):
+        """
+        Returns the data associated with the indicator.
+
+        Returns:
+            The data associated with the indicator.
+        """
         return self._data
 
 
@@ -55,6 +59,7 @@ class Momentum(Indicator):
         """
         super().__init__(data)
 
+    @abstractmethod
     def calculate(self):
         """
         Calculate the momentum indicator.
@@ -64,37 +69,52 @@ class Momentum(Indicator):
         Returns:
         - The calculated indicator values.
         """
-        raise NotImplementedError(
-            "calculate method must be implemented in derived classes"
-        )
 
 
 class MovingAverage(Momentum):
     """
-    Moving Average Crossover indicator class.
+    Moving Average Crossover is a type of momentum indicator.
     """
 
-    def __init__(self, data):
+    def __init__(self, prices: pd.Series, moving_average_length: int):
         """
         Initialize the MovingAverageCrossover object.
 
         Parameters:
-        - data: The data used for calculating the indicator.
-        - short_period: The period for the short-term moving average.
-        - long_period: The period for the long-term moving average.
+        - prices: The data used for calculating the indicator.
+        - moving_average_length: The length of the moving average.
         """
-        super().__init__(data)
+        super().__init__(prices)
+        self._moving_average_length = moving_average_length
+        self._moving_average = None
 
     def calculate(self):
         """
-        Calculate the moving average crossover indicator.
+        Calculate the moving average
 
         Returns:
         - The trading signals based on the moving average crossover.
         """
-        # Calculate the moving average
-        moving_average = self._data.rolling(window=n).mean()
+        self._moving_average = self._data.rolling(
+            window=self._moving_average_length
+        ).mean()
 
-        # Return the trading signals based on the moving average crossover
-        signals = np.where(self._data > moving_average, 1, -1)
-        return signals
+    @property
+    def moving_average_length(self):
+        """
+        Returns the length of the moving average.
+
+        Returns:
+        - The length of the moving average.
+        """
+        return self._moving_average_length
+
+    @property
+    def moving_average(self):
+        """
+        Returns the moving average.
+
+        Returns:
+        - The moving average.
+        """
+        return self._moving_average

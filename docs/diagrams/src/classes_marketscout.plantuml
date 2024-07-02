@@ -87,12 +87,16 @@ class "MarketMemory" as src.api.ib_utils.MarketMemory {
 class "Momentum" as src.models.indicator.Momentum {
   {abstract}calculate()
 }
-class "MovingAverageCrossover" as src.models.indicator.MovingAverageCrossover {
-  long_period : int
-  short_period : int
+class "MovingAverage" as src.models.indicator.MovingAverage {
   calculate()
 }
+class "MovingAverageCrossover" as src.models.strategies.rule.MovingAverageCrossover {
+  long_window
+  short_window
+  generate_signals()
+}
 class "Open" as src.models.strategies.rule.Open {
+  indicator
   {abstract}generate_signals()
 }
 class "PairsTradingStrategy" as src.models.strategies.pairs_trading.PairsTradingStrategy {
@@ -125,7 +129,7 @@ class "Starter" as src.models.starter.Starter {
   actual_sharpe_ratio
   actual_speed
   expected_sharpe_ratio
-  signals : NoneType
+  signals : NoneType, ndarray
   {abstract}calculate_metrics()
   {abstract}execute_trades()
   generate_signals()
@@ -147,14 +151,16 @@ src.api.ib_api_exception.IBApiDataRequestException --|> src.api.ib_api_exception
 src.api.ib_api_exception.UnsupportedBarSizeException --|> src.api.ib_api_exception.IBApiDataRequestException
 src.api.ib_utils.IBMarketMemory --|> src.api.ib_utils.MarketMemory
 src.models.indicator.Momentum --|> src.models.indicator.Indicator
-src.models.indicator.MovingAverageCrossover --|> src.models.indicator.Momentum
+src.models.indicator.MovingAverage --|> src.models.indicator.Momentum
 src.models.starter.Starter --|> src.models.starter.BaseModel
 src.models.strategies.pairs_trading.PairsTradingStrategy --|> src.models.strategies.base_strategy.BaseStrategy
 src.models.strategies.rule.Close --|> src.models.strategies.rule.TradingRule
+src.models.strategies.rule.MovingAverageCrossover --|> src.models.strategies.rule.Open
 src.models.strategies.rule.Open --|> src.models.strategies.rule.TradingRule
 src.models.strategies.rule.PositionSize --|> src.models.strategies.rule.TradingRule
 src.utils.cli.cli_exceptions.AnotherSpecificCLIException --|> src.utils.cli.cli_exceptions.SomeGeneralCLIException
 src.utils.cli.cli_exceptions.SomeMoreSpecificCLIException --|> src.utils.cli.cli_exceptions.SomeGeneralCLIException
 src.api.ib_utils.ConnectionWatchdog --* src.api.brokerage.client.BrokerApiClient : _watchdog
 src.api.ib_utils.MarketMemory --o src.api.brokerage.client.BrokerApiClient : _market_memory
+src.models.indicator.Indicator --o src.models.strategies.rule.Open : indicator
 @enduml
