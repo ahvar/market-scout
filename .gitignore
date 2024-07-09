@@ -3,3 +3,6 @@ envs/*
 .env
 __pycache__
 .coverage
+
+scrap/*
+notebooks/

@@ -13,13 +13,13 @@ class BaseModel(ABC):
     Abstract base class for trading models.
     """
 
-    def __init__(self, data):
+    def __init__(self, prices):
         """
         Initialize the model with the necessary data.
 
         :param data: Historical market data
         """
-        self.data = data
+        self._prices = prices
 
     @abstractmethod
     def generate_signals(self):
@@ -38,6 +38,16 @@ class BaseModel(ABC):
         """
         Execute trades based on the generated signals.
         """
+
+    @property
+    def prices(self):
+        """
+        Returns the data associated with the model.
+
+        Returns:
+            The data associated with the model.
+        """
+        return self._prices
 
 
 class Starter(BaseModel):
