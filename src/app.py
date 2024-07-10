@@ -160,6 +160,7 @@ def chart(
             for handler in logger.handlers:
                 handler.setLevel(logging.INFO)
         # Create the IB API client
+        # TODO: ib_async client
         ib_market_memory = IBMarketMemory()
         client = IBApiClient(
             market_memory=ib_market_memory, host="localhost", port=4002, client_id=1
