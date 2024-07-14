@@ -3,11 +3,14 @@ scout app
 """
 
 from datetime import datetime
-
+from dotenv import load_dotenv
 import logging
 import time
 import typer
-from dotenv import load_dotenv
+import pprint
+from pprint import PrettyPrinter
+from ib_async.ib_async import IB, client, contract, util
+from ib_async.ib_async.contract import Forex
 from openai import OpenAI
 from src.utils.cli.callbacks import (
     validate_end_date,
@@ -159,35 +162,24 @@ def chart(
         if not debug:
             for handler in logger.handlers:
                 handler.setLevel(logging.INFO)
-        # Create the IB API client
-        # TODO: ib_async client
-        ib_market_memory = IBMarketMemory()
-        client = IBApiClient(
-            market_memory=ib_market_memory, host="localhost", port=4002, client_id=1
+        ib = IB()
+        ib.connect(host="127.0.0.1", port=4002, clientId=1, timeout=30)
+        eurusd_contract = Forex("EURUSD")
+        bars = ib.reqHistoricalData(
+            eurusd_contract,
+            endDateTime="",
+            durationStr=duration,
+            barSizeSetting=bar_size,
+            whatToShow="MIDPOINT",
+            useRTH=True,
         )
-        client.start_services()
-        time.sleep(5)
-        # Create the contract
-        contract_factory = ContractFactory()
-        contract = contract_factory.get_contract(ticker)
-        print("waiting for 10 seconds before making historical data request...")
-        time.sleep(10)
-        # Create the request
-        client.request_historical_data(
-            contract=contract,
-            bar_size=bar_size,
-            duration=duration,
-            end_datetime=convert_to_utc(end_date, end_time).strftime("%Y%m%d-%H:%M:%S"),
-            use_rth=1,
-        )
-        time.sleep(100)
+        eurusd_data = util.df(bars)
+        pp = PrettyPrinter(indent=4)
+        pp.pprint(eurusd_data)
+        ib.disconnect()
+
     except Exception as e:
         logger.error("An error occurred: %s", e)
-        client.stop_services()
-        client.executor.shutdown(wait=True)
         raise Exception(e) from e
     finally:
-        client.market_memory.write_to_csv(out_dir)
-        client.stop_services()
-        client.executor.shutdown(wait=True)
         logger.info("Market Scout has stopped.")
