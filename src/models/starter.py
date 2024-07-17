@@ -4,8 +4,25 @@ The system is explained in chapters 5-6 of the book.
 """
 
 import numpy as np
+from pandas import DataFrame
 from abc import ABC, abstractmethod
+from typing import Union
 from src.models.indicator import MovingAverage
+from ib_async.contract import (
+    Forex,
+    Stock,
+    Option,
+    Future,
+    ContFuture,
+    FuturesOption,
+    Index,
+    CFD,
+    Commodity,
+    Bond,
+    Warrant,
+    Contract,
+    ContractDetails,
+)
 
 
 class BaseModel(ABC):
@@ -13,48 +30,41 @@ class BaseModel(ABC):
     Abstract base class for trading models.
     """
 
-    def __init__(self, prices):
+    def __init__(self, price_data: Union[np.ndarray, list, dict, DataFrame]):
         """
-        Initialize the model with the necessary data.
+        Initialize the model with price data.
 
-        :param data: Historical market data
+        :param data: price data
         """
-        self._prices = prices
+        self._price_data = price_data
 
     @abstractmethod
-    def generate_signals(self):
+    def generate_signals(self, *args, **kwargs):
         """
         Generate trading signals based on the strategy.
         """
 
-    @abstractmethod
-    def calculate_metrics(self):
-        """
-        Calculate and return strategy-specific metrics.
-        """
-
-    @abstractmethod
-    def execute_trades(self):
-        """
-        Execute trades based on the generated signals.
-        """
-
     @property
-    def prices(self):
+    def price_data(self):
         """
         Returns the data associated with the model.
 
         Returns:
             The data associated with the model.
         """
-        return self._prices
+        return self._price_data
 
 
 class Starter(BaseModel):
     """Starter System from Robert Carver's book Leveraged Trader"""
 
-    def __init__(self, data, financial_product):
-        super().__init__(data)
+    def __init__(self, price_data, financial_instrument: Contract):
+        """
+        Initialize the model with price data and a financial product.
+        :param                 data: price data
+        :param financial_instrument: financial instrument to trade
+        """
+        super().__init__(price_data)
         self._expected_sharpe_ratio = 0.24  # default from ch. 5 of Leveraged Trader
         self._speed_limit = 0.08  # default from ch. 5 of Leveraged Trader
         self._actual_sharpe_ratio = None
@@ -76,18 +86,31 @@ class Starter(BaseModel):
             raise ValueError("Actual Sharpe ratio is not available.")
         self._actual_speed = self._actual_sharpe_ratio / 3
 
-    def calculate_metrics(self):
-        """Additional metrics calculation specific to pairs trading could be added here."""
+    def generate_signals(self, *args, **kwargs):
+        """This model uses a moving average crossover strategy to generate signals."""
 
-    def execute_trades(self):
-        """Execution logic based on generated signals."""
+        short_ma = kwargs.get("short_moving_average_length", 10)
+        long_ma = kwargs.get("long_moving_average_length", 40)
+        # Calculate the short (fast) and long (slow) moving averages
+        self._price_data["short_ma"] = (
+            self._price_data["close"].rolling(window=short_ma).mean()
+        )
+        self._price_data["long_ma"] = (
+            self._price_data["close"].rolling(window=long_ma).mean()
+        )
+        # Generate signals: 1 for buy, -1 for sell, 0 for hold
+        self._price_data["signal"] = 0
+        self._price_data["signal"][short_ma:] = np.where(
+            self._price_data["short_ma"][short_ma:]
+            > self._price_data["long_ma"][short_ma:],
+            1,
+            -1,
+        )
+        # Optionally, clean up by dropping the MA columns if they are not needed further
+        # self._price_data.drop(['short_ma', 'long_ma'], axis=1, inplace=True)
 
-    def generate_signals(self):
-        """
-        Generate trading signals based on the moving average crossover strategy.
-        """
-        mac = MovingAverage(self.data)
-        self.signals = mac.calculate()
+        # Assuming you want to store the signals for further use
+        self.signals = self._price_data["signal"]
 
     @property
     def expected_sharpe_ratio(self):

@@ -9,8 +9,8 @@ import time
 import typer
 import pprint
 from pprint import PrettyPrinter
-from ib_async.ib_async import IB, client, contract, util
-from ib_async.ib_async.contract import Forex
+from ib_async import IB, client, contract, util
+from ib_async.contract import Forex, Contract
 from openai import OpenAI
 from src.utils.cli.callbacks import (
     validate_end_date,
@@ -23,7 +23,7 @@ from src.utils.cli.callbacks import (
 from src.utils.cli.cli import init_logging, set_error_and_exit, convert_to_utc
 from src.api.ib import IBApiClient
 from src.api.ib_utils import IBMarketMemory
-from src.models.order import ContractFactory
+from src.models.starter import Starter
 from src.utils.references import (
     IB_API_LOGGER_NAME,
     bar_sizes,
@@ -107,7 +107,7 @@ def market_summary(
 @app.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
 )
-def chart(
+def trade(
     ctx: typer.Context,
     ticker: str = typer.Argument(..., help="Ticker symbol for the stock"),
     bar_size: str = typer.Option(
@@ -146,6 +146,12 @@ def chart(
         callback=validate_out_dir,
         help="The name of the output file. Default is <ticker>.csv",
     ),
+    running_mode: str = typer.Option(
+        None,
+        "-rm",
+        "--running-mode",
+        help="The running mode for the command. Valid modes: live, simulate",
+    ),
     debug: bool = typer.Option(
         False,
         "-b",
@@ -174,8 +180,8 @@ def chart(
             useRTH=True,
         )
         eurusd_data = util.df(bars)
-        pp = PrettyPrinter(indent=4)
-        pp.pprint(eurusd_data)
+        starter = Starter(eurusd_data, eurusd_contract)
+        starter.generate_signals()
         ib.disconnect()
 
     except Exception as e:
