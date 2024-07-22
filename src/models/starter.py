@@ -4,10 +4,11 @@ The system is explained in chapters 5-6 of the book.
 """
 
 import numpy as np
+import backtrader as bt
+from backtrader.strategy import Strategy
 from pandas import DataFrame
 from abc import ABC, abstractmethod
 from typing import Union
-from src.models.indicator import MovingAverage
 from ib_async.contract import (
     Forex,
     Stock,
@@ -25,51 +26,41 @@ from ib_async.contract import (
 )
 
 
-class BaseModel(ABC):
-    """
-    Abstract base class for trading models.
-    """
-
-    def __init__(self, price_data: Union[np.ndarray, list, dict, DataFrame]):
-        """
-        Initialize the model with price data.
-
-        :param data: price data
-        """
-        self._price_data = price_data
-
-    @abstractmethod
-    def generate_signals(self, *args, **kwargs):
-        """
-        Generate trading signals based on the strategy.
-        """
-
-    @property
-    def price_data(self):
-        """
-        Returns the data associated with the model.
-
-        Returns:
-            The data associated with the model.
-        """
-        return self._price_data
-
-
-class Starter(BaseModel):
+class Starter(Strategy):
     """Starter System from Robert Carver's book Leveraged Trader"""
 
-    def __init__(self, price_data, financial_instrument: Contract):
+    params = (
+        ("short_moving_average_length", 16),
+        ("long_moving_average_length", 64),
+        ("expected_sharpe_ratio", 0.24),
+        ("speed_limit", 0.08),
+    )
+
+    def __init__(self):
         """
-        Initialize the model with price data and a financial product.
-        :param                 data: price data
-        :param financial_instrument: financial instrument to trade
+        Initialize the model
         """
-        super().__init__(price_data)
-        self._expected_sharpe_ratio = 0.24  # default from ch. 5 of Leveraged Trader
-        self._speed_limit = 0.08  # default from ch. 5 of Leveraged Trader
-        self._actual_sharpe_ratio = None
-        self._actual_speed = None
-        self.signals = None
+        super().__init__()
+        # Initialize moving averages using the built-in indicators
+        self.short_ma = bt.indicators.SimpleMovingAverage(
+            self.data.close, period=self.params.short_moving_average_length
+        )
+        self.long_ma = bt.indicators.SimpleMovingAverage(
+            self.data.close, period=self.params.long_moving_average_length
+        )
+        # Initialize the actual sharpe ratio using backtrader indicators for sharpe ratio
+        self._actual_sharpe_ratio = bt.indicators.SharpeRatio(self.data.close)
+
+    def next(self):
+        """
+        Define the moving average crossover strategy
+        """
+        # Check if short MA is above the long MA and we're not already in the market
+        if self.short_ma > self.long_ma and not self.position:
+            self.buy()
+        # Check if short MA is below the long MA and we're in the market
+        elif self.short_ma < self.long_ma and self.position:
+            self.sell()
 
     def _compute_speed_limit(self):
         """
@@ -87,10 +78,34 @@ class Starter(BaseModel):
         self._actual_speed = self._actual_sharpe_ratio / 3
 
     def generate_signals(self, *args, **kwargs):
-        """This model uses a moving average crossover strategy to generate signals."""
+        """
+        This model uses a moving average crossover strategy to generate signals.
 
-        short_ma = kwargs.get("short_moving_average_length", 10)
-        long_ma = kwargs.get("long_moving_average_length", 40)
+        NOTE:
+        -------------------------------------------------------------------------
+        A vectorized dataset in algorithmic trading refers to historical data structured
+        in such a way that operations on the data can be performed using vectorized computations,
+        typically leveraging libraries like NumPy or pandas. This approach is efficient for certain
+        types of analysis but may not accurately capture the realities of trading, such as transaction costs,
+        market impact, or the sequential nature of receiving market data.
+        -------------------------------------------------------------------------
+
+        -------------------------------------------------------------------------
+        While we use pandas here for backtesting, this simulation assumes all data is available for vectorized
+        operations at once, rather than accounting for the time-ordered sequence of market events. Does the
+        sequential nature of trading data matter for this strategy? If so, how would you modify the code to
+        account for this?
+        """
+        params = (
+            ("short_moving_average_length", 16),
+            ("long_moving_average_length", 64),
+            ("expected_sharpe_ratio", 0.24),
+            ("speed_limit", 0.08),
+        )
+
+        # Default values for the moving averages come from ch. 5, pp. 109 of Leveraged Trader
+        short_ma = kwargs.get("short_moving_average_length", 16)
+        long_ma = kwargs.get("long_moving_average_length", 64)
         # Calculate the short (fast) and long (slow) moving averages
         self._price_data["short_ma"] = (
             self._price_data["close"].rolling(window=short_ma).mean()

@@ -8,6 +8,7 @@ import logging
 import time
 import typer
 import pprint
+import backtrader as bt
 from pprint import PrettyPrinter
 from ib_async import IB, client, contract, util
 from ib_async.contract import Forex, Contract
@@ -169,6 +170,7 @@ def trade(
             for handler in logger.handlers:
                 handler.setLevel(logging.INFO)
         ib = IB()
+        cerebro = bt.Cerebro()
         ib.connect(host="127.0.0.1", port=4002, clientId=1, timeout=30)
         eurusd_contract = Forex("EURUSD")
         bars = ib.reqHistoricalData(
@@ -180,8 +182,10 @@ def trade(
             useRTH=True,
         )
         eurusd_data = util.df(bars)
-        starter = Starter(eurusd_data, eurusd_contract)
-        starter.generate_signals()
+        starter = Starter()
+        cerebro.addstrategy(starter)
+        data = bt.feeds.PandasData(dataname=eurusd_data)
+        cerebro.adddata(data)
         ib.disconnect()
 
     except Exception as e:

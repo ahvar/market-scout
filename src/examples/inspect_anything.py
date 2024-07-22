@@ -1,7 +1,8 @@
 import ib_async
-from ib_async.ib import IB
-from ib_async.objects import Execution
-from ib_async.contract import Forex
+
+# from ib_async.ib import IB
+# from ib_async.objects import Execution
+# from ib_async.contract import Forex
 from pprint import PrettyPrinter, pformat
 from datetime import datetime
 import inspect
@@ -28,11 +29,11 @@ bars = ib.reqHistoricalData(
 # bars = [Bar(**bar.__dict__) for bar in bars]
 pp.pprint(f"IB ASYNC: {pp.pprint(ib_async.__dict__)}")
 print("\n\n")
-pp.pprint(f"IB: {pp.pprint(IB.__dict__)}")
+# pp.pprint(f"IB: {pp.pprint(IB.__dict__)}")
 print("\n\n")
-pp.pprint(f"Wrapper: {pp.pprint(ib_async.wrapper.__dict__)}")
+# pp.pprint(f"Wrapper: {pp.pprint(ib_async.wrapper.__dict__)}")
 print("\n\n")
-pp.pprint(f"Future: {pp.pprint(ib_async.contract.Future.__dict__)}")
+# pp.pprint(f"Future: {pp.pprint(ib_async.contract.Future.__dict__)}")
 # pp.pprint(
 #    f"__dict__ returns the dictionary representing the object's namespace: {pp.pprint(bars[0].__dict__)}"
 # )
