@@ -12,7 +12,7 @@ from unittest.mock import ANY, patch, create_autospec, MagicMock, call, Property
 import pandas as pd
 from ibapi.contract import Contract
 from ibapi.common import BarData
-from src.api.ib import IBApiClient
+from broker import IBApiClient
 from src.api.ib_utils import IBMarketMemory
 from src.api.ib_api_exception import (
     IBApiConnectionException,
@@ -33,7 +33,7 @@ class TestIBApiClient(unittest.TestCase):
         Set up the IBApiClient instance before each test.
         """
         os.environ["TEST_MODE"] = "True"
-        from src.api.ib import IBApiClient
+        from broker import IBApiClient
 
         cls.IBApiClient = IBApiClient
 
