@@ -7,6 +7,7 @@ import asyncio
 from datetime import datetime
 from src.api.broker import IBAsyncBroker
 from src.models.starter import Starter
+from ib_async.contract import Forex, Stock
 
 
 if __name__ == "__main__":
@@ -16,16 +17,22 @@ if __name__ == "__main__":
     broker = IBAsyncBroker()
     cerebro.setbroker(broker)
 
-    # Add strategy and pass the broker instance
-    cerebro.addstrategy(Starter, broker)
-
-    # Add data feed
-    data = bt.feeds.YahooFinanceData(
-        dataname="AAPL",
-        fromdate=datetime.datetime(2020, 1, 1),
-        todate=datetime.datetime(2021, 1, 1),
+    # Fetch historical data
+    contract = Forex("EURUSD")
+    eurusd_data = broker.get_historical_data(
+        contract=contract,
+        endDateTime="",
+        durationStr="30 D",
+        barSizeSetting="1 hour",
+        whatToShow="MIDPOINT",
+        useRTH=True,
     )
-    cerebro.adddata(data)
+
+    # Add the historical data to the cerebro instance
+    datafeed = bt.feeds.PandasData(dataname=eurusd_data)
+    cerebro.adddata(datafeed)
+    # Add strategy and pass the broker instance
+    cerebro.addstrategy(Starter, broker=broker)
 
     # Run the strategy
     cerebro.run()

@@ -4,9 +4,12 @@ Classes for interacting with the IB API.
 
 # standard library
 import logging
+import collections
 
 # third-party
 import backtrader as bt
+import pandas as pd
+from backtrader.brokers.ibbroker import IBBroker
 from ib_async.ib import IB
 from ib_async.contract import Stock, Forex
 from ib_async.order import LimitOrder, MarketOrder
@@ -34,7 +37,7 @@ from src.utils.references import IB_API_LOGGER_NAME
 ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
-class IBAsyncBroker(bt.BrokerBase):
+class IBAsyncBroker(IBBroker):
     """
     A class for interacting with the Interactive Brokers API asynchronously.
     """
@@ -46,16 +49,12 @@ class IBAsyncBroker(bt.BrokerBase):
         :param          port: The port on which the TWS or IB Gateway is listening.
         :param     client_id: A unique identifier for the client application and used in communication with the TWS or IB Gateway.
         """
-        super(IBAsyncBroker, self).__init__()
+        super().__init__()
         ib_api_logger.info("Initializing %s instance", self.__class__.__name__)
         self._ib = IB()
         self._ib.connect(host=host, port=port, clientId=client_id)
         self._orders = {}
-        # self._bar_size = ""
-        # self._current_ticker = None
-        # atexit.register(self._disconnect_from_broker_api)
-        # Use % formatting instead of f-strings because f-strings are interpolated at runtime.
-        # We save some performance overhead by not evaluating the f-string.
+        self.notifs = collections.deque()  # Initialize the notifications deque
         ib_api_logger.info(
             "%s instance initialized. \nHost: %s\nPort: %s\nClient_ID: %s",
             self.__class__.__name__,
@@ -65,18 +64,31 @@ class IBAsyncBroker(bt.BrokerBase):
         )
 
     def start(self):
-        super(IBAsyncBroker, self).start()
+        super().start()
 
     def stop(self):
         self._ib.disconnect()
-        super(IBAsyncBroker, self).stop()
+        super().stop()
 
-    def getcash(self):
-        pass
+    def get_notification(self):
+        try:
+            return self.notifs.popleft()
+        except IndexError:
+            pass
 
-    def getvalue(self):
-        pass
+        return None
 
+    """
+    NOTE: Asynchronous vs. Synchronous
+    -----------------------------------------
+    Commenting buy() and sell() out for now because
+    the IBBroker methods use _makeorder and submit,
+    which might be synchronous and specific to the
+    backtrader framework. In contrast, IBAsyncBroker
+    directly interacts with the Interactive Brokers
+    API asynchronously by calling _ib.placeOrder()
+    directly.
+    -----------------------------------------
     def buy(self, owner, data, size, price=None, exectype=None, **kwargs):
         contract = Stock(data._name, "SMART", "USD")
         order = MarketOrder("BUY", size)
@@ -91,8 +103,26 @@ class IBAsyncBroker(bt.BrokerBase):
         self._orders[order.orderId] = order
         return order
 
+    """
+
     def notify(self, order):
         pass
+
+    def get_historical_data(
+        self, contract, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH
+    ):
+        bars = self._ib.reqHistoricalData(
+            contract,
+            endDateTime=endDateTime,
+            durationStr=durationStr,
+            barSizeSetting=barSizeSetting,
+            whatToShow=whatToShow,
+            useRTH=useRTH,
+        )
+        # Convert bars to a pandas DataFrame
+        dataframe = pd.DataFrame([bar_data.__dict__ for bar_data in bars])
+        dataframe.set_index("date", inplace=True)
+        return dataframe
 
     async def get_positions(self):
         positions = await self._ib.reqPositions()
@@ -104,10 +134,6 @@ class IBAsyncBroker(bt.BrokerBase):
 
     def cancel(self, order):
         # Implement the method to cancel an order
-        pass
-
-    def getposition(self, data):
-        # Implement the method to get the position for a given data
         pass
 
     def set_fund_history(self, fund):
@@ -183,3 +209,7 @@ class IBAsyncBroker(bt.BrokerBase):
         # Define your own set of critical error codes
         critical_errors = {...}  # Populate with actual critical error codes
         return error_code in critical_errors
+
+    @property
+    def ib(self):
+        return self._ib

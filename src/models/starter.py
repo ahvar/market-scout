@@ -49,7 +49,7 @@ class Starter(Strategy):
         ("expected_sharpe_ratio", 0.24),
     )
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """
         Initialize the model
         """
