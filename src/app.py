@@ -22,7 +22,7 @@ from src.utils.cli.callbacks import (
     validate_report_type,
 )
 from src.utils.cli.cli import init_logging, set_error_and_exit, convert_to_utc
-from src.api.ib import IBApiClient
+from broker import IBApiClient
 from src.api.ib_utils import IBMarketMemory
 from src.models.starter import Starter
 from src.utils.references import (
