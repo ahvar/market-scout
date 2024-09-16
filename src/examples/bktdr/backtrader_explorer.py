@@ -41,5 +41,3 @@ if __name__ == "__main__":
     # Print positions
     strategy = cerebro.runstrats[0][0]
     asyncio.run(strategy.print_positions())
-
-    # terrible AIzaSyBnd6fL2VgJXA03ED0qhymBOFY2NuxEHu0
