@@ -5,7 +5,7 @@ Use the custom IBAsyncBroker to run a simple backtrader strategy
 import backtrader as bt
 import asyncio
 from datetime import datetime
-from src.api.broker import IBAsyncBroker
+from broker.broker import IBAsyncBroker
 from src.models.starter import Starter
 from ib_async.contract import Forex, Stock
 

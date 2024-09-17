@@ -2,7 +2,7 @@ import backtrader as bt
 from datetime import datetime
 from pprint import PrettyPrinter
 from src.models.starter import Starter
-from src.api.broker import IBAsyncBroker
+from broker.broker import IBAsyncBroker
 from ib_async.ib import IB
 from ib_async import util
 from ib_async.contract import Forex

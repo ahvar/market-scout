@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Hello, {{ user.username}} !</h1>
+{% for schedule in schedules %}
+<div>
+    {% for activity in schedule.activities %}
+    <p>{{ schedule.author.username }} --- activity --- : <b>{{ activity.name }}</b></p>
+    <div>
+        <p>Start: {{ activity.start }}</p>
+        <p>End: {{ activity.end }}</p>
+    </div>
+    {% endfor %}
+    {% for expense in schedule.expenses %}
+    <p>{{ schedule.author.username }} --- purchase --- : <b>{{expense.description}}</b></p>
+    <div>
+        <p>Amount: {{ expense.amount }}</p>
+        <p>Date: {{ expense.date }}</p>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

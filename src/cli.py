@@ -13,7 +13,7 @@ from pprint import PrettyPrinter
 from ib_async import IB, client, contract, util
 from ib_async.contract import Forex, Contract
 from openai import OpenAI
-from src.utils.cli.callbacks import (
+from command.command_callbacks import (
     validate_end_date,
     validate_duration,
     validate_bar_size,
@@ -21,9 +21,9 @@ from src.utils.cli.callbacks import (
     validate_out_dir,
     validate_report_type,
 )
-from src.utils.cli.cli import init_logging, set_error_and_exit, convert_to_utc
+from command.command_utils import init_logging, set_error_and_exit, convert_to_utc
 from broker import IBApiClient
-from src.api.ib_utils import IBMarketMemory
+from broker.ib_utils import IBMarketMemory
 from src.models.starter import Starter
 from src.utils.references import (
     IB_API_LOGGER_NAME,

@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+
+<head>
+    {% if title %}
+    <title>{{ title }} - Market Scout</title>
+    {% else %}
+    <title>Welcome to Market Scout</title>
+    {% endif %}
+</head>
+
+<body>
+    <div>Timelight: <a href="{{ url_for('index') }}">Home</a></div>
+    <div>Login: <a href="{{ url_for('login') }}">Sign In</a></div>
+    <hr>
+    <!-- The get_flashed_messages() function comes from Flask, and returns a list
+     of all the messages that have been registered with flash() previously.-->
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul>
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</body>
+
+</html>

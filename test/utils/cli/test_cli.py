@@ -6,7 +6,7 @@ import unittest
 import pytz
 from datetime import datetime, timedelta
 from unittest.mock import patch
-from src.utils.cli.cli import parse_datetime, convert_to_utc
+from command.command_utils import parse_datetime, convert_to_utc
 from src.utils.references import date_formats, hour, day, week, minute
 
 

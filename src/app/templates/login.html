@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- The action attribute tells the browser the URL when submitting the information entered in the form. When the action
+ is set to an empty string the form is submitted to the URL that is currently in the address bar -->
+
+<!-- The method attribute specifies HTTP request method to be used when submitting the form to the server. Default is GET
+ but in many cases, using a POST request makes for a better user experience because requests of this type can submit the
+ form data in the body of the request, while GET requests add the form fields to the URL, cluttering the browser address
+ bar -->
+
+<!-- The novalidate attribute tells the web browser to not apply validation to the fields in this form, which effectively
+ leaves this task to the Flask application running in the server. Using novalidate is entirely optional, but for this first
+ form it is important that you set it because this will allow you to test server-side validation later in this chapter.-->
+<h1>Sign In</h1>
+<form action="" method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.username.label }}<br>
+        {{ form.username(size=32) }}
+        {% for error in form.username.errors %}
+        <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.password.label }}<br>
+        {{ form.password(size=32) }}
+        {% for error in form.password.errors %}
+        <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+    </p>
+    <p>{{ form.remember_me() }} {{ form.remember_me.label }}</p>
+    <p>{{ form.submit() }}</p>
+</form>
+{% endblock %}

@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 from ibapi.common import BarData
 from src.utils.references import __Application__, __version__
-from src.api.ib_api_exception import (
+from broker.ib_api_exception import (
     HistoricalDataMissingException,
     UnsupportedBarSizeException,
 )

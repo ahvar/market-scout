@@ -12,9 +12,9 @@ from concurrent.futures import ThreadPoolExecutor, Future
 # third-party
 import pandas as pd
 from ibapi.contract import Contract
-from src.api.ib_utils import ConnectionWatchdog, MarketMemory
+from broker.ib_utils import ConnectionWatchdog, MarketMemory
 from src.utils.references import IB_API_LOGGER_NAME
-from src.api.ib_api_exception import IBApiConnectionException
+from broker.ib_api_exception import IBApiConnectionException
 
 broker_logger = logging.getLogger(IB_API_LOGGER_NAME)
 
