@@ -1,15 +1,20 @@
 import backoff
 import os
+import pandas as pd
 from dataclasses import dataclass
 from enum import Enum
 
 is_test_mode = os.getenv("TEST_MODE", "False").lower() == "true"
-
+BUSINESS_DAYS_IN_YEAR = 256.0
 backoff_params = {
     "max_tries": 1 if is_test_mode else 8,
     "max_time": 300,
     "jitter": backoff.full_jitter,
 }
+
+
+def resample_prices_to_business_day_index(prices: pd.Series) -> pd.Series:
+    return prices.resample("1B").last()
 
 
 class DateTimeType(Enum):
