@@ -1,4 +1,5 @@
 import backoff
+import random
 import os
 import pandas as pd
 from dataclasses import dataclass
@@ -63,6 +64,32 @@ bar_sizes = [
 ]
 duration_units = [("S", "Seconds"), ("D", "Days"), ("W", "Weeks"), ("M", "Months")]
 report_types = ["ReportsFinStatements", "ReportsOwnership", "ReportsFinSummary"]
+
+
+def get_duration_unit() -> str:
+    """
+    Get a random duration quantity and unit
+    """
+    qty = 0
+    unit = random.choice(duration_units)[0]
+    if unit == "S":
+        qty = random.randint(1, 604800)  # seconds in 1 week
+    elif unit == "D":
+        qty = random.randint(1, 365)  # days in 1 year
+    elif unit == "W":
+        qty = random.randint(1, 104)  # weeks in 2 years
+    elif unit == "M":
+        qty = random.randint(1, 24)  # months in 2 years
+    else:
+        raise ValueError(f"Invalid duration unit: {unit}")
+    return f"{qty} {unit}"
+
+
+def get_bar_size() -> str:
+    """
+    Get a random bar size
+    """
+    return random.choice(bar_sizes)
 
 
 @dataclass

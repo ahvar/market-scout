@@ -14,7 +14,7 @@ from ib_async.ib import IB
 from ib_async.contract import Stock, Forex
 from ib_async.order import LimitOrder, MarketOrder
 
-from command.command_utils import set_error_and_exit
+from src.utils.command.command_utils import set_error_and_exit
 from src.utils.references import (
     socket_drop,
     connection_broken,
@@ -25,7 +25,7 @@ from src.utils.references import (
     bar_sizes,
     backoff_params,
 )
-from broker.ib_api_exception import (
+from src.broker.ib_api_exception import (
     IBApiException,
     IBApiConnectionException,
     IBApiDataRequestException,
