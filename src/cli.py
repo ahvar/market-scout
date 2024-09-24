@@ -2,6 +2,13 @@
 scout app
 """
 
+from src.patch.patch_ibpy2 import generate_ibpy2_init_patch, apply_ibpy2_init_patch
+
+print("calling generating and applying patch...")
+generate_ibpy2_init_patch()
+apply_ibpy2_init_patch()
+
+
 from datetime import datetime
 from dotenv import load_dotenv
 import logging
