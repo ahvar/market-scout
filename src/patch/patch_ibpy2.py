@@ -3,61 +3,49 @@ import subprocess
 import os
 from pathlib import Path
 
-project_root = Path(__file__).resolve().parent.parent.parent
 
-
-def generate_ibpy2_init_patch():
-    original_file = project_root / "src" / "patch" / "ibpy2_original_init.py"
-    modified_file = project_root / "src" / "patch" / "ibpy2_modified_init.py"
-    patch_file = project_root / "src" / "patch" / "fix_syntax_error.patch"
-
-    # Generate the patch file
+def generate_patch(original: Path, corrected: Path, patch: Path):
+    """
+    Generate a patch file from the difference between two files.
+    """
     try:
-        with open(patch_file, "w") as patch_out:
+        with open(patch, "w") as patch_out:
             subprocess.run(
-                ["diff", "-u", str(original_file), str(modified_file)],
+                [
+                    "diff",
+                    "-u",
+                    str(original),
+                    str(corrected),
+                ],
                 check=True,
                 stdout=patch_out,
             )
     except subprocess.CalledProcessError as e:
         if e.returncode == 1:
-            # diff found and written to patch file (expected behavior)
+            # diff found and written to patch file (expected)
             pass
         else:
             # re-raise the exception
             raise
 
 
-def apply_ibpy2_init_patch():
-    # Get the path to ibpy2 init
-    ibpy2_init_filepath = (
-        project_root
-        / "envs"
-        / "lib"
-        / "python3.11"
-        / "site-packages"
-        / "ib"
-        / "lib"
-        / "__init__.py"
-    )
+def apply_patch(target: Path, patch_content: Path):
+    """
+    Apply a patch to a file.
+    """
+    # make a back-up if there isn't one
+    backup_file = target.with_suffix(".bak")
+    if not backup_file.exists:
+        backup_file.touch()
+        shutil.copy(target, backup_file)
 
-    # Make a backup
-    ibpy2_path_backup = ibpy2_init_filepath.with_suffix(".bak")
-    shutil.copy(ibpy2_init_filepath, ibpy2_path_backup)
+    with open(patch_content, "r") as patch_file:
+        patch_content = patch_file.read()
 
-    # Read the patch file
+    # Apply the patch
     try:
-        with open(
-            project_root / "src" / "patch" / "fix_syntax_error.patch", "r"
-        ) as patch_in:
-            patch_content = patch_in.read()
-
-        # Apply the patch
         subprocess.run(
-            [
-                "patch",
-                str(ibpy2_init_filepath),
-            ],
+            ["patch", "-N", "-r", "-", str(target)],
             input=patch_content,
             text=True,
             check=True,
@@ -67,7 +55,3 @@ def apply_ibpy2_init_patch():
             pass
         else:
             raise
-
-
-if __name__ == "__main__":
-    apply_ibpy2_init_patch()

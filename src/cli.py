@@ -2,12 +2,38 @@
 scout app
 """
 
-from src.patch.patch_ibpy2 import generate_ibpy2_init_patch, apply_ibpy2_init_patch
+from src.patch.patch_ibpy2 import generate_patch, apply_patch
+from src.utils.references import (
+    IB_API_LOGGER_NAME,
+    bar_sizes,
+    duration_units,
+    report_types,
+    get_duration_unit,
+    get_bar_size,
+    original_dispatcher_file,
+    modified_dispatcher_file,
+    dispatcher_patch_file,
+    ibpy2_dispatcher_filepath,
+    ibpy2_init_filepath,
+    ibpy2_original_init_file,
+    ibpy2_modified_init_file,
+    ibpy2_init_patch_file,
+)
 
-print("calling generating and applying patch...")
-generate_ibpy2_init_patch()
-apply_ibpy2_init_patch()
-
+print("patching IbPy2 __init__.py ...")
+generate_patch(
+    original=ibpy2_original_init_file,
+    corrected=ibpy2_modified_init_file,
+    patch=ibpy2_init_patch_file,
+)
+apply_patch(target=ibpy2_init_filepath, patch_content=ibpy2_init_patch_file)
+print("patching IbPy2 dispatcher.py ...")
+generate_patch(
+    original=original_dispatcher_file,
+    corrected=modified_dispatcher_file,
+    patch=dispatcher_patch_file,
+)
+apply_patch(target=ibpy2_dispatcher_filepath, patch_content=dispatcher_patch_file)
 
 from datetime import datetime
 from dotenv import load_dotenv

@@ -3,7 +3,45 @@ import random
 import os
 import pandas as pd
 from dataclasses import dataclass
+from pathlib import Path
 from enum import Enum
+
+
+project_root = Path(__file__).resolve().parent.parent.parent
+
+# IbPy2 dispatcher.py patches
+original_dispatcher_file = (
+    project_root / "src" / "patch" / "ibpy2_original_dispatcher.py"
+)
+modified_dispatcher_file = (
+    project_root / "src" / "patch" / "ibpy2_modified_dispatcher.py"
+)
+dispatcher_patch_file = project_root / "src" / "patch" / "ibpy2_dispatcher.patch"
+ibpy2_dispatcher_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "opt"
+    / "dispatcher.py"
+)
+
+# IbPy2 __init__.py patches
+ibpy2_original_init_file = project_root / "src" / "patch" / "ibpy2_original_init.py"
+ibpy2_modified_init_file = project_root / "src" / "patch" / "ibpy2_modified_init.py"
+ibpy2_init_patch_file = project_root / "src" / "patch" / "fix_syntax_error.patch"
+ibpy2_init_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "lib"
+    / "__init__.py"
+)
 
 is_test_mode = os.getenv("TEST_MODE", "False").lower() == "true"
 BUSINESS_DAYS_IN_YEAR = 256.0
