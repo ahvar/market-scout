@@ -1,0 +1,10 @@
+--- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_overloading.py	2024-09-26 09:22:06.000000000 -0500
++++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_overloading.py	2024-09-26 09:24:25.000000000 -0500
+@@ -40,7 +40,6 @@
+ 
+ # Make the environment more like Python 3.0
+ __metaclass__ = type
+-from itertools import izip as zip
+ 
+ 
+ class overloaded:

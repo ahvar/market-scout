@@ -1,0 +1,424 @@
+--- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_ereader.py	2024-09-26 10:05:48.000000000 -0500
++++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_ereader.py	2024-09-26 10:29:29.000000000 -0500
+@@ -6,7 +6,8 @@
+ #
+ # WARNING: all changes to this file will be lost.
+ 
+-from ib.lib import Boolean, Double, DataInputStream, Integer, Long, StringBuffer, Thread
++from ib.lib import Boolean, Double, DataInputStream, Integer, Thread
++from io import StringIO
+ from ib.lib.overloading import overloaded
+ 
+ from ib.ext.Contract import Contract
+@@ -23,19 +24,16 @@
+ from ib.ext.UnderComp import UnderComp
+ from ib.ext.Util import Util
+ 
+-# 
++#
+ #  * EReader.java
+ #  *
+-#  
++#
+ # package: com.ib.client
+ 
+ 
+-
+-
+-
+-
+ class EReader(Thread):
+-    """ generated source for class EReader """
++    """generated source for class EReader"""
++
+     #  incoming msg id's
+     TICK_PRICE = 1
+     TICK_SIZE = 2
+@@ -80,28 +78,28 @@
+     m_dis = None
+ 
+     def parent(self):
+-        """ generated source for method parent """
++        """generated source for method parent"""
+         return self.m_parent
+ 
+     def eWrapper(self):
+-        """ generated source for method eWrapper """
++        """generated source for method eWrapper"""
+         return self.parent().wrapper()
+ 
+     @overloaded
+     def __init__(self, parent, dis):
+-        """ generated source for method __init__ """
++        """generated source for method __init__"""
+         self.__init__("EReader", parent, dis)
+ 
+     @__init__.register(object, str, object, DataInputStream)
+     def __init___0(self, name, parent, dis):
+-        """ generated source for method __init___0 """
++        """generated source for method __init___0"""
+         Thread.__init__(self, name, parent, dis)
+         self.setName(name)
+         self.m_parent = parent
+         self.m_dis = dis
+ 
+     def run(self):
+-        """ generated source for method run """
++        """generated source for method run"""
+         try:
+             #  loop until thread is terminated
+             while not self.isInterrupted() and self.processMsg(self.readInt()):
+@@ -117,9 +115,9 @@
+         except Exception as e:
+             pass
+ 
+-    #  Overridden in subclass. 
++    #  Overridden in subclass.
+     def processMsg(self, msgId):
+-        """ generated source for method processMsg """
++        """generated source for method processMsg"""
+         if msgId == -1:
+             return False
+         if msgId == self.TICK_PRICE:
+@@ -157,7 +155,7 @@
+             tickType = self.readInt()
+             size = self.readInt()
+             self.eWrapper().tickSize(tickerId, tickType, size)
+-        elif msgId==self.POSITION:
++        elif msgId == self.POSITION:
+             version = self.readInt()
+             account = self.readStr()
+             contract = Contract()
+@@ -178,10 +176,10 @@
+             if version >= 3:
+                 avgCost = self.readDouble()
+             self.eWrapper().position(account, contract, pos, avgCost)
+-        elif msgId==self.POSITION_END:
++        elif msgId == self.POSITION_END:
+             version = self.readInt()
+             self.eWrapper().positionEnd()
+-        elif msgId==self.ACCOUNT_SUMMARY:
++        elif msgId == self.ACCOUNT_SUMMARY:
+             version = self.readInt()
+             reqId = self.readInt()
+             account = self.readStr()
+@@ -189,7 +187,7 @@
+             value = self.readStr()
+             currency = self.readStr()
+             self.eWrapper().accountSummary(reqId, account, tag, value, currency)
+-        elif msgId==self.ACCOUNT_SUMMARY_END:
++        elif msgId == self.ACCOUNT_SUMMARY_END:
+             version = self.readInt()
+             reqId = self.readInt()
+             self.eWrapper().accountSummaryEnd(reqId)
+@@ -212,7 +210,7 @@
+             if version >= 6 or (tickType == TickType.MODEL_OPTION):
+                 #  introduced in version == 5
+                 optPrice = self.readDouble()
+-                if optPrice < 0:    #  -1 is the "not yet computed" indicator
++                if optPrice < 0:  #  -1 is the "not yet computed" indicator
+                     optPrice = Double.MAX_VALUE
+                 pvDividend = self.readDouble()
+                 if pvDividend < 0:  #  -1 is the "not yet computed" indicator
+@@ -222,15 +220,26 @@
+                 if abs(gamma) > 1:  #  -2 is the "not yet computed" indicator
+                     gamma = Double.MAX_VALUE
+                 vega = self.readDouble()
+-                if abs(vega) > 1:   #  -2 is the "not yet computed" indicator
++                if abs(vega) > 1:  #  -2 is the "not yet computed" indicator
+                     vega = Double.MAX_VALUE
+                 theta = self.readDouble()
+                 if abs(theta) > 1:  #  -2 is the "not yet computed" indicator
+                     theta = Double.MAX_VALUE
+                 undPrice = self.readDouble()
+-                if undPrice < 0:    #  -1 is the "not yet computed" indicator
++                if undPrice < 0:  #  -1 is the "not yet computed" indicator
+                     undPrice = Double.MAX_VALUE
+-            self.eWrapper().tickOptionComputation(tickerId, tickType, impliedVol, delta, optPrice, pvDividend, gamma, vega, theta, undPrice)
++            self.eWrapper().tickOptionComputation(
++                tickerId,
++                tickType,
++                impliedVol,
++                delta,
++                optPrice,
++                pvDividend,
++                gamma,
++                vega,
++                theta,
++                undPrice,
++            )
+         elif msgId == self.TICK_GENERIC:
+             version = self.readInt()
+             tickerId = self.readInt()
+@@ -254,7 +263,17 @@
+             futureExpiry = self.readStr()
+             dividendImpact = self.readDouble()
+             dividendsToExpiry = self.readDouble()
+-            self.eWrapper().tickEFP(tickerId, tickType, basisPoints, formattedBasisPoints, impliedFuturesPrice, holdDays, futureExpiry, dividendImpact, dividendsToExpiry)
++            self.eWrapper().tickEFP(
++                tickerId,
++                tickType,
++                basisPoints,
++                formattedBasisPoints,
++                impliedFuturesPrice,
++                holdDays,
++                futureExpiry,
++                dividendImpact,
++                dividendsToExpiry,
++            )
+         elif msgId == self.ORDER_STATUS:
+             version = self.readInt()
+             id = self.readInt()
+@@ -277,7 +296,18 @@
+             whyHeld = None
+             if version >= 6:
+                 whyHeld = self.readStr()
+-            self.eWrapper().orderStatus(id, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld)
++            self.eWrapper().orderStatus(
++                id,
++                status,
++                filled,
++                remaining,
++                avgFillPrice,
++                permId,
++                parentId,
++                lastFillPrice,
++                clientId,
++                whyHeld,
++            )
+         elif msgId == self.ACCT_VALUE:
+             version = self.readInt()
+             key = self.readStr()
+@@ -320,7 +350,16 @@
+                 accountName = self.readStr()
+             if version == 6 and self.m_parent.serverVersion() == 39:
+                 contract.m_primaryExch = self.readStr()
+-            self.eWrapper().updatePortfolio(contract, position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName)
++            self.eWrapper().updatePortfolio(
++                contract,
++                position,
++                marketPrice,
++                marketValue,
++                averageCost,
++                unrealizedPNL,
++                realizedPNL,
++                accountName,
++            )
+         elif msgId == self.ACCT_UPDATE_TIME:
+             version = self.readInt()
+             timeStamp = self.readStr()
+@@ -382,7 +421,7 @@
+                 order.m_permId = self.readInt()
+                 if version < 18:
+                     #  will never happen
+-                    #  order.m_ignoreRth = 
++                    #  order.m_ignoreRth =
+                     self.readBoolFromInt()
+                 else:
+                     order.m_outsideRth = self.readBoolFromInt()
+@@ -419,7 +458,7 @@
+                 order.m_displaySize = self.readInt()
+                 if version < 18:
+                     #  will never happen
+-                    #  order.m_rthOnly = 
++                    #  order.m_rthOnly =
+                     self.readBoolFromInt()
+                 order.m_blockOrder = self.readBoolFromInt()
+                 order.m_sweepToFill = self.readBoolFromInt()
+@@ -437,17 +476,23 @@
+                 order.m_volatilityType = self.readInt()
+                 if version == 11:
+                     receivedInt = self.readInt()
+-                    order.m_deltaNeutralOrderType = ("NONE" if (receivedInt == 0) else "MKT")
++                    order.m_deltaNeutralOrderType = (
++                        "NONE" if (receivedInt == 0) else "MKT"
++                    )
+                 else:
+                     #  version 12 and up
+                     order.m_deltaNeutralOrderType = self.readStr()
+                     order.m_deltaNeutralAuxPrice = self.readDoubleMax()
+-                    if version >= 27 and not Util.StringIsEmpty(order.m_deltaNeutralOrderType):
++                    if version >= 27 and not Util.StringIsEmpty(
++                        order.m_deltaNeutralOrderType
++                    ):
+                         order.m_deltaNeutralConId = self.readInt()
+                         order.m_deltaNeutralSettlingFirm = self.readStr()
+                         order.m_deltaNeutralClearingAccount = self.readStr()
+                         order.m_deltaNeutralClearingIntent = self.readStr()
+-                    if version >= 31 and not Util.StringIsEmpty(order.m_deltaNeutralOrderType):
++                    if version >= 31 and not Util.StringIsEmpty(
++                        order.m_deltaNeutralOrderType
++                    ):
+                         order.m_deltaNeutralOpenClose = self.readStr()
+                         order.m_deltaNeutralShortSale = self.readBoolFromInt()
+                         order.m_deltaNeutralShortSaleSlot = self.readInt()
+@@ -482,7 +527,7 @@
+                         comboLeg.m_exemptCode = self.readInt()
+                         contract.m_comboLegs.append(comboLeg)
+                         i += 1
+-                orderComboLegsCount = self.readInt() 
++                orderComboLegsCount = self.readInt()
+                 if orderComboLegsCount > 0:
+                     order.m_orderComboLegs = []
+                     i = 0
+@@ -507,11 +552,15 @@
+                     order.m_scaleInitLevelSize = self.readIntMax()
+                     order.m_scaleSubsLevelSize = self.readIntMax()
+                 else:
+-                    #  int notSuppScaleNumComponents = 
++                    #  int notSuppScaleNumComponents =
+                     self.readIntMax()
+                     order.m_scaleInitLevelSize = self.readIntMax()
+                 order.m_scalePriceIncrement = self.readDoubleMax()
+-            if version >= 28 and order.m_scalePriceIncrement > 0.0 and order.m_scalePriceIncrement != Double.MAX_VALUE:
++            if (
++                version >= 28
++                and order.m_scalePriceIncrement > 0.0
++                and order.m_scalePriceIncrement != Double.MAX_VALUE
++            ):
+                 order.m_scalePriceAdjustValue = self.readDoubleMax()
+                 order.m_scalePriceAdjustInterval = self.readIntMax()
+                 order.m_scaleProfitOffset = self.readDoubleMax()
+@@ -593,7 +642,9 @@
+                 legsStr = None
+                 if version >= 2:
+                     legsStr = self.readStr()
+-                self.eWrapper().scannerData(tickerId, rank, contract, distance, benchmark, projection, legsStr)
++                self.eWrapper().scannerData(
++                    tickerId, rank, contract, distance, benchmark, projection, legsStr
++                )
+                 ctr += 1
+             self.eWrapper().scannerDataEnd(tickerId)
+         elif msgId == self.CONTRACT_DATA:
+@@ -760,14 +811,18 @@
+             side = self.readInt()
+             price = self.readDouble()
+             size = self.readInt()
+-            self.eWrapper().updateMktDepthL2(id, position, marketMaker, operation, side, price, size)
++            self.eWrapper().updateMktDepthL2(
++                id, position, marketMaker, operation, side, price, size
++            )
+         elif msgId == self.NEWS_BULLETINS:
+             version = self.readInt()
+             newsMsgId = self.readInt()
+             newsMsgType = self.readInt()
+             newsMessage = self.readStr()
+             originatingExch = self.readStr()
+-            self.eWrapper().updateNewsBulletin(newsMsgId, newsMsgType, newsMessage, originatingExch)
++            self.eWrapper().updateNewsBulletin(
++                newsMsgId, newsMsgType, newsMessage, originatingExch
++            )
+         elif msgId == self.MANAGED_ACCTS:
+             version = self.readInt()
+             accountsList = self.readStr()
+@@ -801,10 +856,23 @@
+                 barCount = -1
+                 if version >= 3:
+                     barCount = self.readInt()
+-                self.eWrapper().historicalData(reqId, date, open, high, low, close, volume, barCount, WAP, Boolean.valueOf(hasGaps).booleanValue())
++                self.eWrapper().historicalData(
++                    reqId,
++                    date,
++                    open,
++                    high,
++                    low,
++                    close,
++                    volume,
++                    barCount,
++                    WAP,
++                    Boolean.valueOf(hasGaps).booleanValue(),
++                )
+                 ctr += 1
+             #  send end of dataset marker
+-            self.eWrapper().historicalData(reqId, completedIndicator, -1, -1, -1, -1, -1, -1, -1, False)
++            self.eWrapper().historicalData(
++                reqId, completedIndicator, -1, -1, -1, -1, -1, -1, -1, False
++            )
+         elif msgId == self.SCANNER_PARAMETERS:
+             version = self.readInt()
+             xml = self.readStr()
+@@ -826,7 +894,9 @@
+             volume = self.readLong()
+             wap = self.readDouble()
+             count = self.readInt()
+-            self.eWrapper().realtimeBar(reqId, time, open, high, low, close, volume, wap, count)
++            self.eWrapper().realtimeBar(
++                reqId, time, open, high, low, close, volume, wap, count
++            )
+         elif msgId == self.FUNDAMENTAL_DATA:
+             # int version =
+             self.readInt()
+@@ -884,49 +954,55 @@
+             commissionReport.m_yieldRedemptionDate = self.readInt()
+             self.eWrapper().commissionReport(commissionReport)
+         else:
+-            self.m_parent.error(EClientErrors.NO_VALID_ID, EClientErrors.UNKNOWN_ID.code(), EClientErrors.UNKNOWN_ID.msg())
++            self.m_parent.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UNKNOWN_ID.code(),
++                EClientErrors.UNKNOWN_ID.msg(),
++            )
+             return False
+         return True
+ 
+     def readStr(self):
+-        """ generated source for method readStr """
+-        buf = StringBuffer()
++        buf = StringIO()
+         while True:
+             c = self.m_dis.readByte()
+             if c == 0:
+                 break
+-            buf.append(c)
++            buf.write(chr(c))
+ 
+-        strval = str(buf)
++        strval = buf.getvalue()
+         return None if 0 == len(strval) else strval
+ 
+     def readBoolFromInt(self):
+-        """ generated source for method readBoolFromInt """
++        """generated source for method readBoolFromInt"""
+         strval = self.readStr()
+-        return False if strval is None else (Integer.parseInt(strval) != 0)
++        return False if strval is None else (int(strval) != 0)
+ 
+     def readInt(self):
+-        """ generated source for method readInt """
++        """generated source for method readInt"""
+         strval = self.readStr()
+-        return 0 if strval is None else Integer.parseInt(strval)
++        return 0 if strval is None else int(strval)
+ 
+     def readIntMax(self):
+-        """ generated source for method readIntMax """
++        """generated source for method readIntMax"""
+         strval = self.readStr()
+-        return Integer.MAX_VALUE if (strval is None or 0 == len(strval)) else Integer.parseInt(strval)
++        return (
++            Integer.MAX_VALUE if (strval is None or 0 == len(strval)) else int(strval)
++        )
+ 
+     def readLong(self):
+-        """ generated source for method readLong """
++        """generated source for method readLong"""
+         strval = self.readStr()
+-        return 0l if strval is None else Long.parseLong(strval)
++        return 0 if strval is None else int(strval)
+ 
+     def readDouble(self):
+-        """ generated source for method readDouble """
++        """generated source for method readDouble"""
+         strval = self.readStr()
+-        return 0 if strval is None else Double.parseDouble(strval)
++        return 0 if strval is None else float(strval)
+ 
+     def readDoubleMax(self):
+-        """ generated source for method readDoubleMax """
++        """generated source for method readDoubleMax"""
+         strval = self.readStr()
+-        return Double.MAX_VALUE if (strval is None or 0 == len(strval)) else Double.parseDouble(strval)
+-
++        return (
++            Double.MAX_VALUE if (strval is None or 0 == len(strval)) else float(strval)
++        )

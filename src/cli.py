@@ -18,6 +18,18 @@ from src.utils.references import (
     ibpy2_original_init_file,
     ibpy2_modified_init_file,
     ibpy2_init_patch_file,
+    ibpy2_modified_overloading_file,
+    ibpy2_original_overloading_file,
+    ibpy2_overloading_patch_file,
+    ibpy2_overloading_filepath,
+    ibpy2_eclient_socket_filepath,
+    ibpy2_original_eclient_socket,
+    ibpy2_modified_eclient_socket,
+    ibpy2_eclient_socket_patch,
+    ibpy2_ereader_filepath,
+    ibpy2_original_ereader,
+    ibpy2_modified_ereader,
+    ibpy2_ereader_patch,
 )
 
 print("patching IbPy2 __init__.py ...")
@@ -34,6 +46,32 @@ generate_patch(
     patch=dispatcher_patch_file,
 )
 apply_patch(target=ibpy2_dispatcher_filepath, patch_content=dispatcher_patch_file)
+print("patching IbPy2 overloading.py ...")
+generate_patch(
+    original=ibpy2_original_overloading_file,
+    corrected=ibpy2_modified_overloading_file,
+    patch=ibpy2_overloading_patch_file,
+)
+apply_patch(
+    target=ibpy2_overloading_filepath, patch_content=ibpy2_overloading_patch_file
+)
+print("patching IbPy2 EClientSocket.py ...")
+generate_patch(
+    original=ibpy2_original_eclient_socket,
+    corrected=ibpy2_modified_eclient_socket,
+    patch=ibpy2_eclient_socket_patch,
+)
+apply_patch(
+    target=ibpy2_eclient_socket_filepath, patch_content=ibpy2_eclient_socket_patch
+)
+
+print("patching IbPy2 EReader.py ...")
+generate_patch(
+    original=ibpy2_original_ereader,
+    corrected=ibpy2_modified_ereader,
+    patch=ibpy2_ereader_patch,
+)
+apply_patch(target=ibpy2_ereader_filepath, patch_content=ibpy2_ereader_patch)
 
 from datetime import datetime
 from dotenv import load_dotenv

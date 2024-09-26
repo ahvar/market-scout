@@ -43,6 +43,63 @@ ibpy2_init_filepath = (
     / "__init__.py"
 )
 
+# IbPy2 overloading.py patches
+ibpy2_original_overloading_file = (
+    project_root / "src" / "patch" / "ibpy2_original_overloading.py"
+)
+ibpy2_modified_overloading_file = (
+    project_root / "src" / "patch" / "ibpy2_modified_overloading.py"
+)
+ibpy2_overloading_patch_file = (
+    project_root / "src" / "patch" / "ibpy2_overloading.patch"
+)
+ibpy2_overloading_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "lib"
+    / "overloading.py"
+)
+
+# IbPy2 EClientSocket.py patches
+ibpy2_original_eclient_socket = (
+    project_root / "src" / "patch" / "ibpy2_original_eclient_socket.py"
+)
+ibpy2_modified_eclient_socket = (
+    project_root / "src" / "patch" / "ibpy2_modified_eclient_socket.py"
+)
+ibpy2_eclient_socket_patch = (
+    project_root / "src" / "patch" / "ibpy2_eclient_socket.patch"
+)
+ibpy2_eclient_socket_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "ext"
+    / "EClientSocket.py"
+)
+
+# IbPy2 EReader.py patches
+ibpy2_original_ereader = project_root / "src" / "patch" / "ibpy2_original_ereader.py"
+ibpy2_modified_ereader = project_root / "src" / "patch" / "ibpy2_modified_ereader.py"
+ibpy2_ereader_patch = project_root / "src" / "patch" / "ibpy2_ereader.patch"
+ibpy2_ereader_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "ext"
+    / "EReader.py"
+)
+
 is_test_mode = os.getenv("TEST_MODE", "False").lower() == "true"
 BUSINESS_DAYS_IN_YEAR = 256.0
 backoff_params = {
