@@ -2,7 +2,7 @@ import backtrader as bt
 from datetime import datetime
 from pprint import PrettyPrinter
 from src.models.starter import Starter
-from broker.broker import IBAsyncBroker
+from src.broker.broker import IBAsyncBroker
 from ib_async.ib import IB
 from ib_async import util
 from ib_async.contract import Forex
@@ -40,7 +40,7 @@ def print_some_stuff():
 
 if __name__ == "__main__":
     ib, bars = get_ib_and_price_data()
-    # df = util.df(bars)
+    df = util.df(bars)
     df.set_index("date", inplace=True)
     cerebro = bt.Cerebro()
     pp.pprint(f"Data: {pp.pprint(df)}")

@@ -18,9 +18,11 @@ NOTE | Vectorized Data:
 """
 
 import numpy as np
+import pandas as pd
 import backtrader as bt
 from backtrader.strategy import Strategy
 from pandas import DataFrame
+from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Union
 from ib_async.contract import (

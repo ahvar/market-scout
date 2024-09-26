@@ -1,15 +1,130 @@
 import backoff
+import random
 import os
+import pandas as pd
 from dataclasses import dataclass
+from pathlib import Path
 from enum import Enum
 
-is_test_mode = os.getenv("TEST_MODE", "False").lower() == "true"
 
+project_root = Path(__file__).resolve().parent.parent.parent
+
+# IbPy2 dispatcher.py patches
+original_dispatcher_file = (
+    project_root / "src" / "patch" / "ibpy2_original_dispatcher.py"
+)
+modified_dispatcher_file = (
+    project_root / "src" / "patch" / "ibpy2_modified_dispatcher.py"
+)
+dispatcher_patch_file = project_root / "src" / "patch" / "ibpy2_dispatcher.patch"
+ibpy2_dispatcher_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "opt"
+    / "dispatcher.py"
+)
+
+# IbPy2 __init__.py patches
+ibpy2_original_init_file = project_root / "src" / "patch" / "ibpy2_original_init.py"
+ibpy2_modified_init_file = project_root / "src" / "patch" / "ibpy2_modified_init.py"
+ibpy2_init_patch_file = project_root / "src" / "patch" / "fix_syntax_error.patch"
+ibpy2_init_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "lib"
+    / "__init__.py"
+)
+
+# IbPy2 overloading.py patches
+ibpy2_original_overloading_file = (
+    project_root / "src" / "patch" / "ibpy2_original_overloading.py"
+)
+ibpy2_modified_overloading_file = (
+    project_root / "src" / "patch" / "ibpy2_modified_overloading.py"
+)
+ibpy2_overloading_patch_file = (
+    project_root / "src" / "patch" / "ibpy2_overloading.patch"
+)
+ibpy2_overloading_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "lib"
+    / "overloading.py"
+)
+
+# IbPy2 EClientSocket.py patches
+ibpy2_original_eclient_socket = (
+    project_root / "src" / "patch" / "ibpy2_original_eclient_socket.py"
+)
+ibpy2_modified_eclient_socket = (
+    project_root / "src" / "patch" / "ibpy2_modified_eclient_socket.py"
+)
+ibpy2_eclient_socket_patch = (
+    project_root / "src" / "patch" / "ibpy2_eclient_socket.patch"
+)
+ibpy2_eclient_socket_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "ext"
+    / "EClientSocket.py"
+)
+
+# IbPy2 EReader.py patches
+ibpy2_original_ereader = project_root / "src" / "patch" / "ibpy2_original_ereader.py"
+ibpy2_modified_ereader = project_root / "src" / "patch" / "ibpy2_modified_ereader.py"
+ibpy2_ereader_patch = project_root / "src" / "patch" / "ibpy2_ereader.patch"
+ibpy2_ereader_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "ext"
+    / "EReader.py"
+)
+# IbPy2 message.py patches
+ibpy2_original_message = project_root / "src" / "patch" / "ibpy2_original_message.py"
+ibpy2_modified_message = project_root / "src" / "patch" / "ibpy2_modified_message.py"
+ibpy2_message_patch = project_root / "src" / "patch" / "ibpy2_message.patch"
+ibpy2_message_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "opt"
+    / "message.py"
+)
+
+is_test_mode = os.getenv("TEST_MODE", "False").lower() == "true"
+BUSINESS_DAYS_IN_YEAR = 256.0
 backoff_params = {
     "max_tries": 1 if is_test_mode else 8,
     "max_time": 300,
     "jitter": backoff.full_jitter,
 }
+
+
+def resample_prices_to_business_day_index(prices: pd.Series) -> pd.Series:
+    return prices.resample("1B").last()
 
 
 class DateTimeType(Enum):
@@ -58,6 +173,40 @@ bar_sizes = [
 ]
 duration_units = [("S", "Seconds"), ("D", "Days"), ("W", "Weeks"), ("M", "Months")]
 report_types = ["ReportsFinStatements", "ReportsOwnership", "ReportsFinSummary"]
+default_tickers = ["AAPL", "TSLA", "MSFT"]
+
+
+def get_ticker() -> str:
+    """
+    Get a random ticker symbol
+    """
+    return random.choice(default_tickers)
+
+
+def get_duration_unit() -> str:
+    """
+    Get a random duration quantity and unit
+    """
+    qty = 0
+    unit = random.choice(duration_units)[0]
+    if unit == "S":
+        qty = random.randint(1, 604800)  # seconds in 1 week
+    elif unit == "D":
+        qty = random.randint(1, 365)  # days in 1 year
+    elif unit == "W":
+        qty = random.randint(1, 104)  # weeks in 2 years
+    elif unit == "M":
+        qty = random.randint(1, 24)  # months in 2 years
+    else:
+        raise ValueError(f"Invalid duration unit: {unit}")
+    return f"{qty} {unit}"
+
+
+def get_bar_size() -> str:
+    """
+    Get a random bar size
+    """
+    return random.choice(bar_sizes)
 
 
 @dataclass
