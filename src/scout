@@ -9,13 +9,17 @@ import typer
 import logging
 from rich import print as rprint
 from src.utils.references import __Application__, __version__, IB_API_LOGGER_NAME
-from src.utils.cli.cli import init_logging, version_callback, set_error_and_exit
-from src.app import app
+from src.utils.command.command_utils import (
+    init_logging,
+    version_callback,
+    set_error_and_exit,
+)
+from src.cli import cli_app
 
 logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
-@app.callback(invoke_without_command=True)
+@cli_app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
@@ -50,7 +54,7 @@ if __name__ == "__main__":
     try:
         app_log = init_logging(logging.DEBUG)
         app_log.log_application_start()
-        app()
+        cli_app()
     except Exception as e:
         logger.error("An error occurred: %s", e)
         set_error_and_exit(e)
