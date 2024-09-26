@@ -1,5 +1,5 @@
 --- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_eclient_socket.py	2024-09-26 09:56:37.000000000 -0500
-+++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_eclient_socket.py	2024-09-26 09:57:00.000000000 -0500
++++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_eclient_socket.py	2024-09-26 10:37:40.000000000 -0500
 @@ -293,10 +293,10 @@
          self.m_reader = self.createReader(self, DataInputStream(socket.getInputStream()))
          #  check server version
@@ -13,3 +13,12 @@
          if self.m_serverVersion < self.SERVER_VERSION:
              self.eDisconnect()
              self.m_anyWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
+@@ -1759,7 +1759,7 @@
+         """ generated source for method send_2 """
+         self.send(str(val))
+ 
+-    @send.register(object, long)
++    @send.register(object, int)
+     def send_3(self, val):
+         """ generated source for method send_3 """
+         self.send(str(val))

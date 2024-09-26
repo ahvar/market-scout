@@ -1,23 +1,17 @@
 ***************
-*** 293,302 ****
-          self.m_reader = self.createReader(self, DataInputStream(socket.getInputStream()))
-          #  check server version
-          self.m_serverVersion = self.m_reader.readInt()
--         print "Server Version: %d" % self.m_serverVersion
-          if self.m_serverVersion >= 20:
-              self.m_TwsTime = self.m_reader.readStr()
--             print "TWS Time at connection:" + self.m_TwsTime
-          if self.m_serverVersion < self.SERVER_VERSION:
-              self.eDisconnect()
-              self.m_anyWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
---- 293,302 ----
-          self.m_reader = self.createReader(self, DataInputStream(socket.getInputStream()))
-          #  check server version
-          self.m_serverVersion = self.m_reader.readInt()
-+         print("Server Version: %d" % self.m_serverVersion)
-          if self.m_serverVersion >= 20:
-              self.m_TwsTime = self.m_reader.readStr()
-+             print ("TWS Time at connection:" + self.m_TwsTime)
-          if self.m_serverVersion < self.SERVER_VERSION:
-              self.eDisconnect()
-              self.m_anyWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
+*** 48,54 ****
+  class EWrapperAccumulator(SignatureAccumulator):
+      def getSignatures(self):
+          for name, args in self.signatures:
+-             if match("(?!((?i)error.*))", name):
+                  yield (name, args)
+  
+  
+--- 48,54 ----
+  class EWrapperAccumulator(SignatureAccumulator):
+      def getSignatures(self):
+          for name, args in self.signatures:
++             if match("(?i)(?!error.*)", name):
+                  yield (name, args)
+  
+  

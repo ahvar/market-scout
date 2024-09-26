@@ -94,6 +94,10 @@ def validate_end_date(ctx: Context, end: str) -> datetime:
     :params end: the end of the target time period
     :return end: the end of the target time period
     """
+    if end is None:
+        logger.debug("No end date provided, default to previous day")
+        now_minus_one_day = datetime.now() - timedelta(days=1)
+        return convert_to_utc(now_minus_one_day.date(), now_minus_one_day.time())
     try:
         logger.debug("Validate end date...")
         return parse_datetime(end, date_formats, DateTimeType.DATE)

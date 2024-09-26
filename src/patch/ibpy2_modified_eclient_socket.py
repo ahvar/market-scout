@@ -1759,7 +1759,7 @@ class EClientSocket(object):
         """ generated source for method send_2 """
         self.send(str(val))
 
-    @send.register(object, long)
+    @send.register(object, int)
     def send_3(self, val):
         """ generated source for method send_3 """
         self.send(str(val))

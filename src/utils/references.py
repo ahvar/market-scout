@@ -99,6 +99,20 @@ ibpy2_ereader_filepath = (
     / "ext"
     / "EReader.py"
 )
+# IbPy2 message.py patches
+ibpy2_original_message = project_root / "src" / "patch" / "ibpy2_original_message.py"
+ibpy2_modified_message = project_root / "src" / "patch" / "ibpy2_modified_message.py"
+ibpy2_message_patch = project_root / "src" / "patch" / "ibpy2_message.patch"
+ibpy2_message_filepath = (
+    project_root
+    / "envs"
+    / "lib"
+    / "python3.11"
+    / "site-packages"
+    / "ib"
+    / "opt"
+    / "message.py"
+)
 
 is_test_mode = os.getenv("TEST_MODE", "False").lower() == "true"
 BUSINESS_DAYS_IN_YEAR = 256.0
@@ -159,6 +173,14 @@ bar_sizes = [
 ]
 duration_units = [("S", "Seconds"), ("D", "Days"), ("W", "Weeks"), ("M", "Months")]
 report_types = ["ReportsFinStatements", "ReportsOwnership", "ReportsFinSummary"]
+default_tickers = ["AAPL", "TSLA", "MSFT"]
+
+
+def get_ticker() -> str:
+    """
+    Get a random ticker symbol
+    """
+    return random.choice(default_tickers)
 
 
 def get_duration_unit() -> str:
