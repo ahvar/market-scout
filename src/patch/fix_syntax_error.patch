@@ -1,0 +1,429 @@
+--- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_init.py	2024-09-23 19:02:28.000000000 -0500
++++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_init.py	2024-09-24 15:47:56.000000000 -0500
+@@ -16,26 +16,26 @@
+ import struct
+ import sys
+ 
++
+ def toTypeName(value):
+-    return '%s%s' % (value[0].upper(), value[1:])
++    return "%s%s" % (value[0].upper(), value[1:])
+ 
+ 
+ def maybeName(obj):
+-    """ Returns an object's __name__ attribute or it's string representation.
++    """Returns an object's __name__ attribute or it's string representation.
+ 
+     @param obj any object
+     @return obj name or string representation
+     """
+     try:
+         return obj.__name__
+-    except (AttributeError, ):
++    except AttributeError as ae:
+         return str(obj)
+ 
+ 
+ class classmethod_(classmethod):
+-    """ Classmethod that provides attribute delegation.
++    """Classmethod that provides attribute delegation."""
+ 
+-    """
+     def __init__(self, func):
+         classmethod.__init__(self, func)
+         self.func = func
+@@ -45,13 +45,14 @@
+ 
+ 
+ def synchronized(lock):
+-    """ Synchronization decorator.
++    """Synchronization decorator.
+ 
+     from http://wiki.python.org/moin/PythonDecoratorLibrary
+ 
+     @param lock Lock or RLock instance
+     @return decorator that provides automatic locking
+     """
++
+     def wrapper(func):
+         @functools.wraps(func)
+         def inner(*args, **kwds):
+@@ -60,23 +61,24 @@
+                 return func(*args, **kwds)
+             finally:
+                 lock.release()
++
+         return inner
++
+     return wrapper
+ 
+ 
+ class Boolean(object):
+-    """ Partial implementation of Java Boolean type.
++    """Partial implementation of Java Boolean type."""
+ 
+-    """
+     def __init__(self, value):
+-        """ Constructor.
++        """Constructor.
+ 
+         @param value bool instance, True or False
+         """
+         self.value = value
+ 
+     def booleanValue(self):
+-        """ The value of this instance (a bool).
++        """The value of this instance (a bool).
+ 
+         @return True or False
+         """
+@@ -84,33 +86,33 @@
+ 
+     @classmethod
+     def valueOf(cls, text):
+-        """ Creates an instance of this class with a bool value.
++        """Creates an instance of this class with a bool value.
+ 
+         @param cls this class
+         @param text string
+         @return instance of cls
+         """
+-        value = str(text).lower() == 'true'
++        value = str(text).lower() == "true"
+         return cls(value)
+ 
+ 
+ class Cloneable(object):
+-    """ Stub for the Cloneable Java interface.
++    """Stub for the Cloneable Java interface.
+ 
+     Some of the translated code implements the Java Cloneable
+     interface, but its methods are never used.  We provide this class
+     for sub typing, and will implement methods as needed later.
+     """
++
+     def clone(self):
+         return copy.copy(self)
+ 
+ 
+ class DataInputStream(object):
+-    """ Partial implementation of the Java DataInputStream type.
++    """Partial implementation of the Java DataInputStream type."""
+ 
+-    """
+     def __init__(self, stream):
+-        """ Constructor.
++        """Constructor.
+ 
+         @param stream any object with recv method
+         """
+@@ -118,26 +120,25 @@
+         self.recv = stream.recv
+ 
+     def readByte(self, unpack=struct.unpack):
+-        """ Reads a byte from the contained stream.
++        """Reads a byte from the contained stream.
+ 
+         @return string read from stream
+         """
+-        return unpack('!b', self.recv(1))[0]
++        return unpack("!b", self.recv(1))[0]
+ 
+ 
+ class DataOutputStream(object):
+-    """ Partial implementation of the Java DataOutputStream type
++    """Partial implementation of the Java DataOutputStream type"""
+ 
+-    """
+     def __init__(self, stream):
+-        """ Constructor.
++        """Constructor.
+ 
+         @param stream any object with send method
+         """
+         self.send = stream.send
+ 
+-    def write(self, data, pack=struct.pack, eol=struct.pack('!b', 0)):
+-        """ Writes data to the contained stream.
++    def write(self, data, pack=struct.pack, eol=struct.pack("!b", 0)):
++        """Writes data to the contained stream.
+ 
+         @param data string to send, or 0
+         @return None
+@@ -148,21 +149,20 @@
+         else:
+             for char in data:
+                 if sys.version_info[0] > 2:
+-                    char = char.encode('utf-8')
+-                send(pack('!c', char))
++                    char = char.encode("utf-8")
++                send(pack("!c", char))
+ 
+ 
+ class Double(float):
+-    """ Partial implementation of Java Double type.
++    """Partial implementation of Java Double type."""
+ 
+-    """
+     ##
+     # sentinel value used by the socket writer
+-    MAX_VALUE = sys.maxint
++    MAX_VALUE = sys.maxsize
+ 
+     @staticmethod
+     def parseDouble(text):
+-        """ Float double (float) from string.
++        """Float double (float) from string.
+ 
+         @param text value to parse
+         @return float instance
+@@ -171,16 +171,15 @@
+ 
+ 
+ class Integer(int):
+-    """ Partial implementation of Java Integer type.
++    """Partial implementation of Java Integer type."""
+ 
+-    """
+     ##
+     # sentinel value used by the socket writer
+-    MAX_VALUE = sys.maxint
++    MAX_VALUE = sys.maxsize
+ 
+     @staticmethod
+     def parseInt(text):
+-        """ Int from string.
++        """Int from string.
+ 
+         @param text value to parse
+         @return int instance
+@@ -189,7 +188,7 @@
+ 
+     @staticmethod
+     def parseLong(text):
+-        """ Long from string.
++        """Long from string.
+ 
+         @param text value to parse
+         @return long instance
+@@ -204,11 +203,10 @@
+ 
+ 
+ class Socket(socket.socket):
+-    """ Partial implementation of the Java Socket type.
++    """Partial implementation of the Java Socket type."""
+ 
+-    """
+     def __init__(self, host, port):
+-        """ Constructor; attempts connection immediately.
++        """Constructor; attempts connection immediately.
+ 
+         @param host hostname as string
+         @param port port number as integer
+@@ -217,17 +215,13 @@
+         self.connect((host, port))
+ 
+     def getInputStream(self):
+-        """ Returns this instance, which has a send method.
+-
+-        """
++        """Returns this instance, which has a send method."""
+         return self
+ 
+     def getOutputStream(self):
+-        """ Returns this instance, which has a recv method.
+-
+-        """
++        """Returns this instance, which has a recv method."""
+         return self
+-    
++
+     def disconnect(self):
+         self.shutdown(socket.SHUT_RDWR)
+         self.close()
+@@ -236,119 +230,110 @@
+         try:
+             throwaway = self.getpeername()
+             return True
+-        except (socket.error, ), ex:
++        except socket.error as ex:
+             return False
+-        
++
+ 
+ class StringBuffer(list):
+-    """ Partial implementation of the Java StringBuffer type
++    """Partial implementation of the Java StringBuffer type
+ 
+     Translated code uses instances of this type to build up strings.
+     The list base type provides the append method.
+     """
++
+     def __str__(self, join=str.join, chr=chr):
+-        """ the string value of this instance
++        """the string value of this instance
+ 
+         @return string from characters contained in this instance
+         """
+-        return join('', [chr(v) for v in self])
++        return join("", [chr(v) for v in self])
+ 
+ 
+-if 'qt' in sys.modules:
++if "qt" in sys.modules:
+     from qt import QThread
+ 
+     class ThreadType(QThread):
+-        """ Partial implementation of Java Thread type, based on Qt3 QThread.
++        """Partial implementation of Java Thread type, based on Qt3 QThread."""
+ 
+-        """
+         def __init__(self, name):
+-            """ Constructor.
++            """Constructor.
+ 
+             @param name ignored
+             """
+             QThread.__init__(self)
+ 
+         def interrupt(self):
+-            """ Stop this thread (by call to terminate).
+-
+-            """
++            """Stop this thread (by call to terminate)."""
+             return self.terminate()
+ 
+         def isInterrupted(self):
+-            """ Check state of thread.
++            """Check state of thread.
+ 
+             @return True if thread is finished
+             """
+             return self.finished()
+ 
+         def setDaemon(self, value):
+-            """ No-op.
++            """No-op.
+ 
+             @param value ignored
+             @return None
+             """
+ 
+         def setName(self, value):
+-            """ No-op.
++            """No-op.
+ 
+             @param value ignored
+             @return None
+             """
+ 
+-
+-
+-elif 'PyQt4' in sys.modules:
++elif "PyQt4" in sys.modules:
+     from PyQt4.QtCore import QThread
+ 
+     class ThreadType(QThread):
+-        """ Partial implementation of Java Thread type, based on Qt4 QThread.
++        """Partial implementation of Java Thread type, based on Qt4 QThread."""
+ 
+-        """
+         def __init__(self, name):
+-            """ Constructor.
++            """Constructor.
+ 
+             @param name ignored
+             """
+             QThread.__init__(self)
+ 
+         def interrupt(self):
+-            """ stop this thread (by call to exit)
+-
+-            """
++            """stop this thread (by call to exit)"""
+             return self.exit()
+ 
+         def isInterrupted(self):
+-            """ check state of thread
++            """check state of thread
+ 
+             @return True if thread is finished
+             """
+             return self.isFinished()
+ 
+         def setDaemon(self, value):
+-            """ No-op.
++            """No-op.
+ 
+             @param value ignored
+             @return None
+             """
+ 
+         def setName(self, value):
+-            """ sets the name of this QObject
++            """sets the name of this QObject
+ 
+             @param value name of object as string
+             @return None
+             """
+             self.setObjectName(value)
+ 
+-
+ else:
+     import threading
+ 
+     class ThreadType(threading.Thread):
+-        """ Partial implementation of Java Thread type, based on Python Thread.
++        """Partial implementation of Java Thread type, based on Python Thread."""
+ 
+-        """
+         def __init__(self, name):
+-            """ Constructor.
++            """Constructor.
+ 
+             @param name name of this thread
+             """
+@@ -356,13 +341,11 @@
+             self.setDaemon(True)
+ 
+         def interrupt(self):
+-            """ No-op; Python threads are not directly interruptible.
+-
+-            """
++            """No-op; Python threads are not directly interruptible."""
+             return False
+ 
+         def isInterrupted(self):
+-            """ Check state of thread (always False).
++            """Check state of thread (always False).
+ 
+             @return False
+             """
+@@ -370,11 +353,10 @@
+ 
+ 
+ class Thread(ThreadType):
+-    """ Thread parent type, based on available framework
++    """Thread parent type, based on available framework"""
+ 
+-    """
+     def __init__(self, name, parent, dis):
+-        """ Constructor.
++        """Constructor.
+ 
+         @param name name of this thread
+         @param parent ignored
+@@ -382,11 +364,11 @@
+         """
+         ThreadType.__init__(self, name=name)
+ 
+-
+     def term(self):
+         def isInterrupted():
+-            print 'down town'
++            print("down town")
+             return True
++
+         self.isInterrupted = isInterrupted
+         self.m_dis.stream.shutdown(socket.SHUT_RDWR)
+         self.m_dis.stream.close()
