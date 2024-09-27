@@ -1,5 +1,5 @@
---- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_ereader.py	2024-09-26 10:05:48.000000000 -0500
-+++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_ereader.py	2024-09-26 10:29:29.000000000 -0500
+--- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_ereader.py	2024-09-26 15:15:59.000000000 -0500
++++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_ereader.py	2024-09-26 15:15:59.000000000 -0500
 @@ -6,7 +6,8 @@
  #
  # WARNING: all changes to this file will be lost.

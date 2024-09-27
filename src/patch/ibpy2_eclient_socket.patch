@@ -1,5 +1,5 @@
---- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_eclient_socket.py	2024-09-26 09:56:37.000000000 -0500
-+++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_eclient_socket.py	2024-09-26 10:37:40.000000000 -0500
+--- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_eclient_socket.py	2024-09-26 15:15:59.000000000 -0500
++++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_eclient_socket.py	2024-09-26 15:15:59.000000000 -0500
 @@ -293,10 +293,10 @@
          self.m_reader = self.createReader(self, DataInputStream(socket.getInputStream()))
          #  check server version

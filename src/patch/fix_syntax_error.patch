@@ -1,5 +1,5 @@
---- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_init.py	2024-09-23 19:02:28.000000000 -0500
-+++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_init.py	2024-09-24 15:47:56.000000000 -0500
+--- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_init.py	2024-09-26 15:15:59.000000000 -0500
++++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_init.py	2024-09-26 15:15:59.000000000 -0500
 @@ -16,26 +16,26 @@
  import struct
  import sys

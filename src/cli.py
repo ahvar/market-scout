@@ -93,6 +93,7 @@ import typer
 import random
 import pprint
 import backtrader as bt
+import pandas as pd
 from pprint import PrettyPrinter
 from typing import Optional
 from typing_extensions import Annotated
@@ -154,7 +155,8 @@ def simple_strategy(
     duration: Annotated[
         Optional[str],
         typer.Argument(
-            default_factory=get_duration_unit, help="The duration for the request"
+            default_factory=get_duration_unit,
+            help="The duration for the request",
         ),
     ],
     end_date: Annotated[
@@ -212,33 +214,18 @@ def simple_strategy(
         eurusd_contract = Forex("EURUSD")
         bars = ib.reqHistoricalData(
             eurusd_contract,
-            endDateTime="",
+            endDateTime=end_date,
             durationStr=duration,
             barSizeSetting=bar_size,
             whatToShow="MIDPOINT",
             useRTH=True,
         )
         eurusd_data = util.df(bars)
-        table = Table(title="EURUSD Data")
-        table.add_column("Date", style="cyan", no_wrap=True)
-        table.add_column("Open", style="magenta")
-        table.add_column("High", style="green")
-        table.add_column("Low", style="red")
-        table.add_column("Close", style="blue")
-        table.add_column("Volume", style="yellow")
-        for index, row in eurusd_data.iterrows():
-            table.add_row(
-                str(index),
-                str(row["open"]),
-                str(row["high"]),
-                str(row["low"]),
-                str(row["close"]),
-                str(row["volume"]),
-            )
-        print(table)
+        eurusd_data["date"] = pd.to_datetime(eurusd_data["date"])
+        eurusd_data.set_index("date", inplace=True)
         close_prices = eurusd_data["close"]
         forecast = calc_ewmac_forecast(close_prices, 16, 64)
-
+        ib.disconnect()
     except Exception as e:
         logger.error("An error occurred: %s", e)
         raise Exception(e) from e
