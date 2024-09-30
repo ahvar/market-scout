@@ -5,12 +5,13 @@ Classes for interacting with the IB API.
 # standard library
 import logging
 import collections
+from datetime import datetime
 
 # third-party
 import backtrader as bt
 import pandas as pd
 from backtrader.brokers.ibbroker import IBBroker
-from ib_async.ib import IB
+from ib_async.ib import IB, util
 from ib_async.contract import Stock, Forex
 from ib_async.order import LimitOrder, MarketOrder
 
@@ -35,6 +36,52 @@ from src.broker.ib_api_exception import (
 from src.utils.references import IB_API_LOGGER_NAME
 
 ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
+
+
+def connect_ib(host: str, port: int, client_id: int) -> IB:
+    """
+    Connect to the Interactive Brokers API.
+    :param host: The hostname or IP address of the machine on which the TWS or IB Gateway is running.
+    :param port: The port on which the TWS or IB Gateway is listening.
+    :param client_id: A unique identifier for the client application and used in communication with the TWS or IB Gateway.
+    """
+    ib_api_logger.info("Connecting to the Interactive Brokers API...")
+    ib = IB()
+    ib.connect(host=host, port=port, clientId=client_id)
+    ib_api_logger.info(
+        "Connected to the Interactive Brokers API. \nHost: %s\nPort: %s\nClient_ID: %s",
+        host,
+        port,
+        client_id,
+    )
+    return ib
+
+
+def retrieve_historical_data(
+    symbol: str, duration: str, bar_size: str, end_date: datetime
+) -> pd.DataFrame:
+    """
+    Retrieve historical data from the Interactive Brokers API.
+    :param symbol: The symbol of the asset for which to retrieve historical data.
+    :param duration: The duration of the historical data.
+    :param bar_size: The size of the bars in the historical data.
+    :param end_date: The end date of the historical data
+    """
+    ib = connect_ib(host="127.0.0.1", port=4002, client_id=1)
+    eurusd_contract = Forex(symbol)
+    bars = ib.reqHistoricalData(
+        eurusd_contract,
+        endDateTime=end_date,
+        durationStr=duration,
+        barSizeSetting=bar_size,
+        whatToShow="MIDPOINT",
+        useRTH=True,
+    )
+    eurusd_data = util.df(bars)
+    eurusd_data["date"] = pd.to_datetime(eurusd_data["date"])
+    eurusd_data.set_index("date", inplace=True)
+    ib.disconnect()
+    return eurusd_data
 
 
 class IBAsyncBroker(IBBroker):

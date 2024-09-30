@@ -116,8 +116,7 @@ from src.utils.command.command_utils import (
     set_error_and_exit,
     convert_to_utc,
 )
-from src.broker.broker import IBAsyncBroker
-from src.broker.ib_utils import IBMarketMemory
+from src.broker.broker import retrieve_historical_data
 from src.models.starter import Starter
 from src.models.ewmac import calc_ewmac_forecast
 from src.utils.references import (
@@ -209,23 +208,9 @@ def simple_strategy(
             for handler in logger.handlers:
                 handler.setLevel(logging.INFO)
         print("[bold]Market Scout is starting...[/bold]")
-        ib = IB()
-        ib.connect(host="127.0.0.1", port=4002, clientId=1, timeout=30)
-        eurusd_contract = Forex("EURUSD")
-        bars = ib.reqHistoricalData(
-            eurusd_contract,
-            endDateTime=end_date,
-            durationStr=duration,
-            barSizeSetting=bar_size,
-            whatToShow="MIDPOINT",
-            useRTH=True,
-        )
-        eurusd_data = util.df(bars)
-        eurusd_data["date"] = pd.to_datetime(eurusd_data["date"])
-        eurusd_data.set_index("date", inplace=True)
+        eurusd_data = retrieve_historical_data(ticker, duration, bar_size, end_date)
         close_prices = eurusd_data["close"]
         forecast = calc_ewmac_forecast(close_prices, 16, 64)
-        ib.disconnect()
     except Exception as e:
         logger.error("An error occurred: %s", e)
         raise Exception(e) from e
