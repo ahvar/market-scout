@@ -15,8 +15,12 @@ NOTE:
 """
 
 from flask import render_template, flash, redirect, url_for
-from src.app import app
+from flask_login import current_user, login_user
+from src.app import app, db
 from src.app.forms import LoginForm, TradeForm, ProfitAndLossForm
+from src.app.models.user import User
+
+import sqlalchemy as sa
 
 
 @app.route("/")
@@ -53,17 +57,26 @@ def login():
     When the browser sends the POST request as a result of the user pressing the submit button,
     form.validate_on_submit() is going to gather all the data, run all the validators attached to fields,
     and if everything is all right it will return True
+
+    -----------------
+    Logging users in
+    -----------------
+    The current_user variable comes from the Flask-Login, and can be used at any time during the handling
+    of a request to obtain the user object that represents the client of that request.
     """
-    login_form = LoginForm()
     pandl_form = ProfitAndLossForm()
     trade_form = TradeForm()
-    if login_form.validate_on_submit():
-        # The flash() function is a useful way to show a message to the user.
-        flash(
-            "Login requested from user {}, remember_me={}".format(
-                login_form.username.data, login_form.remember_me.data
-            )
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = db.session.scalar(
+            sa.select(User).where(User.username == form.username.data)
         )
+        if user is None or not user.check_password(form.password.data):
+            flash("Invalid username or password")
+            return redirect(url_for("login"))
+        login_user(user, remember=form.remember_me.data)
         # The argument to url_for() is the endpoint name, which is the name of the view function.
         return redirect(url_for("index"))
-    return render_template("login.html", title="Sign In", form=login_form)
+    return render_template("login.html", title="Sign In", form=form)

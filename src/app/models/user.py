@@ -1,4 +1,7 @@
 from typing import Optional
+from flask_login import UserMixin
+from app import login
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # an extension that provides a Flask-friendly wrapper to SQLAlchemy
 import sqlalchemy as sa
@@ -6,7 +9,7 @@ import sqlalchemy.orm as so
 from src.app import db
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     """
     The User class created above will represent users stored in the database. The class inherits from db.Model,
     a base class for all models from Flask-SQLAlchemy. The User model defines several fields as class variables.
@@ -27,8 +30,19 @@ class User(db.Model):
         "ProfitAndLoss", back_populates="researcher"
     )
 
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
     def __repr__(self):
         """
         How to print Users
         """
         return "<User {}>".format(self.username)
+
+
+@login.user_loader
+def load_user(id):
+    return db.session.get(User, int(id))
