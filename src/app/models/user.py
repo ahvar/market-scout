@@ -1,6 +1,6 @@
 from typing import Optional
 from flask_login import UserMixin
-from app import login
+from src.app import login
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # an extension that provides a Flask-friendly wrapper to SQLAlchemy

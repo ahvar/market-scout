@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Hello, {{ user.username }}!</h1>
-<h2>{{ user.pandl.name }}</h2>
+<h1>Hello, {{ current_user.username }}!</h1>
+<h2>{{ current_user.pandl.name }}</h2>
 <ul>
-{% for trade in user.pandl.trades %}
+{% for trade in current_user.pandl.trades %}
     <li>
         <p>Trade ID: {{ trade.id }}</p>
         <p>Date: {{ trade.date }}</p>

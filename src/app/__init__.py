@@ -43,5 +43,6 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 login = LoginManager(app)
-
+login.login_view = "login"
 from src.app import routes, models
+from src.app.models import user, trade, profit_and_loss
