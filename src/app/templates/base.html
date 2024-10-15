@@ -10,8 +10,15 @@
 </head>
 
 <body>
-    <div>Market Scout: <a href="{{ url_for('index') }}">Home</a></div>
-    <div>Login: <a href="{{ url_for('login') }}">Sign In</a></div>
+    <div>
+        Market Scout:
+        <a href="{{ url_for('index') }}">Home</a>
+        {% if current_user.is_anonymous %}
+        <a href="{{ url_for('login') }}">Login</a>
+        {% else %}
+        <a href="{{ url_for('logout') }}">Logout</a>
+        {% endif %}
+    </div>
     <hr>
     <!-- The get_flashed_messages() function comes from Flask, and returns a list
      of all the messages that have been registered with flash() previously.-->

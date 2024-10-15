@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """
-    Scout: A command-line companion for navigating the financial markets.
-
-Can be invoked from the command line as 'scout'
+Scout: Research the financial markets.
 """
 
 import typer
@@ -36,14 +34,15 @@ def main(
     message = f"""
     [bold]------------------------------------------------------------------------------------------------[/bold]
     [bold blue]{__Application__.replace("_", " ").upper()} {__version__} [/bold blue]
-    [bold yellow]A query tool for equity market data [/bold yellow]
+    [bold yellow]Research financial markets [/bold yellow]
     [bold]------------------------------------------------------------------------------------------------[/bold]
 
     [green]
-    A comprehensive command-line companion for navigating the financial markets. Interact with your brokerage account, 
-    access real-time and historical market data, analyze trends, and manage your investment portfolio.
+    Interact with your brokerage account to access real-time and historical market data, analyze trends, and
+    manage your positions.
 
-    For more detailed guidance on a command, you can type 'scout COMMAND --help'. For example, 'scout analyze --help' will display detailed information about the analyze command.
+    For more detailed guidance on a command, you can type 'scout COMMAND --help'. For example, 'scout analyze --help'
+    will display detailed information about the analyze command.
     """
     if ctx.invoked_subcommand is None:
         rprint(message)

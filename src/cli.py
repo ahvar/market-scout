@@ -93,6 +93,7 @@ import typer
 import random
 import pprint
 import backtrader as bt
+import pandas as pd
 from pprint import PrettyPrinter
 from typing import Optional
 from typing_extensions import Annotated
@@ -115,8 +116,7 @@ from src.utils.command.command_utils import (
     set_error_and_exit,
     convert_to_utc,
 )
-from src.broker.broker import IBAsyncBroker
-from src.broker.ib_utils import IBMarketMemory
+from src.broker.broker import retrieve_historical_data
 from src.models.starter import Starter
 from src.models.ewmac import calc_ewmac_forecast
 from src.utils.references import (
@@ -154,7 +154,8 @@ def simple_strategy(
     duration: Annotated[
         Optional[str],
         typer.Argument(
-            default_factory=get_duration_unit, help="The duration for the request"
+            default_factory=get_duration_unit,
+            help="The duration for the request",
         ),
     ],
     end_date: Annotated[
@@ -207,38 +208,9 @@ def simple_strategy(
             for handler in logger.handlers:
                 handler.setLevel(logging.INFO)
         print("[bold]Market Scout is starting...[/bold]")
-        ib = IB()
-        ib.connect(host="127.0.0.1", port=4002, clientId=1, timeout=30)
-        eurusd_contract = Forex("EURUSD")
-        bars = ib.reqHistoricalData(
-            eurusd_contract,
-            endDateTime="",
-            durationStr=duration,
-            barSizeSetting=bar_size,
-            whatToShow="MIDPOINT",
-            useRTH=True,
-        )
-        eurusd_data = util.df(bars)
-        table = Table(title="EURUSD Data")
-        table.add_column("Date", style="cyan", no_wrap=True)
-        table.add_column("Open", style="magenta")
-        table.add_column("High", style="green")
-        table.add_column("Low", style="red")
-        table.add_column("Close", style="blue")
-        table.add_column("Volume", style="yellow")
-        for index, row in eurusd_data.iterrows():
-            table.add_row(
-                str(index),
-                str(row["open"]),
-                str(row["high"]),
-                str(row["low"]),
-                str(row["close"]),
-                str(row["volume"]),
-            )
-        print(table)
+        eurusd_data = retrieve_historical_data(ticker, duration, bar_size, end_date)
         close_prices = eurusd_data["close"]
         forecast = calc_ewmac_forecast(close_prices, 16, 64)
-
     except Exception as e:
         logger.error("An error occurred: %s", e)
         raise Exception(e) from e

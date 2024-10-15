@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch, PropertyMock
-from broker.ib_utils import ConnectionWatchdog, IBMarketMemory
+from graveyard.ib_utils import ConnectionWatchdog, IBMarketMemory
 
 
 class TestConnectionWatchdog(unittest.TestCase):

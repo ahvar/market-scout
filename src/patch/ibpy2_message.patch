@@ -1,5 +1,5 @@
---- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_message.py	2024-09-26 11:12:35.000000000 -0500
-+++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_message.py	2024-09-26 11:11:36.000000000 -0500
+--- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_message.py	2024-09-26 15:15:59.000000000 -0500
++++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_message.py	2024-09-26 15:15:59.000000000 -0500
 @@ -47,7 +47,7 @@
  class EWrapperAccumulator(SignatureAccumulator):
      def getSignatures(self):
