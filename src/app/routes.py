@@ -116,3 +116,16 @@ def register():
         flash("Congratulations, you are now a registered user!")
         return redirect(url_for("login"))
     return render_template("register.html", title="Register", form=form)
+
+
+@app.route("/user/<username>")
+@login_required
+def user(username):
+    user = db.first_or_404(sa.select(User).where(User.username == username))
+    # pandl = user.pandl
+    # trades = pandl.trades if pandl else []
+    trades = [
+        {"researcher": user, "instrument": "SPY"},
+        {"researcher": user, "instrument": "AMZN"},
+    ]
+    return render_template("user.html", user=user, trades=trades)

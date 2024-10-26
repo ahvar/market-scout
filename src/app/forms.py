@@ -51,7 +51,7 @@ class LoginForm(FlaskForm):
 
 class ProfitAndLossForm(FlaskForm):
     name = StringField("Profit & Loss Name", validators=[DataRequired()])
-    researcher = StringField("Researcher", vaidators=[DataRequired()])
+    researcher = StringField("Researcher", validators=[DataRequired()])
     trades = StringField("Start", validators=[DataRequired()])
 
 

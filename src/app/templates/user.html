@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>User: {{ user.username }}</h1>
+    <hr>
+    {% for trade in trades %}
+    <p>
+        Trade on: {{ trade.date }} 
+    </p>
+    {% endfor %}
+{% endblock %}
