@@ -171,7 +171,13 @@ bar_sizes = [
     "1 week",
     "1 month",
 ]
-duration_units = [("S", "Seconds"), ("D", "Days"), ("W", "Weeks"), ("M", "Months")]
+duration_units = [
+    ("S", "Seconds"),
+    ("D", "Days"),
+    ("W", "Weeks"),
+    ("M", "Months"),
+    ("Y", "Years"),
+]
 report_types = ["ReportsFinStatements", "ReportsOwnership", "ReportsFinSummary"]
 default_tickers = ["AAPL", "TSLA", "MSFT"]
 

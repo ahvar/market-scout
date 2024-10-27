@@ -125,32 +125,25 @@ def validate_bar_size(ctx: Context, bar_size: str) -> str:
     return bar_size
 
 
-def validate_out_dir(ctx: Context, out_dir: str) -> Path:
+def validate_out_dir(ctx: Context, outdir: Path) -> Path:
     """
     If no output directory is provided, the current working directory is used.
     :params    ctx: the typer context object
     :params out_dir: the output directory
     :return out_dir: the output directory
     """
-    if out_dir is None:
+    if outdir is None:
         logger.debug(
             "No output directory provided, default to current working directory"
         )
         return Path.cwd()
 
     logger.debug("Validating output directory...")
-    out_path = Path(out_dir)
-    if not out_path.is_dir():
-        try:
-            # if out_path is a file, create the file
-            if out_path.suffix:
-                out_path.touch()
-            else:
-                out_path.mkdir(parents=True, exist_ok=True)
-        except (FileNotFoundError, PermissionError) as e:
-            logger.error("Could not create directory: %s", e)
-            raise BadParameter(str(e)) from e
-    return out_path.resolve()
+    if outdir.is_file():
+        raise BadParameter(f"Output directory expected but a file was passed: {outdir}")
+    if not outdir.is_dir():
+        raise BadParameter(f"Output directory not found: {outdir}")
+    return outdir.resolve()
 
 
 def validate_end_time(ctx: Context, end: str) -> str:

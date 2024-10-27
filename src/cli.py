@@ -100,6 +100,7 @@ from typing_extensions import Annotated
 from rich import print
 from rich.console import Console
 from rich.table import Table
+from pathlib import Path
 from ib_async import IB, client, contract, util
 from ib_async.contract import Forex, Contract
 from openai import OpenAI
@@ -176,8 +177,8 @@ def simple_strategy(
             help="The request's end time in 24-hour clock. Default is the current time. Valid formats: HH:MM:SS",
         ),
     ] = None,
-    out_dir: Annotated[
-        str,
+    outdir: Annotated[
+        Path,
         typer.Option(
             "-o",
             "--outdir",
@@ -208,9 +209,22 @@ def simple_strategy(
             for handler in logger.handlers:
                 handler.setLevel(logging.INFO)
         print("[bold]Market Scout is starting...[/bold]")
-        eurusd_data = retrieve_historical_data(ticker, duration, bar_size, end_date)
-        close_prices = eurusd_data["close"]
-        forecast = calc_ewmac_forecast(close_prices, 16, 64)
+        price_and_analysis_dir = outdir / "prices_and_analysis"
+        price_history_dir = price_and_analysis_dir / ticker / "price_history"
+        forecast_dir = price_and_analysis_dir / ticker / "forecast" / "trend_following"
+        price_history_dir.mkdir(parents=True, exist_ok=True)
+        forecast_dir.mkdir(parents=True, exist_ok=True)
+
+        prices = retrieve_historical_data(ticker, duration, bar_size, end_date)
+        forecast = calc_ewmac_forecast(prices["close"], 16, 64)
+        prices.to_csv(
+            price_history_dir
+            / f"{ticker}_{duration}_{bar_size}_{datetime.today().strftime('%Y_%m_%d')}_prices.csv"
+        )
+        forecast.to_csv(
+            forecast_dir
+            / f"{ticker}_{duration}_{bar_size}_{datetime.today().strftime('%Y_%m_%d')}_forecast.csv"
+        )
     except Exception as e:
         logger.error("An error occurred: %s", e)
         raise Exception(e) from e

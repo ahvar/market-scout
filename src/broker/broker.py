@@ -68,20 +68,20 @@ def retrieve_historical_data(
     :param end_date: The end date of the historical data
     """
     ib = connect_ib(host="127.0.0.1", port=4002, client_id=1)
-    eurusd_contract = Forex(symbol)
+    stock_contract = Stock(symbol=symbol, exchange="SMART", currency="USD")
     bars = ib.reqHistoricalData(
-        eurusd_contract,
+        stock_contract,
         endDateTime=end_date,
         durationStr=duration,
         barSizeSetting=bar_size,
         whatToShow="MIDPOINT",
         useRTH=True,
     )
-    eurusd_data = util.df(bars)
-    eurusd_data["date"] = pd.to_datetime(eurusd_data["date"])
-    eurusd_data.set_index("date", inplace=True)
+    stock_data = util.df(bars)
+    stock_data["date"] = pd.to_datetime(stock_data["date"])
+    stock_data.set_index("date", inplace=True)
     ib.disconnect()
-    return eurusd_data
+    return stock_data
 
 
 class IBAsyncBroker(IBBroker):
