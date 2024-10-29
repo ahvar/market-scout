@@ -22,11 +22,11 @@ def calc_ewmac_forecast(price: pd.Series, fast: int, slow: int) -> pd.Series:
     # We don't need to calculate the decay parameter, just use the span
     # directly
     fast_ewma = price.ewm(span=fast).mean()
-    fast_ewma.to_csv(Path(__file__).resolve().parent / "fast_ewma.csv")
+    # fast_ewma.to_csv(Path(__file__).resolve().parent / "fast_ewma.csv")
     slow_ewma = price.ewm(span=slow).mean()
-    slow_ewma.to_csv(Path(__file__).resolve().parent / "slow_ewma.csv")
+    # slow_ewma.to_csv(Path(__file__).resolve().parent / "slow_ewma.csv")
     raw_ewmac = fast_ewma - slow_ewma
-    raw_ewmac.to_csv(Path(__file__).resolve().parent / "raw_ewmac.csv")
+    # raw_ewmac.to_csv(Path(__file__).resolve().parent / "raw_ewmac.csv")
 
     vol = robust_vol_calc(price.diff())
     return raw_ewmac / vol

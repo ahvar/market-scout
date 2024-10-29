@@ -9,6 +9,12 @@ from enum import Enum
 
 project_root = Path(__file__).resolve().parent.parent.parent
 
+ARBITRARY_FORECAST_CAPITAL = 100000
+ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE = 0.16
+BUSINESS_DAYS_IN_YEAR = 256.0
+ROOT_BDAYS_INYEAR = BUSINESS_DAYS_IN_YEAR**0.5
+ARBITRARY_VALUE_OF_PRICE_POINT = 1.0
+
 # IbPy2 dispatcher.py patches
 original_dispatcher_file = (
     project_root / "src" / "patch" / "ibpy2_original_dispatcher.py"

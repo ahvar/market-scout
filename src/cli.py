@@ -10,6 +10,9 @@ from src.utils.references import (
     report_types,
     get_duration_unit,
     get_bar_size,
+    ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE,
+    ARBITRARY_VALUE_OF_PRICE_POINT,
+    ARBITRARY_FORECAST_CAPITAL,
     original_dispatcher_file,
     modified_dispatcher_file,
     dispatcher_patch_file,
@@ -116,9 +119,16 @@ from src.utils.command.command_utils import (
     init_logging,
     set_error_and_exit,
     convert_to_utc,
+    make_dirs_and_write,
 )
 from src.broker.broker import retrieve_historical_data
+from src.accounts.accounts_forecast import (
+    get_normalised_forecast,
+    get_average_notional_position,
+    get_notional_position_for_forecast,
+)
 from src.models.starter import Starter
+from src.models.vol import robust_daily_vol_given_price
 from src.models.ewmac import calc_ewmac_forecast
 from src.utils.references import (
     IB_API_LOGGER_NAME,
@@ -208,23 +218,34 @@ def simple_strategy(
         if not debug:
             for handler in logger.handlers:
                 handler.setLevel(logging.INFO)
-        print("[bold]Market Scout is starting...[/bold]")
-        price_and_analysis_dir = outdir / "prices_and_analysis"
-        price_history_dir = price_and_analysis_dir / ticker / "price_history"
-        forecast_dir = price_and_analysis_dir / ticker / "forecast" / "trend_following"
-        price_history_dir.mkdir(parents=True, exist_ok=True)
-        forecast_dir.mkdir(parents=True, exist_ok=True)
-
+        print("[bold]Requesting price history from IB...[/bold]")
         prices = retrieve_historical_data(ticker, duration, bar_size, end_date)
+        print("[bold]Calculating EWMAC Forecast...")
         forecast = calc_ewmac_forecast(prices["close"], 16, 64)
-        prices.to_csv(
-            price_history_dir
-            / f"{ticker}_{duration}_{bar_size}_{datetime.today().strftime('%Y_%m_%d')}_prices.csv"
+        daily_returns_volatility = robust_daily_vol_given_price(prices)
+        normalized_forecast = get_normalised_forecast(
+            forecast=forecast, target_abs_forecast=10
         )
-        forecast.to_csv(
-            forecast_dir
-            / f"{ticker}_{duration}_{bar_size}_{datetime.today().strftime('%Y_%m_%d')}_forecast.csv"
+        print("[bold]Calculating position size...")
+        average_notional_position = get_average_notional_position(
+            daily_returns_volatility=daily_returns_volatility,
+            risk_target=ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE,
+            value_per_point=ARBITRARY_VALUE_OF_PRICE_POINT,
+            capital=ARBITRARY_FORECAST_CAPITAL,
         )
+        notional_position = get_notional_position_for_forecast(
+            normalised_forecast=normalized_forecast,
+            average_notional_position=average_notional_position,
+        )
+        make_dirs_and_write(
+            outdir=outdir,
+            ticker=ticker,
+            prices=prices,
+            forecast=forecast,
+            duration=duration,
+            bar_size=bar_size,
+        )
+
     except Exception as e:
         logger.error("An error occurred: %s", e)
         raise Exception(e) from e

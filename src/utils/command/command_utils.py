@@ -19,6 +19,7 @@ from pathlib import Path
 # third-party
 import typer
 import yaml
+import pandas as pd
 from src.utils.logging_utils import LoggingUtils, LogFileCreationError
 from src.utils.references import (
     hour,
@@ -136,6 +137,30 @@ def load_config(config_path: str):
     """Load and return configuration from a YAML file."""
     with open(config_path) as file:
         return yaml.safe_load(file)
+
+
+def make_dirs_and_write(
+    outdir: Path,
+    ticker: str,
+    prices: pd.Series,
+    forecast: pd.Series,
+    duration: str,
+    bar_size: str,
+) -> None:
+    price_and_analysis_dir = outdir / "prices_and_analysis"
+    price_history_dir = price_and_analysis_dir / ticker / "price_history"
+    forecast_dir = price_and_analysis_dir / ticker / "forecast" / "trend_following"
+    price_history_dir.mkdir(parents=True, exist_ok=True)
+    forecast_dir.mkdir(parents=True, exist_ok=True)
+
+    prices.to_csv(
+        price_history_dir
+        / f"{ticker}_{duration}_{bar_size}_{datetime.today().strftime('%Y_%m_%d')}_prices.csv"
+    )
+    forecast.to_csv(
+        forecast_dir
+        / f"{ticker}_{duration}_{bar_size}_{datetime.today().strftime('%Y_%m_%d')}_forecast.csv"
+    )
 
 
 def convert_to_utc(date_obj: datetime.date, time_obj: datetime.time) -> datetime:

@@ -7,3 +7,8 @@ __pycache__
 scrap/*
 notebooks/
 graveyard/
+prices_and_analysis/
+
+src/models/fast_ewma.csv
+src/models/raw_ewmac.csv
+src/models/slow_ewma.csv
