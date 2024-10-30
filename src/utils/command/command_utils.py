@@ -144,6 +144,7 @@ def make_dirs_and_write(
     ticker: str,
     prices: pd.Series,
     forecast: pd.Series,
+    notional_position: pd.Series,
     duration: str,
     bar_size: str,
 ) -> None:
@@ -160,6 +161,10 @@ def make_dirs_and_write(
     forecast.to_csv(
         forecast_dir
         / f"{ticker}_{duration}_{bar_size}_{datetime.today().strftime('%Y_%m_%d')}_forecast.csv"
+    )
+    notional_position.to_csv(
+        forecast_dir
+        / f"{ticker}_{duration}_{bar_size}_{datetime.today().strftime('%Y_%m_%d')}_notional_position.csv"
     )
 
 

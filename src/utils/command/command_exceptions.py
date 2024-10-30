@@ -9,6 +9,10 @@ class SomeGeneralCLIException(Exception):
     """
 
 
+class MissingData(Exception):
+    pass
+
+
 class SomeMoreSpecificCLIException(SomeGeneralCLIException):
     """
     docstring here
@@ -19,3 +23,7 @@ class AnotherSpecificCLIException(SomeGeneralCLIException):
     """
     docstring here
     """
+
+
+class missingData(Exception):
+    pass

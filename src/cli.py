@@ -242,10 +242,10 @@ def simple_strategy(
             ticker=ticker,
             prices=prices,
             forecast=forecast,
+            notional_position=notional_position,
             duration=duration,
             bar_size=bar_size,
         )
-
     except Exception as e:
         logger.error("An error occurred: %s", e)
         raise Exception(e) from e

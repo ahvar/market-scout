@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from enum import Enum
 
+from src.utils.command.command_exceptions import MissingData
+
 
 project_root = Path(__file__).resolve().parent.parent.parent
 
@@ -14,6 +16,69 @@ ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE = 0.16
 BUSINESS_DAYS_IN_YEAR = 256.0
 ROOT_BDAYS_INYEAR = BUSINESS_DAYS_IN_YEAR**0.5
 ARBITRARY_VALUE_OF_PRICE_POINT = 1.0
+
+
+class Frequency(Enum):
+    UNKNOWN = "Unknown"
+    YEAR = "Year"
+    MONTH = "Month"
+    WEEK = "Week"
+    BDAY = "BDay"
+    DAY = "Day"
+    HOUR = "Hour"
+    MINUTES_15 = "Minutes_15"
+    MINUTES_5 = "Minutes_5"
+    MINUTE = "Minute"
+    SECONDS_10 = "Seconds_10"
+    SECOND = "Second"
+    MIXED = "Mixed"
+
+
+DAILY_PRICE_FREQ = Frequency.DAY
+BUSINESS_DAY_FREQ = Frequency.BDAY
+HOURLY_FREQ = Frequency.HOUR
+
+MIXED_FREQ = Frequency.MIXED
+
+
+def from_config_frequency_pandas_resample(freq: Frequency) -> str:
+    """
+    Translate between my frequencies and pandas frequencies
+
+    >>> from_config_frequency_pandas_resample(BUSINESS_DAY_FREQ)
+    'B'
+    """
+    LOOKUP_TABLE = {
+        Frequency.BDAY: "B",
+        Frequency.WEEK: "W",
+        Frequency.MONTH: "M",
+        Frequency.HOUR: "H",
+        Frequency.YEAR: "A",
+        Frequency.DAY: "D",
+        Frequency.MINUTES_15: "15T",
+        Frequency.MINUTES_5: "5T",
+        Frequency.SECONDS_10: "10S",
+        Frequency.SECOND: "S",
+    }
+
+    try:
+        resample_string = LOOKUP_TABLE[freq]
+    except KeyError as e:
+        raise MissingData("Resample frequency %s is not supported" % freq) from e
+
+    return resample_string
+
+
+class NamedObject:
+    def __init__(self, name):
+        self._name = str(name)
+
+    def __repr__(self):
+        return self._name
+
+
+arg_not_supplied = NamedObject("arg not supplied")
+user_exit = NamedObject("exit")
 
 # IbPy2 dispatcher.py patches
 original_dispatcher_file = (
