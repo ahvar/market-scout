@@ -127,8 +127,10 @@ from src.accounts.accounts_forecast import (
     get_average_notional_position,
     get_notional_position_for_forecast,
 )
+from src.accounts.curve import AccountCurve
 from src.models.starter import Starter
 from src.models.vol import robust_daily_vol_given_price
+from src.accounts.profit_and_loss import ProfitAndLossWithSharpeRatioCosts
 from src.models.ewmac import calc_ewmac_forecast
 from src.utils.references import (
     IB_API_LOGGER_NAME,
@@ -138,6 +140,8 @@ from src.utils.references import (
     get_duration_unit,
     get_bar_size,
     get_ticker,
+    Frequency,
+    NET_CURVE,
 )
 
 __copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
@@ -246,6 +250,25 @@ def simple_strategy(
             duration=duration,
             bar_size=bar_size,
         )
+        pandl_with_sr_costs = ProfitAndLossWithSharpeRatioCosts(
+            price=prices,
+            SR_cost=0.0,
+            positions=notional_position,
+            fx="USD",
+            daily_returns_volatility=daily_returns_volatility,
+            average_position=average_notional_position,
+            capital=100000,
+            value_per_point=1.0,
+            delayfill=False,
+        )
+        as_pd_series = pandl_with_sr_costs.as_pd_series_for_frequency(
+            frequency=Frequency.BDAY,
+            percent=False,
+            curve_type=NET_CURVE,
+        )
+
+        account_curve = AccountCurve(pandl_with_sr_costs)
+
     except Exception as e:
         logger.error("An error occurred: %s", e)
         raise Exception(e) from e

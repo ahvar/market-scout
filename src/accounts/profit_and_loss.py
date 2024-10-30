@@ -4,7 +4,14 @@ from src.utils.references import (
     DAILY_PRICE_FREQ,
     from_config_frequency_pandas_resample,
     arg_not_supplied,
+    SECONDS_IN_YEAR,
+    ROOT_BDAYS_INYEAR,
+    curve_types,
+    NET_CURVE,
+    GROSS_CURVE,
+    COSTS_CURVE,
 )
+from src.models.vol import robust_daily_vol_given_price
 from src.utils.command.command_exceptions import MissingData
 
 
@@ -240,3 +247,247 @@ def calculate_pandl(positions: pd.Series, prices: pd.Series):
     returns[returns.isna()] = 0.0
 
     return returns
+
+
+class ProfitAndLossWithGenericCosts(ProfitAndLoss):
+    def weight(self, weight: pd.Series):
+        weighted_capital = apply_weighting(weight, self.capital)
+        weighted_positions = apply_weighting(weight, self.positions)
+
+        return ProfitAndLossWithGenericCosts(
+            self.price,
+            positions=weighted_positions,
+            fx=self.fx,
+            capital=weighted_capital,
+            value_per_point=self.value_per_point,
+            roundpositions=self.roundpositions,
+            delayfill=self.delayfill,
+            passed_diagnostic_df=None,
+        )
+
+    def as_pd_series(self, percent=False, curve_type=NET_CURVE):
+        if curve_type == NET_CURVE:
+            if percent:
+                return self.net_percentage_pandl()
+            else:
+                return self.net_pandl_in_base_currency()
+
+        elif curve_type == GROSS_CURVE:
+            if percent:
+                return self.percentage_pandl()
+            else:
+                return self.pandl_in_base_currency()
+        elif curve_type == COSTS_CURVE:
+            if percent:
+                return self.costs_percentage_pandl()
+            else:
+                return self.costs_pandl_in_base_currency()
+
+        else:
+            raise Exception(
+                "Curve type %s not recognised! Must be one of %s"
+                % (curve_type, curve_types)
+            )
+
+    def net_percentage_pandl(self) -> pd.Series:
+        gross = self.percentage_pandl()
+        costs = self.costs_percentage_pandl()
+        net = _add_gross_and_costs(gross, costs)
+
+        return net
+
+    def net_pandl_in_base_currency(self) -> pd.Series:
+        gross = self.pandl_in_base_currency()
+        costs = self.costs_pandl_in_base_currency()
+        net = _add_gross_and_costs(gross, costs)
+
+        return net
+
+    def net_pandl_in_instrument_currency(self) -> pd.Series:
+        gross = self.pandl_in_instrument_currency()
+        costs = self.costs_pandl_in_instrument_currency()
+        net = _add_gross_and_costs(gross, costs)
+
+        return net
+
+    def net_pandl_in_points(self) -> pd.Series:
+        gross = self.pandl_in_points()
+        costs = self.costs_pandl_in_points()
+        net = _add_gross_and_costs(gross, costs)
+
+        return net
+
+    def costs_percentage_pandl(self) -> pd.Series:
+        costs_in_base = self.costs_pandl_in_base_currency()
+        costs = self._percentage_pandl_given_pandl(costs_in_base)
+
+        return costs
+
+    def costs_pandl_in_base_currency(self) -> pd.Series:
+        costs_in_instr_ccy = self.costs_pandl_in_instrument_currency()
+        costs_in_base = self._base_pandl_given_currency_pandl(costs_in_instr_ccy)
+
+        return costs_in_base
+
+    def costs_pandl_in_instrument_currency(self) -> pd.Series:
+        costs_in_points = self.costs_pandl_in_points()
+        costs_in_instr_ccy = self._pandl_in_instrument_ccy_given_points_pandl(
+            costs_in_points
+        )
+
+        return costs_in_instr_ccy
+
+    def costs_pandl_in_points(self) -> pd.Series:
+        raise NotImplementedError
+
+
+def _add_gross_and_costs(gross: pd.Series, costs: pd.Series):
+    net = gross.add(costs, fill_value=0)
+
+    return net
+
+
+class ProfitAndLossWithSharpeRatioCosts(ProfitAndLossWithGenericCosts):
+    def __init__(
+        self,
+        *args,
+        SR_cost: float,
+        average_position: pd.Series,
+        daily_returns_volatility: pd.Series = arg_not_supplied,
+        **kwargs,
+    ):
+        ## Is SR_cost a negative number?
+        super().__init__(*args, **kwargs)
+        self._SR_cost = SR_cost
+        self._daily_returns_volatility = daily_returns_volatility
+        self._average_position = average_position
+
+    def weight(self, weight: pd.Series):
+        ## we don't weight fills, instead will be inferred from positions
+        weighted_capital = apply_weighting(weight, self.capital)
+        weighted_positions = apply_weighting(weight, self.positions)
+        weighted_average_position = apply_weighting(weight, self.average_position)
+
+        return ProfitAndLossWithSharpeRatioCosts(
+            positions=weighted_positions,
+            capital=weighted_capital,
+            average_position=weighted_average_position,
+            price=self.price,
+            fx=self.fx,
+            SR_cost=self._SR_cost,
+            daily_returns_volatility=self.daily_returns_volatility,
+            value_per_point=self.value_per_point,
+            roundpositions=self.roundpositions,
+            delayfill=self.delayfill,
+        )
+
+    def costs_pandl_in_points(self) -> pd.Series:
+        SR_cost_as_annualised_figure = self.SR_cost_as_annualised_figure_points()
+
+        position = self.positions
+        price = self.price
+
+        SR_cost_per_period = (
+            calculate_SR_cost_per_period_of_position_data_match_price_index(
+                position,
+                price=price,
+                SR_cost_as_annualised_figure=SR_cost_as_annualised_figure,
+            )
+        )
+
+        return SR_cost_per_period
+
+    def SR_cost_as_annualised_figure_points(self) -> pd.Series:
+        SR_cost_with_minus_sign = -self.SR_cost
+        annualised_price_vol_points_for_an_average_position = (
+            self.points_vol_of_an_average_position()
+        )
+
+        return (
+            SR_cost_with_minus_sign
+            * annualised_price_vol_points_for_an_average_position
+        )
+
+    def points_vol_of_an_average_position(self) -> pd.Series:
+        average_position = self.average_position
+        annualised_price_vol_points = self.annualised_price_volatility_points()
+
+        average_position_aligned_to_vol = average_position.reindex(
+            annualised_price_vol_points.index, method="ffill"
+        )
+
+        return average_position_aligned_to_vol * annualised_price_vol_points
+
+    def annualised_price_volatility_points(self) -> pd.Series:
+        return self.daily_price_volatility_points * ROOT_BDAYS_INYEAR
+
+    @property
+    def daily_price_volatility_points(self) -> pd.Series:
+        daily_price_volatility = self.daily_returns_volatility
+        if daily_price_volatility is arg_not_supplied:
+            daily_price_volatility = robust_daily_vol_given_price(self.price)
+
+        return daily_price_volatility
+
+    @property
+    def daily_returns_volatility(self) -> pd.Series:
+        return self._daily_returns_volatility
+
+    @property
+    def SR_cost(self) -> float:
+        return self._SR_cost
+
+    @property
+    def average_position(self) -> pd.Series:
+        return self._average_position
+
+
+def spread_out_annualised_return_over_periods(data_as_annual: pd.Series) -> pd.Series:
+    """
+    >>> import datetime
+    >>> d = datetime.datetime
+    >>> date_index1 = [d(2000,1,1,23),d(2000,1,2,23),d(2000,1,3,23)]
+    >>> s1 = pd.Series([0.365,0.730,0.365], index=date_index1)
+    >>> spread_out_annualised_return_over_periods(s1)
+    2000-01-01 23:00:00         NaN
+    2000-01-02 23:00:00    0.001999
+    2000-01-03 23:00:00    0.000999
+    dtype: float64
+    """
+    period_intervals_in_seconds = (
+        data_as_annual.index.to_series().diff().dt.total_seconds()
+    )
+    period_intervals_in_year_fractions = period_intervals_in_seconds / SECONDS_IN_YEAR
+    data_per_period = data_as_annual * period_intervals_in_year_fractions
+
+    return data_per_period
+
+
+def calculate_SR_cost_per_period_of_position_data_match_price_index(
+    position: pd.Series, price: pd.Series, SR_cost_as_annualised_figure: pd.Series
+) -> pd.Series:
+    # only want nans at the start
+    position_ffill = position.ffill()
+
+    ## We don't want to lose calculation because of warmup
+    SR_cost_aligned_positions = SR_cost_as_annualised_figure.reindex(
+        position_ffill.index, method="ffill"
+    )
+    SR_cost_aligned_positions_backfilled = SR_cost_aligned_positions.bfill()
+
+    # Don't include costs until we start trading
+    SR_cost_aligned_positions_when_position_held = SR_cost_aligned_positions_backfilled[
+        ~position_ffill.isna()
+    ]
+
+    # Actually output in price space to match gross returns
+    SR_cost_aligned_to_price = SR_cost_aligned_positions_when_position_held.reindex(
+        price.index, method="ffill"
+    )
+
+    # These will be annualised figure, make it a small loss every day
+    SR_cost_per_period = spread_out_annualised_return_over_periods(
+        SR_cost_aligned_to_price
+    )
+
+    return SR_cost_per_period

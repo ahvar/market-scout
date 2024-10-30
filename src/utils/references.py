@@ -5,7 +5,7 @@ import pandas as pd
 from dataclasses import dataclass
 from pathlib import Path
 from enum import Enum
-
+from datetime import datetime
 from src.utils.command.command_exceptions import MissingData
 
 
@@ -16,6 +16,11 @@ ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE = 0.16
 BUSINESS_DAYS_IN_YEAR = 256.0
 ROOT_BDAYS_INYEAR = BUSINESS_DAYS_IN_YEAR**0.5
 ARBITRARY_VALUE_OF_PRICE_POINT = 1.0
+
+curve_types = ["gross", "net", "costs"]
+GROSS_CURVE = "gross"
+NET_CURVE = "net"
+COSTS_CURVE = "costs"
 
 
 class Frequency(Enum):
@@ -39,6 +44,34 @@ BUSINESS_DAY_FREQ = Frequency.BDAY
 HOURLY_FREQ = Frequency.HOUR
 
 MIXED_FREQ = Frequency.MIXED
+
+
+CALENDAR_DAYS_IN_YEAR = 365.25
+
+BUSINESS_DAYS_IN_YEAR = 256.0
+ROOT_BDAYS_INYEAR = BUSINESS_DAYS_IN_YEAR**0.5
+
+WEEKS_IN_YEAR = CALENDAR_DAYS_IN_YEAR / 7.0
+ROOT_WEEKS_IN_YEAR = WEEKS_IN_YEAR**0.5
+
+MONTHS_IN_YEAR = 12.0
+ROOT_MONTHS_IN_YEAR = MONTHS_IN_YEAR**0.5
+
+APPROX_DAYS_IN_MONTH = CALENDAR_DAYS_IN_YEAR / MONTHS_IN_YEAR
+
+ARBITRARY_START = datetime(1900, 1, 1)
+
+HOURS_PER_DAY = 24
+MINUTES_PER_HOUR = 60
+SECONDS_PER_MINUTE = 60
+SECONDS_PER_HOUR = MINUTES_PER_HOUR * SECONDS_PER_MINUTE
+SECONDS_PER_DAY = HOURS_PER_DAY * SECONDS_PER_HOUR
+
+SECONDS_IN_YEAR = CALENDAR_DAYS_IN_YEAR * SECONDS_PER_DAY
+MINUTES_PER_YEAR = CALENDAR_DAYS_IN_YEAR * HOURS_PER_DAY * MINUTES_PER_HOUR
+UNIXTIME_CONVERTER = 1e9
+
+UNIXTIME_IN_YEAR = UNIXTIME_CONVERTER * SECONDS_IN_YEAR
 
 
 def from_config_frequency_pandas_resample(freq: Frequency) -> str:
@@ -67,6 +100,35 @@ def from_config_frequency_pandas_resample(freq: Frequency) -> str:
         raise MissingData("Resample frequency %s is not supported" % freq) from e
 
     return resample_string
+
+
+def from_frequency_to_times_per_year(freq: Frequency) -> float:
+    """
+    Times a year that a frequency corresponds to
+
+    >>> from_frequency_to_times_per_year(BUSINESS_DAY_FREQ)
+    256.0
+    """
+
+    LOOKUP_TABLE = {
+        Frequency.BDAY: BUSINESS_DAYS_IN_YEAR,
+        Frequency.WEEK: WEEKS_IN_YEAR,
+        Frequency.MONTH: MONTHS_IN_YEAR,
+        Frequency.HOUR: HOURS_PER_DAY * BUSINESS_DAYS_IN_YEAR,
+        Frequency.YEAR: 1,
+        Frequency.DAY: CALENDAR_DAYS_IN_YEAR,
+        Frequency.MINUTES_15: (MINUTES_PER_YEAR / 15),
+        Frequency.MINUTES_5: (MINUTES_PER_YEAR / 5),
+        Frequency.SECONDS_10: SECONDS_IN_YEAR / 10,
+        Frequency.SECOND: SECONDS_IN_YEAR,
+    }
+
+    try:
+        times_per_year = LOOKUP_TABLE[freq]
+    except KeyError as e:
+        raise MissingData("Frequency %s is not supported" % freq) from e
+
+    return float(times_per_year)
 
 
 class NamedObject:
