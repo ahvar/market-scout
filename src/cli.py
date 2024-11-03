@@ -131,7 +131,7 @@ from src.accounts.curve import AccountCurve
 from src.models.starter import Starter
 from src.models.vol import robust_daily_vol_given_price
 from src.accounts.profit_and_loss import ProfitAndLossWithSharpeRatioCosts
-from src.models.ewmac import calc_ewmac_forecast
+from trading_rule import calc_ewmac_forecast
 from src.utils.references import (
     IB_API_LOGGER_NAME,
     bar_sizes,
