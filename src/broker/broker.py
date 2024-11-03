@@ -4,7 +4,9 @@ Classes for interacting with the IB API.
 
 # standard library
 import logging
+import Enum
 import collections
+import asyncio
 from datetime import datetime
 
 # third-party
@@ -260,3 +262,146 @@ class IBAsyncBroker(IBBroker):
     @property
     def ib(self):
         return self._ib
+
+
+class OrderType(Enum):
+    MARKET = "MKT"
+    LIMIT = "LMT"
+    STOP = "STP"
+
+
+class OrderStatus(Enum):
+    PENDING = "Pending"
+    FILLED = "Filled"
+    CANCELLED = "Cancelled"
+
+
+class Order:
+    def __init__(
+        self,
+        instrument: str,
+        quantity: float,
+        order_type: OrderType,
+        price: float = None,
+        timestamp: pd.Timestamp = None,
+    ):
+        self.instrument = instrument
+        self.quantity = quantity
+        self.order_type = order_type
+        self.price = price  # Relevant for limit and stop orders
+        self.status = OrderStatus.PENDING
+        self.timestamp = timestamp if timestamp else pd.Timestamp.now()
+        self.ib_order = None  # Will hold the IB API order object
+
+    def __repr__(self):
+        return (
+            f"Order({self.instrument}, {self.quantity}, {self.order_type}, "
+            f"Price={self.price}, Status={self.status}, Time={self.timestamp})"
+        )
+
+
+class ExecutionEngine:
+    def __init__(self, ib_broker: IBAsyncBroker):
+        self.ib_broker = ib_broker
+
+    async def execute_order(self, order: Order):
+        # Create IB contract
+        contract = Stock(symbol=order.instrument, exchange="SMART", currency="USD")
+
+        # Qualify the contract
+        await self.ib_broker.ib.qualify_contract(contract)
+
+        # Create IB order based on order type
+        if order.order_type == OrderType.MARKET:
+            ib_order = MarketOrder(
+                action="BUY" if order.quantity > 0 else "SELL",
+                total_quantity=abs(order.quantity),
+            )
+        elif order.order_type == OrderType.LIMIT:
+            ib_order = LimitOrder(
+                action="BUY" if order.quantity > 0 else "SELL",
+                total_quantity=abs(order.quantity),
+                limit_price=order.price,
+            )
+        elif order.order_type == OrderType.STOP:
+            ib_order = StopOrder(
+                action="BUY" if order.quantity > 0 else "SELL",
+                total_quantity=abs(order.quantity),
+                stop_price=order.price,
+            )
+        else:
+            raise ValueError(f"Unsupported order type: {order.order_type}")
+
+        # Place the order using IBAsyncBroker
+        trade = await self.ib_broker.ib.place_order(contract, ib_order)
+        order.ib_order = trade
+
+        # Monitor the order status
+        while True:
+            await asyncio.sleep(1)  # Adjust as needed
+            order_status = trade.order_status.status
+            if order_status == IBOrderStatus.FILLED:
+                order.status = OrderStatus.FILLED
+                break
+            elif order_status in [IBOrderStatus.CANCELLED, IBOrderStatus.INACTIVE]:
+                order.status = OrderStatus.CANCELLED
+                break
+            # Continue waiting if order is still pending
+        return order
+
+
+class OrderManagementSystem:
+    def __init__(self, execution_engine: ExecutionEngine):
+        self.execution_engine = execution_engine
+        self.orders = []
+        self.positions = {}
+
+    async def generate_order(
+        self, signal: float, instrument: str, timestamp: pd.Timestamp
+    ):
+        # Determine desired position based on the signal
+        desired_position = int(signal)  # Adjust as per your position sizing logic
+
+        # Calculate the required order size
+        current_position = self.positions.get(instrument, 0)
+        order_size = desired_position - current_position
+
+        if order_size == 0:
+            return None
+
+        order_type = OrderType.MARKET  # Using market orders
+        order = Order(
+            instrument=instrument,
+            quantity=order_size,
+            order_type=order_type,
+            timestamp=timestamp,
+        )
+        self.orders.append(order)
+        return order
+
+    async def process_orders(self):
+        pending_orders = [
+            order for order in self.orders if order.status == OrderStatus.PENDING
+        ]
+        execution_tasks = [
+            self.execution_engine.execute_order(order) for order in pending_orders
+        ]
+        if execution_tasks:
+            await asyncio.gather(*execution_tasks)
+            # Update positions after orders are filled
+            for order in pending_orders:
+                if order.status == OrderStatus.FILLED:
+                    self.update_positions(order)
+
+    def update_positions(self, order: Order):
+        instrument = order.instrument
+        self.positions[instrument] = self.positions.get(instrument, 0) + order.quantity
+
+    def get_positions(self):
+        return self.positions
+
+    def get_open_orders(self):
+        return [order for order in self.orders if order.status == OrderStatus.PENDING]
+
+    def get_order_history(self):
+        return self.orders
