@@ -20,11 +20,18 @@ class TradingRule(ABC):
         super().__init__()
         self._price = price
         self._forecast = None
+        self._normalized_forecast = None
 
     @abstractmethod
     def calculate_forecast(self) -> pd.Series:
         """
         Calculate the forecast.
+        """
+
+    @abstractmethod
+    def normalize_forecast(self) -> pd.Series:
+        """
+        Normalize the forecast.
         """
 
     @property
@@ -40,6 +47,13 @@ class TradingRule(ABC):
         Return the forecast series.
         """
         return self._forecast
+
+    @property
+    def normalized_forecast(self) -> pd.Series:
+        """
+        Return the normalized forecast series.
+        """
+        return self._normalized_forecast
 
 
 class EWMACTradingRule(TradingRule):
@@ -70,6 +84,14 @@ class EWMACTradingRule(TradingRule):
         vol = robust_vol_calc(resampled_price.diff())
         self._forecast = raw_ewmac / vol
         self._price = resampled_price
+
+    def normalize_forecast(self, target_abs_forecast: float = 10.0) -> None:
+        """
+        Normalize the forecast.
+        :params target_abs_forecast: target absolute forecast
+        :returns: normalized forecast
+        """
+        self._normalized_forecast = self._forecast / target_abs_forecast
 
     @property
     def fast(self):
