@@ -12,7 +12,7 @@ from src.utils.command.command_utils import (
     version_callback,
     set_error_and_exit,
 )
-from src.cli import cli_app
+from src.cli_app import cli_app
 
 logger = logging.getLogger(IB_API_LOGGER_NAME)
 

@@ -17,7 +17,6 @@ from pathlib import Path
 from ib_async import IB, client, contract, util
 from ib_async.contract import Forex, Contract
 from openai import OpenAI
-from src.cli_app import cli_app
 from src.utils.command.command_callbacks import (
     validate_end_date,
     validate_duration,
@@ -26,6 +25,7 @@ from src.utils.command.command_callbacks import (
     validate_out_dir,
     validate_report_type,
 )
+from src.cli_app import cli_app
 from src.utils.command.command_utils import (
     init_logging,
     set_error_and_exit,
@@ -61,7 +61,8 @@ logger = logging.getLogger(IB_API_LOGGER_NAME)
 
 
 @cli_app.command(
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+    name="momentum-strategy",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def momentum_strategy(
     ctx: typer.Context,

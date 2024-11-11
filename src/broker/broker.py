@@ -4,10 +4,10 @@ Classes for interacting with the IB API.
 
 # standard library
 import logging
-import Enum
 import collections
 import asyncio
 from datetime import datetime
+from enum import Enum
 
 # third-party
 import backtrader as bt
