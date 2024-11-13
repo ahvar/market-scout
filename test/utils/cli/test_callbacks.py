@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from typer import BadParameter, Context
-from command.command_callbacks import (
+from src.utils.command.command_callbacks import (
     validate_duration,
     validate_end_date,
     validate_bar_size,

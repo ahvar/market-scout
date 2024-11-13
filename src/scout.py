@@ -1,63 +1,88 @@
-from datetime import datetime
-from dotenv import load_dotenv
-import logging
-import time
+#!/usr/bin/env python3
+"""
+Scout: Research the financial markets.
+"""
+
 import typer
-import random
-import pprint
-import backtrader as bt
-import pandas as pd
-from pprint import PrettyPrinter
-from typing import Optional
-from typing_extensions import Annotated
-from rich import print
-from rich.console import Console
-from rich.table import Table
+import logging
 from pathlib import Path
-from ib_async import IB, client, contract, util
-from ib_async.contract import Forex, Contract
-from openai import OpenAI
-from src.utils.command.command_callbacks import (
-    validate_end_date,
-    validate_duration,
-    validate_bar_size,
-    validate_end_time,
-    validate_out_dir,
-    validate_report_type,
+from dotenv import load_dotenv
+from typing import Optional, Annotated
+from rich import print as rprint
+from src.patch_ibpy2_files import patch_ibpy2
+from src.utils.references import (
+    __Application__,
+    __version__,
+    IB_API_LOGGER_NAME,
+    get_ticker,
+    get_bar_size,
+    get_duration_unit,
+    ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE,
+    ARBITRARY_VALUE_OF_PRICE_POINT,
+    ARBITRARY_FORECAST_CAPITAL,
+    ROOT_BDAYS_INYEAR,
+    NET_CURVE,
+    Frequency,
 )
-from src.scout import cli_app
 from src.utils.command.command_utils import (
     init_logging,
+    version_callback,
     set_error_and_exit,
-    convert_to_utc,
     make_dirs_and_write,
 )
-from src.broker.broker import retrieve_historical_data
+from src.utils.command.command_callbacks import (
+    validate_end_date,
+    validate_end_time,
+    validate_out_dir,
+)
 from src.accounts.profit_and_loss import (
     get_average_notional_position,
     get_notional_position_for_forecast,
 )
+from src.broker.broker import retrieve_historical_data
 from src.accounts.curve import AccountCurve
-from src.models.starter import Starter
 from src.models.vol import robust_daily_vol_given_price
 from src.accounts.profit_and_loss import ProfitAndLossWithSharpeRatioCosts
 from src.models.trading_rule import EWMACTradingRule
-from src.utils.references import (
-    IB_API_LOGGER_NAME,
-    bar_sizes,
-    duration_units,
-    report_types,
-    get_duration_unit,
-    get_bar_size,
-    get_ticker,
-    Frequency,
-    NET_CURVE,
-    ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE,
-    ARBITRARY_VALUE_OF_PRICE_POINT,
-    ARBITRARY_FORECAST_CAPITAL,
-)
 
+load_dotenv()
+patch_ibpy2()  # HACK Because this dependency is running python 2 code
+cli_app = typer.Typer()
 logger = logging.getLogger(IB_API_LOGGER_NAME)
+
+__copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
+
+
+@cli_app.callback(invoke_without_command=True)
+def callback(
+    ctx: typer.Context,
+    version: bool = typer.Option(
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Show software version",
+    ),
+):
+    """
+    Prints application information and exits if no subcommand is provided.
+    """
+    message = f"""
+    [bold]------------------------------------------------------------------------------------------------[/bold]
+    [bold blue]{__Application__.replace("_", " ").upper()} {__version__} [/bold blue]
+    [bold yellow]Research financial markets [/bold yellow]
+    [bold]------------------------------------------------------------------------------------------------[/bold]
+
+    [green]
+    Interact with your brokerage account to access real-time and historical market data, analyze trends, and
+    manage your positions.
+
+    For more detailed guidance on a command, you can type 'scout COMMAND --help'. For example, 'scout analyze --help'
+    will display detailed information about the analyze command.
+    """
+    if ctx.invoked_subcommand is None:
+        rprint(message)
+        raise typer.Exit()
 
 
 @cli_app.command(
@@ -181,3 +206,14 @@ def momentum_strategy(
     except Exception as e:
         logger.error("An error occurred: %s", e)
         raise Exception(e) from e
+
+
+try:
+    app_log = init_logging(logging.DEBUG)
+    app_log.log_application_start()
+    cli_app()
+except Exception as e:
+    logger.error("An error occurred: %s", e)
+    set_error_and_exit(e)
+finally:
+    app_log.log_application_finish()
