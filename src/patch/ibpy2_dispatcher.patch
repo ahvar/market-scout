@@ -1,5 +1,5 @@
---- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_dispatcher.py	2024-09-26 15:15:59.000000000 -0500
-+++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_dispatcher.py	2024-09-26 15:15:59.000000000 -0500
+--- /Users/arthurvargas/dev/market-scout/src/patch/ibpy2_original_dispatcher.py	2024-11-26 10:57:50
++++ /Users/arthurvargas/dev/market-scout/src/patch/ibpy2_modified_dispatcher.py	2024-11-26 10:57:50
 @@ -5,7 +5,7 @@
  # Defines Dispatcher class to send messages to registered listeners.
  #

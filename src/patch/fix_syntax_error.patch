@@ -1,5 +1,5 @@
---- /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_original_init.py	2024-09-26 15:15:59.000000000 -0500
-+++ /Users/arthurvargas/dev/src/git/market-scout/src/patch/ibpy2_modified_init.py	2024-09-26 15:15:59.000000000 -0500
+--- /Users/arthurvargas/dev/market-scout/src/patch/ibpy2_original_init.py	2024-11-26 10:57:50
++++ /Users/arthurvargas/dev/market-scout/src/patch/ibpy2_modified_init.py	2024-11-26 10:57:50
 @@ -16,26 +16,26 @@
  import struct
  import sys
@@ -249,8 +249,8 @@
 +        except socket.error as ex:
              return False
 -        
-+
  
++
  class StringBuffer(list):
 -    """ Partial implementation of the Java StringBuffer type
 +    """Partial implementation of the Java StringBuffer type

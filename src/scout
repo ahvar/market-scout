@@ -2,14 +2,16 @@
 """
 Scout: Research the financial markets.
 """
+from dotenv import load_dotenv
+from src.patch_ibpy2_files import patch_ibpy2
+load_dotenv()
+patch_ibpy2()  # HACK Because this dependency is running python 2 code
 
 import typer
 import logging
 from pathlib import Path
-from dotenv import load_dotenv
 from typing import Optional, Annotated
 from rich import print as rprint
-from src.patch_ibpy2_files import patch_ibpy2
 from src.utils.references import (
     __Application__,
     __version__,
@@ -50,7 +52,7 @@ patch_ibpy2()  # HACK Because this dependency is running python 2 code
 cli_app = typer.Typer()
 logger = logging.getLogger(IB_API_LOGGER_NAME)
 
-__copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
+__copyright__ = "Copyright \xa9 2024 Arthur Vargas | ahvargas92@gmail.com"
 
 
 @cli_app.callback(invoke_without_command=True)
