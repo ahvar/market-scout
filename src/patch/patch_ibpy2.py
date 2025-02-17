@@ -19,6 +19,7 @@ def generate_patch(original: Path, corrected: Path, patch: Path):
                 ],
                 check=True,
                 stdout=patch_out,
+                stderr=subprocess.DEVNULL,
             )
     except subprocess.CalledProcessError as e:
         if e.returncode == 1:
@@ -49,6 +50,8 @@ def apply_patch(target: Path, patch_content: Path):
             input=patch_content,
             text=True,
             check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
     except subprocess.CalledProcessError as e:
         if e.returncode == 1:
