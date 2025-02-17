@@ -1,0 +1,42 @@
+@startuml
+skinparam linetype ortho
+skinparam dpi 150
+skinparam shadowing true
+skinparam packageStyle Rectangle
+skinparam componentStyle Rectangle
+
+left to right direction
+
+package "AWS Cloud" {
+
+    package "ECS Fargate Cluster" {
+        rectangle "Containerized Trading Application" as CONTAINER {
+            rectangle "CLI Application\n(Command-Line Interface)" as CLI
+            rectangle "Flask Frontend\n(Visual Market Data UI)" as FRONTEND
+        }
+    }
+
+    rectangle "IB Async Library\n(Python Library)" as IB_Lib
+    rectangle "Interactive Brokers\n(Broker API)" as IB
+
+    database "SQL Database\n(PostgreSQL/MySQL)" as DB
+    database "Redis Cache\n(Amazon ElastiCache - Redis)" as CACHE
+
+}
+
+' Spacing elements for improved readability
+rectangle "   " as SPACE1
+rectangle "   " as SPACE2
+
+' CLI App Interactions
+CLI --> IB_Lib : Fetches Market Data & Orders
+IB_Lib --> IB : Market Data & Orders
+
+CLI --> DB : Stores User Sessions
+CLI --> CACHE : Caches Market Data
+
+' Flask Frontend Interactions
+FRONTEND --> DB : Reads Market Data & Orders
+FRONTEND --> CACHE : Retrieves Cached Data
+
+@enduml

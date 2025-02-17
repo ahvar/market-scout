@@ -154,7 +154,7 @@ ibpy2_dispatcher_filepath = (
     project_root
     / "envs"
     / "lib"
-    / "python3.11"
+    / "python3.12"
     / "site-packages"
     / "ib"
     / "opt"
@@ -169,7 +169,7 @@ ibpy2_init_filepath = (
     project_root
     / "envs"
     / "lib"
-    / "python3.11"
+    / "python3.12"
     / "site-packages"
     / "ib"
     / "lib"
@@ -190,7 +190,7 @@ ibpy2_overloading_filepath = (
     project_root
     / "envs"
     / "lib"
-    / "python3.11"
+    / "python3.12"
     / "site-packages"
     / "ib"
     / "lib"
@@ -211,7 +211,7 @@ ibpy2_eclient_socket_filepath = (
     project_root
     / "envs"
     / "lib"
-    / "python3.11"
+    / "python3.12"
     / "site-packages"
     / "ib"
     / "ext"
@@ -226,7 +226,7 @@ ibpy2_ereader_filepath = (
     project_root
     / "envs"
     / "lib"
-    / "python3.11"
+    / "python3.12"
     / "site-packages"
     / "ib"
     / "ext"
@@ -240,7 +240,7 @@ ibpy2_message_filepath = (
     project_root
     / "envs"
     / "lib"
-    / "python3.11"
+    / "python3.12"
     / "site-packages"
     / "ib"
     / "opt"
@@ -445,5 +445,5 @@ hist_data_farm_msgs = [
 pacing_violation = [162]
 
 __Application__ = "MarketScout"
-__version__ = "1.0.0"
+__version__ = "0.1.0"
 IB_API_LOGGER_NAME = f"{__Application__}_{__version__}_driver"

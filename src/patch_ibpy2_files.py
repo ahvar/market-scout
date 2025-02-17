@@ -41,21 +41,21 @@ from src.utils.references import (
 
 
 def patch_ibpy2():
-    print("patching IbPy2 __init__.py ...")
+    # patching IbPy2 __init__.py
     generate_patch(
         original=ibpy2_original_init_file,
         corrected=ibpy2_modified_init_file,
         patch=ibpy2_init_patch_file,
     )
     apply_patch(target=ibpy2_init_filepath, patch_content=ibpy2_init_patch_file)
-    print("patching IbPy2 dispatcher.py ...")
+    # patching IbPy2 dispatcher.py
     generate_patch(
         original=original_dispatcher_file,
         corrected=modified_dispatcher_file,
         patch=dispatcher_patch_file,
     )
     apply_patch(target=ibpy2_dispatcher_filepath, patch_content=dispatcher_patch_file)
-    print("patching IbPy2 overloading.py ...")
+    # patching IbPy2 overloading.py
     generate_patch(
         original=ibpy2_original_overloading_file,
         corrected=ibpy2_modified_overloading_file,
@@ -64,7 +64,7 @@ def patch_ibpy2():
     apply_patch(
         target=ibpy2_overloading_filepath, patch_content=ibpy2_overloading_patch_file
     )
-    print("patching IbPy2 EClientSocket.py ...")
+    # IbPy2 EClientSocket.py
     generate_patch(
         original=ibpy2_original_eclient_socket,
         corrected=ibpy2_modified_eclient_socket,
@@ -73,8 +73,7 @@ def patch_ibpy2():
     apply_patch(
         target=ibpy2_eclient_socket_filepath, patch_content=ibpy2_eclient_socket_patch
     )
-
-    print("patching IbPy2 EReader.py ...")
+    # IbPy2 EReader.py
     generate_patch(
         original=ibpy2_original_ereader,
         corrected=ibpy2_modified_ereader,
@@ -82,7 +81,7 @@ def patch_ibpy2():
     )
     apply_patch(target=ibpy2_ereader_filepath, patch_content=ibpy2_ereader_patch)
 
-    print("patching IbPy2 message.py ...")
+    # IbPy2 message.py
     generate_patch(
         original=ibpy2_original_message,
         corrected=ibpy2_modified_message,
