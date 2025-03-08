@@ -1,7 +1,7 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
 import pandas as pd
-from src.models.vol import robust_vol_calc
+from src.strategies.vol import robust_vol_calc
 
 
 class TradingRule(ABC):

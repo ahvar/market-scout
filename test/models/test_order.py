@@ -6,7 +6,7 @@ from ibapi.contract import Contract
 
 import unittest
 from ibapi.contract import Contract
-from src.models.order import ContractFactory
+from src.strategies.order import ContractFactory
 
 
 class TestContractFactory(unittest.TestCase):

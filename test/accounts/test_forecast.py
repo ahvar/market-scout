@@ -2,8 +2,8 @@ import unittest
 import pytest
 import pandas as pd
 import numpy as np
-from src.models.vol import robust_daily_vol_given_price
-from src.models.trading_rule import EWMACTradingRule
+from src.strategies.vol import robust_daily_vol_given_price
+from src.strategies.trading_rule import EWMACTradingRule
 from src.accounts.profit_and_loss import (
     get_average_notional_position,
     get_notional_position_for_forecast,

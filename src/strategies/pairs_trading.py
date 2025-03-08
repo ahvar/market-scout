@@ -1,6 +1,6 @@
 """Pairs trading strategy"""
 
-from src.models.strategies.base_strategy import BaseStrategy
+from src.strategies.base_strategy import BaseStrategy
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.stattools import coint

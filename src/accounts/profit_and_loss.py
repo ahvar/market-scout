@@ -11,7 +11,7 @@ from src.utils.references import (
     GROSS_CURVE,
     COSTS_CURVE,
 )
-from src.models.vol import robust_daily_vol_given_price
+from src.strategies.vol import robust_daily_vol_given_price
 from src.utils.command.command_exceptions import MissingData
 
 from src.utils.references import (

@@ -5,7 +5,7 @@ Unit tests for indicators
 import unittest
 from unittest.mock import patch
 import pandas as pd
-from src.models.indicator import MovingAverage
+from src.strategies.indicator import MovingAverage
 
 
 class TestMovingAverage(unittest.TestCase):

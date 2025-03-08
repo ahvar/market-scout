@@ -44,38 +44,6 @@ def index():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    NOTE:
-    ----------
-    GET method
-    ----------
-    When the browser sends the GET request to receive the web page with the form, this method
-    is going to return False, so in that case the function skips the if statement and goes
-    directly to render the template in the last line of the function.
-
-    ------------
-    POST method
-    ------------
-    When the browser sends the POST request as a result of the user pressing the submit button,
-    form.validate_on_submit() is going to gather all the data, run all the validators attached to fields,
-    and if everything is all right it will return True
-
-    -----------------
-    Logging users in
-    -----------------
-    The current_user variable comes from the Flask-Login, and can be used at any time during the handling
-    of a request to obtain the user object that represents the client of that request.
-
-    -------------------
-    Redirecting
-    -------------------
-    If the user is not logged in and navigates to /index, @login_required will redirect to /login
-    but will add a query string argument to build complete redirect URL: /login?next=/next
-    This allows the application to redirect back to the original URL, attempted before login.
-    An attacker could insert a URL to a malicious site in the next argument, so the app only redirects
-    when the URL is relative: urlsplit() and check if netloc component is set or not
-
-    """
     pandl_form = ProfitAndLossForm()
     trade_form = TradeForm()
     if current_user.is_authenticated:
