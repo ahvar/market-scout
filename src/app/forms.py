@@ -10,7 +10,7 @@ from wtforms import (
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo
 import sqlalchemy as sa
 from src.app import db
-from src.app.models.user import User
+from src.app.models.researcher import Researcher
 from src.app.models.trade import Trade
 from src.app.models.profit_and_loss import ProfitAndLoss
 
@@ -43,11 +43,11 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField("Register")
 
     def validate_username(self, username):
-        user = db.session.scalar(sa.select(User).where(User.username == username.data))
+        user = db.session.scalar(sa.select(Researcher).where(Researcher.username == username.data))
         if user is not None:
             raise ValidationError("Please use a different username")
 
     def validate_email(self, email):
-        user = db.session.scalar(sa.select(User).where(User.email == email.data))
+        user = db.session.scalar(sa.select(Researcher).where(Researcher.email == email.data))
         if user is not None:
             raise ValidationError("Please use a different email address")
