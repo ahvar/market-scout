@@ -6,7 +6,7 @@ import backtrader as bt
 import asyncio
 from datetime import datetime
 from src.broker.broker import IBAsyncBroker
-from src.models.starter import Starter
+from src.strategies.starter import Starter
 from ib_async.contract import Forex, Stock
 
 

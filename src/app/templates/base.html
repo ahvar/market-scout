@@ -21,8 +21,6 @@
         {% endif %}
     </div>
     <hr>
-    <!-- The get_flashed_messages() function comes from Flask, and returns a list
-     of all the messages that have been registered with flash() previously.-->
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <ul>

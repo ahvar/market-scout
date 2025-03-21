@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 from flask_login import current_user, login_user, logout_user, login_required
 from src.app import app, db
 from src.app.forms import LoginForm, TradeForm, ProfitAndLossForm, RegistrationForm
-from src.app.models.user import User
+from src.app.models.researcher import Researcher
 
 import sqlalchemy as sa
 
@@ -44,38 +44,6 @@ def index():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    NOTE:
-    ----------
-    GET method
-    ----------
-    When the browser sends the GET request to receive the web page with the form, this method
-    is going to return False, so in that case the function skips the if statement and goes
-    directly to render the template in the last line of the function.
-
-    ------------
-    POST method
-    ------------
-    When the browser sends the POST request as a result of the user pressing the submit button,
-    form.validate_on_submit() is going to gather all the data, run all the validators attached to fields,
-    and if everything is all right it will return True
-
-    -----------------
-    Logging users in
-    -----------------
-    The current_user variable comes from the Flask-Login, and can be used at any time during the handling
-    of a request to obtain the user object that represents the client of that request.
-
-    -------------------
-    Redirecting
-    -------------------
-    If the user is not logged in and navigates to /index, @login_required will redirect to /login
-    but will add a query string argument to build complete redirect URL: /login?next=/next
-    This allows the application to redirect back to the original URL, attempted before login.
-    An attacker could insert a URL to a malicious site in the next argument, so the app only redirects
-    when the URL is relative: urlsplit() and check if netloc component is set or not
-
-    """
     pandl_form = ProfitAndLossForm()
     trade_form = TradeForm()
     if current_user.is_authenticated:
@@ -83,7 +51,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = db.session.scalar(
-            sa.select(User).where(User.username == form.username.data)
+            sa.select(Researcher).where(Researcher.username == form.username.data)
         )
         if user is None or not user.check_password(form.password.data):
             flash("Invalid username or password")
@@ -109,7 +77,7 @@ def register():
         return redirect(url_for("index"))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = Researcher(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
@@ -121,7 +89,7 @@ def register():
 @app.route("/user/<username>")
 @login_required
 def user(username):
-    user = db.first_or_404(sa.select(User).where(User.username == username))
+    user = db.first_or_404(sa.select(Researcher).where(Researcher.username == username))
     # pandl = user.pandl
     # trades = pandl.trades if pandl else []
     trades = [

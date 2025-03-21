@@ -2,7 +2,7 @@
 Trading Rules
 """
 
-from src.models.indicator import MovingAverage, Indicator
+from src.strategies.indicator import MovingAverage, Indicator
 from abc import ABC, ABCMeta, abstractmethod
 import pandas as pd
 import numpy as np
