@@ -43,9 +43,9 @@ from src.accounts.profit_and_loss import (
 )
 from src.broker.broker import retrieve_historical_data
 from src.accounts.curve import AccountCurve
-from src.models.vol import robust_daily_vol_given_price
+from src.strategies.vol import robust_daily_vol_given_price
 from src.accounts.profit_and_loss import ProfitAndLossWithSharpeRatioCosts
-from src.models.trading_rule import EWMACTradingRule
+from src.strategies.trading_rule import EWMACTradingRule
 
 load_dotenv()
 patch_ibpy2()  # HACK Because this dependency is running python 2 code

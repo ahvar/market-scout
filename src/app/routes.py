@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 from flask_login import current_user, login_user, logout_user, login_required
 from src.app import app, db
 from src.app.forms import LoginForm, TradeForm, ProfitAndLossForm, RegistrationForm
-from src.app.models.user import User
+from src.app.models.researcher import Researcher
 
 import sqlalchemy as sa
 
@@ -51,7 +51,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = db.session.scalar(
-            sa.select(User).where(User.username == form.username.data)
+            sa.select(Researcher).where(Researcher.username == form.username.data)
         )
         if user is None or not user.check_password(form.password.data):
             flash("Invalid username or password")
@@ -77,7 +77,7 @@ def register():
         return redirect(url_for("index"))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = Researcher(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
@@ -89,7 +89,7 @@ def register():
 @app.route("/user/<username>")
 @login_required
 def user(username):
-    user = db.first_or_404(sa.select(User).where(User.username == username))
+    user = db.first_or_404(sa.select(Researcher).where(Researcher.username == username))
     # pandl = user.pandl
     # trades = pandl.trades if pandl else []
     trades = [
