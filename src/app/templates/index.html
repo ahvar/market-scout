@@ -1,13 +1,9 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h1>Hello, {{ current_user.username }}!</h1>
-<h2>{{ current_user.pandl.name }}</h2>
-<ul>
-{% for trade in current_user.pandl.trades %}
-    <li>
-        <p>Trade ID: {{ trade.id }}</p>
-        <p>Date: {{ trade.date }}</p>
-    </li>
-{% endfor %}
-</ul>
+    <h1>Hello, {{ current_user.researcher_name }}!</h1>
+    <h2>{{ current_user.pandl.name }}</h2>
+    {% for trade in trades %}
+    <div><p>{{ trade.owner.researcher_name}} says: <b>{{ trade.date }}</b></p></div>
+    {% endfor %}
 {% endblock %}

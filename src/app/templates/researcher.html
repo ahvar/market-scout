@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <table>
+        <tr valign="top">
+            <td><img src="{{ researcher.avatar(128) }}"></td>
+            <td>
+                <h1>User: {{ researcher.researcher_name }}</h1>
+                {% if researcher.about_me %}<p>{{ researcher.about_me }}</p>{% endif %}
+                {% if researcher.last_seen %}<p>{{ researcher.last_seen }}</p>{% endif %}
+                {% if researcher == current_user %}
+                <p><a href="{{ url_for('edit_profile') }}">Edit your profile</a></p>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+    <hr>
+    {% for trade in trades %}
+        {% include '_trade.html' %}
+    {% endfor %}
+{% endblock %}
