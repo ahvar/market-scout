@@ -45,7 +45,7 @@ def login():
         next_page = request.args.get("next")
         if not next_page or urlsplit(next_page).netloc != "":
             next_page = url_for("index")
-        return redirect(url_for(next_page))
+        return redirect(next_page)
     return render_template("login.html", title="Sign In", form=form)
 
 
@@ -72,7 +72,7 @@ def register():
 
 @app.route("/researcher/<researcher_name>")
 @login_required
-def reseacher(researcher_name):
+def researcher(researcher_name):
     researcher = db.first_or_404(sa.select(Researcher).where(Researcher.researcher_name == researcher_name))
     # pandl = user.pandl
     # trades = pandl.trades if pandl else []
@@ -80,7 +80,7 @@ def reseacher(researcher_name):
         {"researcher": researcher, "instrument": "SPY"},
         {"researcher": researcher, "instrument": "AMZN"},
     ]
-    return render_template("researcher.html", user=researcher, trades=trades)
+    return render_template("researcher.html", researcher=researcher, trades=trades)
 
 @app.route('/edit_profile', methods=['GET','POST'])
 @login_required
