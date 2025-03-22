@@ -6,8 +6,9 @@ from wtforms import (
     SubmitField,
     DateField,
     FloatField,
+    TextAreaField
 )
-from wtforms.validators import DataRequired, ValidationError, Email, EqualTo
+from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length
 import sqlalchemy as sa
 from src.app import db
 from src.app.models.researcher import Researcher
@@ -16,7 +17,7 @@ from src.app.models.profit_and_loss import ProfitAndLoss
 
 
 class LoginForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired()])
+    researcher_name = StringField("Researcher Name", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     remember_me = BooleanField("Remember Me")
     submit = SubmitField("Sign In")
@@ -34,7 +35,7 @@ class TradeForm(FlaskForm):
 
 
 class RegistrationForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired()])
+    researcher_name = StringField("Researcher Name", validators=[DataRequired()])
     email = StringField("Email", validators=[DataRequired(), Email()])
     password = PasswordField("Password", validators=[DataRequired()])
     password2 = PasswordField(
@@ -42,12 +43,17 @@ class RegistrationForm(FlaskForm):
     )
     submit = SubmitField("Register")
 
-    def validate_username(self, username):
-        user = db.session.scalar(sa.select(Researcher).where(Researcher.username == username.data))
-        if user is not None:
-            raise ValidationError("Please use a different username")
+    def validate_researcher_name(self, researcher_name):
+        researcher = db.session.scalar(sa.select(Researcher).where(Researcher.researcher_name == researcher_name.data))
+        if researcher is not None:
+            raise ValidationError("Please use a different researcher name")
 
     def validate_email(self, email):
-        user = db.session.scalar(sa.select(Researcher).where(Researcher.email == email.data))
-        if user is not None:
+        researcher = db.session.scalar(sa.select(Researcher).where(Researcher.email == email.data))
+        if researcher is not None:
             raise ValidationError("Please use a different email address")
+        
+class EditProfileForm(FlaskForm):
+    researcher_name = StringField('Researcher Name', validators=[DataRequired()])
+    about_me = TextAreaField('About Me', validators=[Length(min=0,max=140)])
+    submit = SubmitField('Submit')
