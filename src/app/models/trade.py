@@ -12,10 +12,9 @@ class Trade(db.Model):
     date: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc)
     )
-    researcher_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("researcher.id"), index=True)
-    owner_id: so.Mapped[int] = so.mapped_column(
-        sa.ForeignKey("profit_and_loss.id"), index=True
+    profit_and_loss_id: so.Mapped[int] = so.mapped_column(
+        sa.ForeignKey("profit_and_loss.id"), name="fk_profit_and_loss_id", index=True
     )
-    owner: so.Mapped["ProfitAndLoss"] = so.relationship(
+    profit_and_loss: so.Mapped["ProfitAndLoss"] = so.relationship(
         "ProfitAndLoss", back_populates="trades"
     )

@@ -7,6 +7,8 @@ from flask_login import current_user, login_user, logout_user, login_required
 from src.app import app, db
 from src.app.forms import LoginForm, TradeForm, ProfitAndLossForm, RegistrationForm, EditProfileForm
 from src.app.models.researcher import Researcher
+from src.app.models.trade import Trade
+from src.app.models.profit_and_loss import ProfitAndLoss
 
 import sqlalchemy as sa
 
@@ -76,10 +78,11 @@ def researcher(researcher_name):
     researcher = db.first_or_404(sa.select(Researcher).where(Researcher.researcher_name == researcher_name))
     # pandl = user.pandl
     # trades = pandl.trades if pandl else []
-    trades = [
-        {"researcher": researcher, "instrument": "SPY"},
-        {"researcher": researcher, "instrument": "AMZN"},
-    ]
+    trades = db.session.scalars(
+        sa.select(Trade)
+        .join(ProfitAndLoss)
+        .where(ProfitAndLoss.researcher_id == researcher.id)
+    ).all()
     return render_template("researcher.html", researcher=researcher, trades=trades)
 
 @app.route('/edit_profile', methods=['GET','POST'])
