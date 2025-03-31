@@ -13,7 +13,7 @@ import pytz
 from typer import Context, BadParameter
 from datetime import datetime, timedelta
 from pathlib import Path
-from src.utils.command.command_utils import (
+from src.utils.helpers import (
     parse_datetime,
     convert_to_utc,
 )
@@ -21,12 +21,12 @@ from src.utils.references import (
     date_formats,
     time_formats,
     bar_sizes,
-    IB_API_LOGGER_NAME,
+    MKT_SCOUT_CLI,
     duration_units,
     DateTimeType,
 )
 
-logger = logging.getLogger(IB_API_LOGGER_NAME)
+logger = logging.getLogger(MKT_SCOUT_CLI)
 
 
 def validate_report_type(ctx: Context, report_type: str) -> str:

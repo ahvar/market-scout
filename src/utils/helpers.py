@@ -26,15 +26,16 @@ from src.utils.references import (
     week,
     day,
     minute,
-    IB_API_LOGGER_NAME,
+    MKT_SCOUT_CLI,
+    MKT_SCOUT_FRONTEND,
     __Application__,
     __version__,
     DateTimeType,
 )
 
-__copyright__ = "Copyright \xa9 2023 Arthur Vargas | ahvargas92@gmail.com"
+__copyright__ = "Copyright \xa9 2025 Arthur Vargas | arthurvargasdev@gmail.com"
 
-logger = logging.getLogger(IB_API_LOGGER_NAME)
+logger = logging.getLogger(MKT_SCOUT_CLI)
 
 
 def version_callback(value: bool) -> None:
@@ -108,8 +109,14 @@ def parse_datetime(
 
     raise ValueError(f"Format not recognized: {datetime_string}")
 
+def _make_logfile_parent_dir_and_get_path() -> Path:
+    try:
+        logfile_parent = Path("/opt/eon/log") / __Application__ / __version__.replace('.','_') / time.strftime("%Y%m%d%H%M%S")
+        logfile_parent.mkdir(exist_ok=True, parents=True)
+    except LogFileCreationError as lfe:
+        set_error_and_exit(f"Unable to create logfile parent dir: {lfe.filespec}")
 
-def init_logging(log_level: str) -> LoggingUtils:
+def init_cli_logger(log_level: str) -> LoggingUtils:
     """
     Initiate app log
 
@@ -117,13 +124,11 @@ def init_logging(log_level: str) -> LoggingUtils:
     :returns LoggingUtils: logging utility for consistent log formats
     """
     try:
-        timestamp = time.strftime("%Y%m%d%H%M%S")
-        log_dir = Path("/opt/eon/log") / __Application__ / timestamp
-        log_file = log_dir / "app.log"
-        log_dir.mkdir(exist_ok=True, parents=True)
+        logfile_parent = _make_logfile_parent_dir_and_get_path()
+        log_file = logfile_parent / f"{MKT_SCOUT_CLI}.log"
 
         logging_utils = LoggingUtils(
-            application_name=IB_API_LOGGER_NAME,
+            application_name=MKT_SCOUT_CLI,
             log_file=log_file,
             file_level=log_level,
             console_level=logging.ERROR,
@@ -132,12 +137,25 @@ def init_logging(log_level: str) -> LoggingUtils:
     except LogFileCreationError as lfe:
         set_error_and_exit(f"Unable to create log file: {lfe.filespec}")
 
+def init_frontend_logger(log_level: str) -> LoggingUtils:
+    try:
+        logfile_parent = _make_logfile_parent_dir_and_get_path()
+        log_file = logfile_parent / f"{MKT_SCOUT_FRONTEND}.log"
+
+        logging_utils = LoggingUtils(
+            application_name=MKT_SCOUT_FRONTEND,
+            log_file=log_file,
+            file_level=log_level,
+            console_level=logging.ERROR,
+        )
+        return logging_utils
+    except LogFileCreationError as lfe:
+        set_error_and_exit(f"Unable to create log file: {lfe.filespec}")
 
 def load_config(config_path: str):
     """Load and return configuration from a YAML file."""
     with open(config_path) as file:
         return yaml.safe_load(file)
-
 
 def make_dirs_and_write(
     outdir: Path,

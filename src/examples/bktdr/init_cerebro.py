@@ -11,7 +11,6 @@ pp = PrettyPrinter(indent=4)
 
 
 def get_ib_and_price_data():
-
     ib = IB()
     ib.connect(host="127.0.0.1", port=4002, clientId=1, timeout=30)
 

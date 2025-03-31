@@ -8,9 +8,9 @@ import logging
 import pandas as pd
 import numpy as np
 
-from src.utils.references import IB_API_LOGGER_NAME
+from src.utils.references import MKT_SCOUT_CLI
 
-indicator_logger = logging.getLogger(IB_API_LOGGER_NAME)
+indicator_logger = logging.getLogger(MKT_SCOUT_CLI)
 
 
 class Indicator(ABC):

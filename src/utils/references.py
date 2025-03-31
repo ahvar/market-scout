@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from enum import Enum
 from datetime import datetime
-from src.utils.command.command_exceptions import MissingData
+from src.utils.exceptions import MissingData
 
 
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -446,4 +446,6 @@ pacing_violation = [162]
 
 __Application__ = "MarketScout"
 __version__ = "0.1.0"
-IB_API_LOGGER_NAME = f"{__Application__}_{__version__}_driver"
+MKT_SCOUT_CLI = f"{__Application__}_{__version__}_cli"
+MKT_SCOUT_FRONTEND = f"{__Application__}_{__version__}_frontend"
+
