@@ -64,3 +64,17 @@ class EditProfileForm(FlaskForm):
     researcher_name = StringField("Researcher Name", validators=[DataRequired()])
     about_me = TextAreaField("About Me", validators=[Length(min=0, max=140)])
     submit = SubmitField("Submit")
+
+    def __init__(self, original_researcher_name, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.original_researcher_name = original_researcher_name
+
+    def validate_username(self, researcher_name):
+        if researcher_name.data != self.original_researcher_name:
+            researcher = db.session.scalar(
+                sa.select(Researcher).where(
+                    Researcher.researcher_name == researcher_name.data
+                )
+            )
+            if researcher is not None:
+                raise ValidationError("Please use a different researcher name.")

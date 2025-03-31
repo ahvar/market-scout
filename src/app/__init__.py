@@ -17,6 +17,7 @@ migrate = Migrate(app, db)
 
 login = LoginManager(app)
 login.login_view = "login"
+app_logger = None
 
 if not app.debug:
     if app.config["MAIL_SERVER"]:
@@ -36,7 +37,7 @@ if not app.debug:
         )
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
-    init_frontend_logger(logging.INFO)
+    app_logger = init_frontend_logger(logging.INFO)
 
 
 from src.app import routes, errors
