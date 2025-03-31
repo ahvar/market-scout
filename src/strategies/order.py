@@ -4,9 +4,9 @@ Defines <tbd>
 
 import logging
 from ibapi.contract import Contract
-from src.utils.references import IB_API_LOGGER_NAME
+from src.utils.references import MKT_SCOUT_CLI
 
-contract_logger = logging.getLogger(IB_API_LOGGER_NAME)
+contract_logger = logging.getLogger(MKT_SCOUT_CLI)
 
 
 class ContractFactory:

@@ -17,7 +17,7 @@ from ib_async.ib import IB, util
 from ib_async.contract import Stock, Forex
 from ib_async.order import LimitOrder, MarketOrder
 
-from src.utils.command.command_utils import set_error_and_exit
+from src.utils.helpers import set_error_and_exit
 from src.utils.references import (
     socket_drop,
     connection_broken,
@@ -35,9 +35,9 @@ from src.broker.ib_api_exception import (
     HistoricalDataMissingException,
 )
 
-from src.utils.references import IB_API_LOGGER_NAME
+from src.utils.references import MKT_SCOUT_CLI
 
-ib_api_logger = logging.getLogger(IB_API_LOGGER_NAME)
+ib_api_logger = logging.getLogger(MKT_SCOUT_CLI)
 
 
 def connect_ib(host: str, port: int, client_id: int) -> IB:

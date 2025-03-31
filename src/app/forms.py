@@ -6,7 +6,7 @@ from wtforms import (
     SubmitField,
     DateField,
     FloatField,
-    TextAreaField
+    TextAreaField,
 )
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length
 import sqlalchemy as sa
@@ -44,16 +44,37 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField("Register")
 
     def validate_researcher_name(self, researcher_name):
-        researcher = db.session.scalar(sa.select(Researcher).where(Researcher.researcher_name == researcher_name.data))
+        researcher = db.session.scalar(
+            sa.select(Researcher).where(
+                Researcher.researcher_name == researcher_name.data
+            )
+        )
         if researcher is not None:
             raise ValidationError("Please use a different researcher name")
 
     def validate_email(self, email):
-        researcher = db.session.scalar(sa.select(Researcher).where(Researcher.email == email.data))
+        researcher = db.session.scalar(
+            sa.select(Researcher).where(Researcher.email == email.data)
+        )
         if researcher is not None:
             raise ValidationError("Please use a different email address")
-        
+
+
 class EditProfileForm(FlaskForm):
-    researcher_name = StringField('Researcher Name', validators=[DataRequired()])
-    about_me = TextAreaField('About Me', validators=[Length(min=0,max=140)])
-    submit = SubmitField('Submit')
+    researcher_name = StringField("Researcher Name", validators=[DataRequired()])
+    about_me = TextAreaField("About Me", validators=[Length(min=0, max=140)])
+    submit = SubmitField("Submit")
+
+    def __init__(self, original_researcher_name, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.original_researcher_name = original_researcher_name
+
+    def validate_username(self, researcher_name):
+        if researcher_name.data != self.original_researcher_name:
+            researcher = db.session.scalar(
+                sa.select(Researcher).where(
+                    Researcher.researcher_name == researcher_name.data
+                )
+            )
+            if researcher is not None:
+                raise ValidationError("Please use a different researcher name.")

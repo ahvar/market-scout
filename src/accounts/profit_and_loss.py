@@ -12,7 +12,7 @@ from src.utils.references import (
     COSTS_CURVE,
 )
 from src.strategies.vol import robust_daily_vol_given_price
-from src.utils.command.command_exceptions import MissingData
+from src.utils.exceptions import MissingData
 
 from src.utils.references import (
     ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE,

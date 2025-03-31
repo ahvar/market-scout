@@ -4,7 +4,7 @@ scout app
 
 from src.patch.patch_ibpy2 import generate_patch, apply_patch
 from src.utils.references import (
-    IB_API_LOGGER_NAME,
+    MKT_SCOUT_CLI,
     bar_sizes,
     duration_units,
     report_types,

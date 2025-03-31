@@ -11,6 +11,7 @@ import getpass
 import platform
 import sys
 from datetime import datetime, timedelta
+from logging.handlers import RotatingFileHandler
 
 
 class LogFileCreationError(Exception):
@@ -79,9 +80,7 @@ class LoggingUtils:
                 self._file_name = os.path.join(self._app_Name + ".log")
 
             try:
-                self._file_handler = logging.FileHandler(
-                    self._file_name, encoding="UTF-8"
-                )
+                self._file_handler = RotatingFileHandler(self._file_name, maxBytes=10240, backupCount=10)
             except IOError:
                 raise LogFileCreationError(self._file_name)
 

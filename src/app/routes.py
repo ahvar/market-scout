@@ -5,7 +5,13 @@ from flask import render_template, flash, redirect, url_for, request
 from urllib.parse import urlsplit
 from flask_login import current_user, login_user, logout_user, login_required
 from src.app import app, db
-from src.app.forms import LoginForm, TradeForm, ProfitAndLossForm, RegistrationForm, EditProfileForm
+from src.app.forms import (
+    LoginForm,
+    TradeForm,
+    ProfitAndLossForm,
+    RegistrationForm,
+    EditProfileForm,
+)
 from src.app.models.researcher import Researcher
 from src.app.models.trade import Trade
 from src.app.models.profit_and_loss import ProfitAndLoss
@@ -38,7 +44,9 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         researcher = db.session.scalar(
-            sa.select(Researcher).where(Researcher.researcher_name == form.researcher_name.data)
+            sa.select(Researcher).where(
+                Researcher.researcher_name == form.researcher_name.data
+            )
         )
         if researcher is None or not researcher.check_password(form.password.data):
             flash("Invalid researcher name or password")
@@ -63,7 +71,9 @@ def register():
         return redirect(url_for("index"))
     form = RegistrationForm()
     if form.validate_on_submit():
-        researcher = Researcher(researcher_name=form.researcher_name.data, email=form.email.data)
+        researcher = Researcher(
+            researcher_name=form.researcher_name.data, email=form.email.data
+        )
         researcher.set_password(form.password.data)
         db.session.add(researcher)
         db.session.commit()
@@ -75,7 +85,9 @@ def register():
 @app.route("/researcher/<researcher_name>")
 @login_required
 def researcher(researcher_name):
-    researcher = db.first_or_404(sa.select(Researcher).where(Researcher.researcher_name == researcher_name))
+    researcher = db.first_or_404(
+        sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
+    )
     # pandl = user.pandl
     # trades = pandl.trades if pandl else []
     trades = db.session.scalars(
@@ -85,20 +97,22 @@ def researcher(researcher_name):
     ).all()
     return render_template("researcher.html", researcher=researcher, trades=trades)
 
-@app.route('/edit_profile', methods=['GET','POST'])
+
+@app.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
-    form = EditProfileForm()
+    form = EditProfileForm(current_user.researcher_name)
     if form.validate_on_submit():
         current_user.researcher_name = form.researcher_name.data
         current_user.about_me = form.about_me.data
         db.session.commit()
-        flash('Your changes have been saved')
-        return redirect(url_for('edit_profile'))
-    elif request.method == 'GET':
+        flash("Your changes have been saved")
+        return redirect(url_for("edit_profile"))
+    elif request.method == "GET":
         form.researcher_name.data = current_user.researcher_name
         form.about_me.data = current_user.about_me
-    return render_template('edit_profile.html', title='Edit Profile', form=form)
+    return render_template("edit_profile.html", title="Edit Profile", form=form)
+
 
 @app.before_request
 def before_request():

@@ -21,7 +21,6 @@ async def main():
 
     # Print the tickers
     for ticker in tickers:
-
         pp.pprint(ticker)
 
     # Disconnect from the API
