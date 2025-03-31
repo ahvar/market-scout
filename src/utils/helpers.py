@@ -113,6 +113,7 @@ def _make_logfile_parent_dir_and_get_path() -> Path:
     try:
         logfile_parent = Path("/opt/eon/log") / __Application__ / __version__.replace('.','_') / time.strftime("%Y%m%d%H%M%S")
         logfile_parent.mkdir(exist_ok=True, parents=True)
+        return logfile_parent
     except LogFileCreationError as lfe:
         set_error_and_exit(f"Unable to create logfile parent dir: {lfe.filespec}")
 

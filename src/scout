@@ -15,7 +15,7 @@ from rich import print as rprint
 from src.utils.references import (
     __Application__,
     __version__,
-    IB_API_LOGGER_NAME,
+    MKT_SCOUT_CLI,
     get_ticker,
     get_bar_size,
     get_duration_unit,
@@ -50,7 +50,7 @@ from src.strategies.trading_rule import EWMACTradingRule
 #load_dotenv()
 #patch_ibpy2()  # HACK Because this dependency is running python 2 code
 cli_app = typer.Typer()
-logger = logging.getLogger(IB_API_LOGGER_NAME)
+logger = logging.getLogger(MKT_SCOUT_CLI)
 
 __copyright__ = "Copyright \xa9 2025 Arthur Vargas | arthurvargasdev@gmail.com"
 
