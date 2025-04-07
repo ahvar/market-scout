@@ -109,13 +109,20 @@ def parse_datetime(
 
     raise ValueError(f"Format not recognized: {datetime_string}")
 
+
 def _make_logfile_parent_dir_and_get_path() -> Path:
     try:
-        logfile_parent = Path("/opt/eon/log") / __Application__ / __version__.replace('.','_') / time.strftime("%Y%m%d%H%M%S")
+        logfile_parent = (
+            Path("/opt/eon/log")
+            / __Application__
+            / __version__.replace(".", "_")
+            / time.strftime("%Y%m%d%H%M%S")
+        )
         logfile_parent.mkdir(exist_ok=True, parents=True)
         return logfile_parent
     except LogFileCreationError as lfe:
         set_error_and_exit(f"Unable to create logfile parent dir: {lfe.filespec}")
+
 
 def init_cli_logger(log_level: str) -> LoggingUtils:
     """
@@ -138,6 +145,7 @@ def init_cli_logger(log_level: str) -> LoggingUtils:
     except LogFileCreationError as lfe:
         set_error_and_exit(f"Unable to create log file: {lfe.filespec}")
 
+
 def init_frontend_logger(log_level: str) -> LoggingUtils:
     try:
         logfile_parent = _make_logfile_parent_dir_and_get_path()
@@ -153,10 +161,12 @@ def init_frontend_logger(log_level: str) -> LoggingUtils:
     except LogFileCreationError as lfe:
         set_error_and_exit(f"Unable to create log file: {lfe.filespec}")
 
+
 def load_config(config_path: str):
     """Load and return configuration from a YAML file."""
     with open(config_path) as file:
         return yaml.safe_load(file)
+
 
 def make_dirs_and_write(
     outdir: Path,

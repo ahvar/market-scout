@@ -448,4 +448,3 @@ __Application__ = "MarketScout"
 __version__ = "0.1.0"
 MKT_SCOUT_CLI = f"{__Application__}_{__version__}_cli"
 MKT_SCOUT_FRONTEND = f"{__Application__}_{__version__}_frontend"
-

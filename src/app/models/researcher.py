@@ -10,6 +10,17 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 from src.app import db
 
+followers = sa.Table(
+    "followers",
+    db.metadata,
+    sa.Column(
+        "follower_id", sa.Integer, sa.ForeignKey("researcher.id"), primary_key=True
+    ),
+    sa.Column(
+        "followed_id", sa.Integer, sa.ForeignKey("researcher.id"), primary_key=True
+    ),
+)
+
 
 class Researcher(UserMixin, db.Model):
     """ """
@@ -30,6 +41,20 @@ class Researcher(UserMixin, db.Model):
         default=lambda: datetime.now(timezone.utc)
     )
 
+    following: so.WriteOnlyMapped["Researcher"] = so.relationship(
+        secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        back_populates="followers",
+    )
+
+    followers: so.WriteOnlyMapped["Researcher"] = so.relationship(
+        secondary=followers,
+        primaryjoin=(followers.c.followed_id == id),
+        secondaryjoin=(followers.c.follower_id == id),
+        back_populates="following",
+    )
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -45,6 +70,33 @@ class Researcher(UserMixin, db.Model):
         How to print Researchers
         """
         return "<Researcher {}>".format(self.researcher_name)
+
+    def follow(self, researcher):
+        if not self.is_following(researcher):
+            self.following.add(researcher)
+
+    def unfollow(self, researcher):
+        if self.is_following(researcher):
+            self.following.remove(researcher)
+
+    def is_following(self, researcher):
+        query = self.following.select().where(Researcher.id == researcher.id)
+        return db.session.scalar(query) is not None
+
+    def followers_count(self):
+        query = sa.select(sa.func.count()).select_from(
+            self.followers.select().subquery()
+        )
+        return db.session.scalar(query)
+
+    def following_count(self):
+        query = sa.select(sa.func.count()).select_from(
+            self.following.select().subquery()
+        )
+        return db.session.scalar(query)
+    
+    def following_profitability(self):
+        pass
 
 
 @login.user_loader
