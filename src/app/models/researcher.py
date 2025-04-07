@@ -10,6 +10,12 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 from src.app import db
 
+followers = sa.Table(
+    'followers',
+    db.metadata,
+    sa.Column('follower_id', sa.Integer, sa.ForeignKey('researcher.id'), primary_key=True),
+    sa.Column('followed_id', sa.Integer, sa.ForeignKey('researcher.id'), primary_key=True),
+)
 
 class Researcher(UserMixin, db.Model):
     """ """
@@ -28,6 +34,20 @@ class Researcher(UserMixin, db.Model):
     )
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(
         default=lambda: datetime.now(timezone.utc)
+    )
+
+    following: so.WriteOnlyMapped['Researcher'] = so.relationship(
+        secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        back_populates='followers'
+    )
+
+    followers: so.WriteOnlyMapped['Researcher'] = so.relationship(
+        secondary=followers,
+        primaryjoin=(followers.c.followed_id == id),
+        secondaryjoin=(followers.c.follower_id == id),
+        back_populates='following'
     )
 
     def set_password(self, password):
