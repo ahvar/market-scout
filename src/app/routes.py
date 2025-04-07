@@ -23,18 +23,8 @@ import sqlalchemy as sa
 @app.route("/index")
 @login_required
 def index():
-    researcher = {"researcher_name": "Arthur"}
-    pandl = [
-        {
-            "name": "Starter System",
-            "researcher": {"researcher_name": "John"},
-            "trades": [{"date": "2021-01-10", "contract": "contract"}],
-            "contracts": [
-                {"ticker": "AAPL", "price": 100, "description": "Apple Inc."}
-            ],
-        }
-    ]
-    return render_template("index.html", title="Home", pandl=pandl)
+    results = current_user.following_profitability()
+    return render_template("index.html", title="Home", results=results)
 
 
 @app.route("/login", methods=["GET", "POST"])

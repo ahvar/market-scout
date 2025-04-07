@@ -1,6 +1,7 @@
 from typing import Optional
 from hashlib import md5
 from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
 from flask_login import UserMixin
 from src.app import login
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,6 +10,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from src.app import db
+
+from src.app.models.trade import Trade
+from src.app.models.profit_and_loss import ProfitAndLoss
 
 followers = sa.Table(
     "followers",
@@ -94,9 +98,37 @@ class Researcher(UserMixin, db.Model):
             self.following.select().subquery()
         )
         return db.session.scalar(query)
-    
+
     def following_profitability(self):
-        pass
+        """
+        Returns a list of (researcher_id, researcher_name, total_pnl)
+        for each researcher that self is following, for trades opened
+        and closed within the last 3 months.
+        """
+        three_months_ago = datetime.now(timezone.utc) - relativedelta(months=3)
+
+        stmt = (
+            sa.select(
+                Researcher.id,
+                Researcher.researcher_name,
+                sa.func.sum(
+                    sa.cast(Trade.close_price, sa.Numeric(12, 4))
+                    - sa.cast(Trade.open_price, sa.Numeric(12, 4))
+                ).label("total_pnl")
+            )
+            .join(followers, followers.c.followed_id == Researcher.id)
+            .join(ProfitAndLoss, ProfitAndLoss.researcher_id == Researcher.id)
+            .join(Trade, Trade.profit_and_loss == ProfitAndLoss.id)
+            .where(followers.c.follower_id == self.id)
+            .where(Trade.open_date >= three_months_ago)
+            .where(Trade.close_date != None)
+            .where(Trade.close_date >= three_months_ago)
+            .group_by(Researcher.id, Researcher.researcher_name)
+            .order_by(sa.desc("total_pnl"))
+        )
+
+        results = db.session.execute(stmt).all()
+        return results
 
 
 @login.user_loader

@@ -13,15 +13,17 @@ class Trade(db.Model):
         sa.DateTime(timezone=True),
         index=True,
         default=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
-    open_price: so.Mapped[float] = so.mapped_column(sa.Numeric(precision=12, scale=4), nullable=False)
+    open_price: so.Mapped[float] = so.mapped_column(
+        sa.Numeric(precision=12, scale=4), nullable=False
+    )
     close_date: so.Mapped[datetime] = so.mapped_column(
-        sa.DateTime(timezone=True),
-        index=True,
-        nullable=True
+        sa.DateTime(timezone=True), index=True, nullable=True
     )
-    close_price: so.Mapped[float] = so.mapped_column(sa.Numeric(precision=12,scale=4), nullable=True)
+    close_price: so.Mapped[float] = so.mapped_column(
+        sa.Numeric(precision=12, scale=4), nullable=True
+    )
     instrument_name: so.Mapped[str] = so.mapped_column(sa.String(50), index=True)
     product_type: so.Mapped[str] = so.mapped_column(sa.String(50), index=True)
     profit_and_loss_id: so.Mapped[int] = so.mapped_column(
