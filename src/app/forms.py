@@ -78,3 +78,6 @@ class EditProfileForm(FlaskForm):
             )
             if researcher is not None:
                 raise ValidationError("Please use a different researcher name.")
+            
+class EmptyForm(FlaskForm):
+    submit = SubmitField('Submit')

@@ -2,8 +2,21 @@
 
 {% block content %}
     <h1>Hello, {{ current_user.researcher_name }}!</h1>
-    <h2>{{ current_user.pandl.name }}</h2>
-    {% for trade in trades %}
-    <div><p>{{ trade.owner.researcher_name}} says: <b>{{ trade.date }}</b></p></div>
-    {% endfor %}
+    {% if results %}
+        <h2>Profitability of Researchers You Follow (Last 3 Months)</h2>
+        <table>
+            <tr>
+                <th>Researcher</th>
+                <th>Total PnL</th>
+            </tr>
+            {% for row in results %}
+                <tr>
+                    <td>{{ row[1] }}</td> {# row[1] = researcher_name #}
+                    <td>{{ row[2] }}</td> {# row[2] = total_pnl #}
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No Profitability results found.</p>
+    {% endif %}
 {% endblock %}

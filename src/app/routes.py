@@ -11,6 +11,7 @@ from src.app.forms import (
     ProfitAndLossForm,
     RegistrationForm,
     EditProfileForm,
+    EmptyForm
 )
 from src.app.models.researcher import Researcher
 from src.app.models.trade import Trade
@@ -23,18 +24,8 @@ import sqlalchemy as sa
 @app.route("/index")
 @login_required
 def index():
-    researcher = {"researcher_name": "Arthur"}
-    pandl = [
-        {
-            "name": "Starter System",
-            "researcher": {"researcher_name": "John"},
-            "trades": [{"date": "2021-01-10", "contract": "contract"}],
-            "contracts": [
-                {"ticker": "AAPL", "price": 100, "description": "Apple Inc."}
-            ],
-        }
-    ]
-    return render_template("index.html", title="Home", pandl=pandl)
+    results = current_user.following_profitability()
+    return render_template("index.html", title="Home", results=results)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -95,6 +86,7 @@ def researcher(researcher_name):
         .join(ProfitAndLoss)
         .where(ProfitAndLoss.researcher_id == researcher.id)
     ).all()
+    form = EmptyForm()
     return render_template("researcher.html", researcher=researcher, trades=trades)
 
 
@@ -119,3 +111,46 @@ def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
+
+@app.route('/follow/<researcher_name>', methods=['POST'])
+@login_required
+def follow(researcher_name):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        researcher = db.session.scalar(
+            sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
+        )
+        if researcher is None:
+            flash(f'Researcher {researcher_name} not found.')
+            return redirect(url_for('index'))
+        if researcher == current_user:
+            flash('You cannot follow yourself!')
+            return redirect(url_for('researcher', researcher_name=researcher_name))
+        current_user.follow(researcher_name)
+        db.session.commit()
+        flash(f'You are following {researcher_name}!')
+        return redirect(url_for('researcher', researcher_name=researcher_name))
+    else:
+        return redirect(url_for('index'))
+
+
+@app.route('/unfollow/<researcher_name>', methods=['POST'])
+@login_required
+def unfollow(researcher_name):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        researcher = db.session.scalar(
+            sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
+        )
+        if researcher is None:
+            flash(f'Researcher {researcher_name} is not found.')
+            return redirect(url_for('index'))
+        if researcher == current_user:
+            flash('You cannot unfollow yourself!')
+            return redirect(url_for('researcher', researcher_name=researcher_name))
+        current_user.unfollow(researcher)
+        db.session.commit()
+        flash(f'You are not following {researcher_name}')
+        return redirect(url_for('researcher', researcher_name=researcher_name))
+    else:
+        return redirect(url_for('index'))
