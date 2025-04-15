@@ -41,18 +41,24 @@
         {{ form.submit() }}
     </form>
     {% endif %}
-    {% if profitability %}
-        <h2>Profitability of Researchers You Follow (Last 3 Months)</h2>
+    {% if trades %}
+        <h2>Trades in the Past Three Months for Researchers You Follow</h2>
         <table>
             <tr>
                 <th>Researcher</th>
                 <th>Trades</th>
             </tr>
-            {% for trade in profitability %}
+            {% for trade in trades %}
                 {% include '_trade.html' %}
             {% endfor %}
+            {% if prev_url %}
+            <a href="{{ prev_url }}">Newer Trades</a>
+            {% endif %}
+            {% if next_url %}
+            <a href="{{ next_url }}">Older Trades</a>
+            {% endif %}
         </table>
     {% else %}
-        <p>No Profitability results found.</p>
+        <p>No Trades Found</p>
     {% endif %}
 {% endblock %}

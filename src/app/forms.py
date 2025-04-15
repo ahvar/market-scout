@@ -78,13 +78,18 @@ class EditProfileForm(FlaskForm):
             )
             if researcher is not None:
                 raise ValidationError("Please use a different researcher name.")
-            
+
+
 class EmptyForm(FlaskForm):
-    submit = SubmitField('Submit')
+    submit = SubmitField("Submit")
 
 
 class TradeForm(FlaskForm):
-    instrument_name = StringField("Instrument (e.g. GBPUSD)", validators=[DataRequired()])
-    product_type = StringField("Leveraged Product (e.g. spot FX)", validators=[DataRequired()])
+    instrument_name = StringField(
+        "Instrument (e.g. GBPUSD)", validators=[DataRequired()]
+    )
+    product_type = StringField(
+        "Leveraged Product (e.g. spot FX)", validators=[DataRequired()]
+    )
     trade = TextAreaField("Order Details")
     submit = SubmitField("Submit")

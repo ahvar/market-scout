@@ -12,7 +12,7 @@ from src.app.forms import (
     RegistrationForm,
     EditProfileForm,
     EmptyForm,
-    TradeForm
+    TradeForm,
 )
 from src.app.models.researcher import Researcher
 from src.app.models.trade import Trade
@@ -21,16 +21,22 @@ from src.app.models.profit_and_loss import ProfitAndLoss
 import sqlalchemy as sa
 
 
-@app.route("/", methods=['GET', 'POST'])
-@app.route("/index", methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
+@app.route("/index", methods=["GET", "POST"])
 @login_required
 def index():
     form = TradeForm()
     if form.validate_on_submit():
-        pnl = db.session.scalar(sa.select(ProfitAndLoss).where(ProfitAndLoss.researcher_id == current_user.id)
-    )
+        pnl = db.session.scalar(
+            sa.select(ProfitAndLoss).where(
+                ProfitAndLoss.researcher_id == current_user.id
+            )
+        )
         if not pnl:
-            pnl = ProfitAndLoss(name=f"{current_user.researcher_name}'s PnL", researcher_id=current_user.id)
+            pnl = ProfitAndLoss(
+                name=f"{current_user.researcher_name}'s PnL",
+                researcher_id=current_user.id,
+            )
             db.session.add(pnl)
             db.session.commit()
         trade = Trade(
@@ -38,14 +44,29 @@ def index():
             instrument_name=form.instrument_name.data,
             product_type=form.product_type.data,
             open_price=0,  # or parse from form.trade.data if needed
-            profit_and_loss_id=pnl.id
+            profit_and_loss_id=pnl.id,
         )
         db.session.add(trade)
         db.session.commit()
-        flash('Your trade has been submitted!')
-        return redirect( url_for('index') )
-    profitability = db.session.scalars(current_user.following_profitability()).all()
-    return render_template("index.html", title="Home Page", form=form, profitability=profitability)
+        flash("Your trade has been submitted!")
+        return redirect(url_for("index"))
+    page = request.args.get("page", 1, type=int)
+    trades = db.paginate(
+        current_user.following_profitability(),
+        page=page,
+        per_page=app.config["TRADES_PER_PAGE"],
+        error_out=False,
+    )
+    next_url = url_for("index", page=trades.next_num) if trades.has_next else None
+    prev_url = url_for("index", page=trades.prev_num) if trades.has_prev else None
+    return render_template(
+        "index.html",
+        title="Home Page",
+        form=form,
+        trades=trades.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -99,15 +120,46 @@ def researcher(researcher_name):
     researcher = db.first_or_404(
         sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
     )
-    # pandl = user.pandl
-    # trades = pandl.trades if pandl else []
-    trades = db.session.scalars(
+    page = request.args.get("page", 1, type=int)
+    trades_query = (
         sa.select(Trade)
-        .join(ProfitAndLoss)
+        .join(ProfitAndLoss, Trade.profit_and_loss_id == ProfitAndLoss.id)
         .where(ProfitAndLoss.researcher_id == researcher.id)
-    ).all()
+        .order_by(Trade.open_date.desc())
+    )
+    trades = db.paginate(
+        trades_query,
+        page=page,
+        per_page=app.config["POSTS_PER_PAGE"],
+        error_out=False
+    )
+    next_url = (
+        url_for(
+            "researcher",
+            researcher_name=researcher.researcher_name,
+            page=trades.next_num,
+        )
+        if trades.has_next
+        else None
+    )
+    prev_url = (
+        url_for(
+            "researcher",
+            researcher_name=researcher.researcher_name,
+            page=trades.has_prev,
+        )
+        if trades.has_prev
+        else None
+    )
     form = EmptyForm()
-    return render_template("researcher.html", researcher=researcher, trades=trades)
+    return render_template(
+        "researcher.html",
+        researcher=researcher,
+        trades=trades.items,
+        next_url=next_url,
+        prev_url=prev_url,
+        form=form,
+    )
 
 
 @app.route("/edit_profile", methods=["GET", "POST"])
@@ -132,7 +184,8 @@ def before_request():
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
 
-@app.route('/follow/<researcher_name>', methods=['POST'])
+
+@app.route("/follow/<researcher_name>", methods=["POST"])
 @login_required
 def follow(researcher_name):
     form = EmptyForm()
@@ -141,20 +194,20 @@ def follow(researcher_name):
             sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
         )
         if researcher is None:
-            flash(f'Researcher {researcher_name} not found.')
-            return redirect(url_for('index'))
+            flash(f"Researcher {researcher_name} not found.")
+            return redirect(url_for("index"))
         if researcher == current_user:
-            flash('You cannot follow yourself!')
-            return redirect(url_for('researcher', researcher_name=researcher_name))
+            flash("You cannot follow yourself!")
+            return redirect(url_for("researcher", researcher_name=researcher_name))
         current_user.follow(researcher_name)
         db.session.commit()
-        flash(f'You are following {researcher_name}!')
-        return redirect(url_for('researcher', researcher_name=researcher_name))
+        flash(f"You are following {researcher_name}!")
+        return redirect(url_for("researcher", researcher_name=researcher_name))
     else:
-        return redirect(url_for('index'))
+        return redirect(url_for("index"))
 
 
-@app.route('/unfollow/<researcher_name>', methods=['POST'])
+@app.route("/unfollow/<researcher_name>", methods=["POST"])
 @login_required
 def unfollow(researcher_name):
     form = EmptyForm()
@@ -163,21 +216,33 @@ def unfollow(researcher_name):
             sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
         )
         if researcher is None:
-            flash(f'Researcher {researcher_name} is not found.')
-            return redirect(url_for('index'))
+            flash(f"Researcher {researcher_name} is not found.")
+            return redirect(url_for("index"))
         if researcher == current_user:
-            flash('You cannot unfollow yourself!')
-            return redirect(url_for('researcher', researcher_name=researcher_name))
+            flash("You cannot unfollow yourself!")
+            return redirect(url_for("researcher", researcher_name=researcher_name))
         current_user.unfollow(researcher)
         db.session.commit()
-        flash(f'You are not following {researcher_name}')
-        return redirect(url_for('researcher', researcher_name=researcher_name))
+        flash(f"You are not following {researcher_name}")
+        return redirect(url_for("researcher", researcher_name=researcher_name))
     else:
-        return redirect(url_for('index'))
-    
-@app.route('/explore')
+        return redirect(url_for("index"))
+
+
+@app.route("/explore")
 @login_required
 def explore():
+    page = request.args.get("page", 1, type=int)
     query = sa.select(Trade).order_by(Trade.open_date.desc())
-    trades = db.session.scalars(query).all()
-    return render_template('index.html', title='Explore', trades=trades)
+    trades = db.paginate(
+        query, page=page, per_page=app.config["TRADES_PER_PAGE"], error_out=False
+    )
+    next_url = url_for("explore", page=trades.next_num) if trades.has_next else None
+    prev_url = url_for("explore", page=trades.prev_num) if trades.has_prev else None
+    return render_template(
+        "index.html",
+        title="Explore",
+        trades=trades.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )

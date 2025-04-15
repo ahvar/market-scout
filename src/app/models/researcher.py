@@ -114,7 +114,7 @@ class Researcher(UserMixin, db.Model):
                 sa.func.sum(
                     sa.cast(Trade.close_price, sa.Numeric(12, 4))
                     - sa.cast(Trade.open_price, sa.Numeric(12, 4))
-                ).label("total_pnl")
+                ).label("total_pnl"),
             )
             .join(followers, followers.c.followed_id == Researcher.id, isouter=True)
             .join(ProfitAndLoss, ProfitAndLoss.researcher_id == Researcher.id)
