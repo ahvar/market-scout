@@ -107,7 +107,7 @@ class Researcher(UserMixin, db.Model):
         """
         three_months_ago = datetime.now(timezone.utc) - relativedelta(months=3)
 
-        stmt = (
+        return (
             sa.select(
                 Researcher.id,
                 Researcher.researcher_name,
@@ -126,9 +126,6 @@ class Researcher(UserMixin, db.Model):
             .group_by(Researcher.id, Researcher.researcher_name)
             .order_by(sa.desc("total_pnl"))
         )
-
-        results = db.session.execute(stmt).all()
-        return results
 
 
 @login.user_loader
