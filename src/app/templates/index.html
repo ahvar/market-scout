@@ -2,21 +2,63 @@
 
 {% block content %}
     <h1>Hello, {{ current_user.researcher_name }}!</h1>
-    {% if results %}
-        <h2>Profitability of Researchers You Follow (Last 3 Months)</h2>
+    {% if form %}
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        
+        <p>
+            {{ form.date.label }}<br>
+            {{ form.date() }}<br>
+            {% for error in form.date.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.instrument_name.label }}<br>
+            {{ form.instrument_name() }}<br>
+            {% for error in form.instrument_name.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.product_type.label }}<br>
+            {{ form.product_type() }}<br>
+            {% for error in form.product_type.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        
+        <p>
+            {{ form.trade.label }}<br>
+            {{ form.trade(rows=4, cols=32) }}<br>
+            {% for error in form.trade.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        {{ form.submit() }}
+    </form>
+    {% endif %}
+    {% if trades %}
+        <h2>Trades in the Past Three Months for Researchers You Follow</h2>
         <table>
             <tr>
                 <th>Researcher</th>
-                <th>Total PnL</th>
+                <th>Trades</th>
             </tr>
-            {% for row in results %}
-                <tr>
-                    <td>{{ row[1] }}</td> {# row[1] = researcher_name #}
-                    <td>{{ row[2] }}</td> {# row[2] = total_pnl #}
-                </tr>
+            {% for trade in trades %}
+                {% include '_trade.html' %}
             {% endfor %}
+            {% if prev_url %}
+            <a href="{{ prev_url }}">Newer Trades</a>
+            {% endif %}
+            {% if next_url %}
+            <a href="{{ next_url }}">Older Trades</a>
+            {% endif %}
         </table>
     {% else %}
-        <p>No Profitability results found.</p>
+        <p>No Trades Found</p>
     {% endif %}
 {% endblock %}

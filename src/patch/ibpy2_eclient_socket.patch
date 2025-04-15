@@ -1,7 +1,183 @@
 --- /Users/arthurvargas/dev/market-scout/src/patch/ibpy2_original_eclient_socket.py	2024-11-26 10:57:50
-+++ /Users/arthurvargas/dev/market-scout/src/patch/ibpy2_modified_eclient_socket.py	2024-11-26 10:57:50
-@@ -293,10 +293,10 @@
-         self.m_reader = self.createReader(self, DataInputStream(socket.getInputStream()))
++++ /Users/arthurvargas/dev/market-scout/src/patch/ibpy2_modified_eclient_socket.py	2025-03-31 18:16:58
+@@ -3,6 +3,8 @@
+ from threading import RLock
+ 
+ _locks = {}
++
++
+ def lock_for_object(obj, locks=_locks):
+     return locks.setdefault(id(obj), RLock())
+ 
+@@ -11,8 +13,10 @@
+     def inner(*args, **kwds):
+         with lock_for_object(call):
+             return call(*args, **kwds)
++
+     return inner
+ 
++
+ #
+ # Original file copyright original author(s).
+ # This file copyright Troy Melhase, troy@gci.net.
+@@ -28,15 +32,18 @@
+ from ib.lib import Double, Integer
+ 
+ from threading import RLock
++
+ mlock = RLock()
+-# 
++#
+ #  * EClientSocket.java
+ #  *
+-#  
++#
+ # package: com.ib.client
+ 
++
+ class EClientSocket(object):
+-    """ generated source for class EClientSocket """
++    """generated source for class EClientSocket"""
++
+     #  Client version history
+     #
+     #   6 = Added parentId to orderStatus
+@@ -70,10 +77,10 @@
+     #  29 = can receive trail stop limit price in open order and can place them: API 8.91
+     #  30 = can receive extended bond contract def, new ticks, and trade count in bars
+     #  31 = can receive EFP extensions to scanner and market data, and combo legs on open orders
+-    #     ; can receive RT bars 
++    #     ; can receive RT bars
+     #  32 = can receive TickType.LAST_TIMESTAMP
+-    #     ; can receive "whyHeld" in order status messages 
+-    #  33 = can receive ScaleNumComponents and ScaleComponentSize is open order messages 
++    #     ; can receive "whyHeld" in order status messages
++    #  33 = can receive ScaleNumComponents and ScaleComponentSize is open order messages
+     #  34 = can receive whatIf orders / order state
+     #  35 = can receive contId field for Contract objects
+     #  36 = can receive outsideRth field for Order objects
+@@ -104,7 +111,7 @@
+     #  51 = can receive smartComboRoutingParams in openOrder
+     #  52 = can receive deltaNeutralConId, deltaNeutralSettlingFirm, deltaNeutralClearingAccount and deltaNeutralClearingIntent in openOrder
+     #  53 = can receive orderRef in execution
+-    #  54 = can receive scale order fields (PriceAdjustValue, PriceAdjustInterval, ProfitOffset, AutoReset, 
++    #  54 = can receive scale order fields (PriceAdjustValue, PriceAdjustInterval, ProfitOffset, AutoReset,
+     #       InitPosition, InitFillQty and RandomPercent) in openOrder
+     #  55 = can receive orderComboLegs (price) in openOrder
+     #  56 = can receive trailingPercent in openOrder
+@@ -129,7 +136,7 @@
+ 
+     @classmethod
+     def faMsgTypeName(cls, faDataType):
+-        """ generated source for method faMsgTypeName """
++        """generated source for method faMsgTypeName"""
+         if faDataType == cls.GROUPS:
+             return "GROUPS"
+         elif faDataType == cls.PROFILES:
+@@ -215,43 +222,43 @@
+     MIN_SERVER_VER_ACCT_SUMMARY = 67
+     MIN_SERVER_VER_TRADING_CLASS = 68
+     MIN_SERVER_VER_SCALE_TABLE = 69
+-    
+-    m_anyWrapper = None #  msg handler
+-    m_dos = None    #  the socket output stream
+-    m_connected = bool()    #  true if we are connected
+-    m_reader = None #  thread which reads msgs from socket
++
++    m_anyWrapper = None  #  msg handler
++    m_dos = None  #  the socket output stream
++    m_connected = bool()  #  true if we are connected
++    m_reader = None  #  thread which reads msgs from socket
+     m_serverVersion = 0
+     m_TwsTime = ""
+     m_socket = None
+ 
+     def serverVersion(self):
+-        """ generated source for method serverVersion """
++        """generated source for method serverVersion"""
+         return self.m_serverVersion
+ 
+     def TwsConnectionTime(self):
+-        """ generated source for method TwsConnectionTime """
++        """generated source for method TwsConnectionTime"""
+         return self.m_TwsTime
+ 
+     def wrapper(self):
+-        """ generated source for method wrapper """
++        """generated source for method wrapper"""
+         return self.m_anyWrapper
+ 
+     def reader(self):
+-        """ generated source for method reader """
++        """generated source for method reader"""
+         return self.m_reader
+ 
+     def __init__(self, anyWrapper):
+-        """ generated source for method __init__ """
++        """generated source for method __init__"""
+         self.m_anyWrapper = anyWrapper
+ 
+     def isConnected(self):
+-        """ generated source for method isConnected """
++        """generated source for method isConnected"""
+         return self.m_connected
+ 
+     @overloaded
+     @synchronized(mlock)
+     def eConnect(self, host, port, clientId):
+-        """ generated source for method eConnect """
++        """generated source for method eConnect"""
+         #  already connected?
+         host = self.checkConnected(host)
+         if host is None:
+@@ -264,42 +271,56 @@
+             self.connectionError()
+ 
+     def connectionError(self):
+-        """ generated source for method connectionError """
+-        self.m_anyWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.CONNECT_FAIL.code(), EClientErrors.CONNECT_FAIL.msg())
++        """generated source for method connectionError"""
++        self.m_anyWrapper.error(
++            EClientErrors.NO_VALID_ID,
++            EClientErrors.CONNECT_FAIL.code(),
++            EClientErrors.CONNECT_FAIL.msg(),
++        )
+         self.m_reader = None
+ 
+     def checkConnected(self, host):
+-        """ generated source for method checkConnected """
++        """generated source for method checkConnected"""
+         if self.m_connected:
+-            self.m_anyWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.ALREADY_CONNECTED.code(), EClientErrors.ALREADY_CONNECTED.msg())
++            self.m_anyWrapper.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.ALREADY_CONNECTED.code(),
++                EClientErrors.ALREADY_CONNECTED.msg(),
++            )
+             return None
+         if self.isNull(host):
+             host = "127.0.0.1"
+         return host
+ 
+     def createReader(self, socket, dis):
+-        """ generated source for method createReader """
++        """generated source for method createReader"""
+         return EReader(socket, dis)
+ 
+     @synchronized(mlock)
+     @eConnect.register(object, Socket, int)
+     def eConnect_0(self, socket, clientId):
+-        """ generated source for method eConnect_0 """
++        """generated source for method eConnect_0"""
+         #  create io streams
+         self.m_dos = DataOutputStream(socket.getOutputStream())
+         #  set client version
+         self.send(self.CLIENT_VERSION)
+         #  start reader thread
+-        self.m_reader = self.createReader(self, DataInputStream(socket.getInputStream()))
++        self.m_reader = self.createReader(
++            self, DataInputStream(socket.getInputStream())
++        )
          #  check server version
          self.m_serverVersion = self.m_reader.readInt()
 -        print "Server Version: %d" % self.m_serverVersion
@@ -9,16 +185,1489 @@
          if self.m_serverVersion >= 20:
              self.m_TwsTime = self.m_reader.readStr()
 -            print "TWS Time at connection:" + self.m_TwsTime
-+            print ("TWS Time at connection:" + self.m_TwsTime)
++            print("TWS Time at connection:" + self.m_TwsTime)
          if self.m_serverVersion < self.SERVER_VERSION:
              self.eDisconnect()
-             self.m_anyWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
-@@ -1759,7 +1759,7 @@
-         """ generated source for method send_2 """
+-            self.m_anyWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
++            self.m_anyWrapper.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS.code(),
++                EClientErrors.UPDATE_TWS.msg(),
++            )
+             return
+         #  Send the client id
+         if self.m_serverVersion >= 3:
+@@ -310,7 +331,7 @@
+ 
+     @synchronized(mlock)
+     def eDisconnect(self):
+-        """ generated source for method eDisconnect """
++        """generated source for method eDisconnect"""
+         #  not connected?
+         if self.m_dos is None:
+             return
+@@ -337,13 +358,17 @@
+ 
+     @synchronized(mlock)
+     def cancelScannerSubscription(self, tickerId):
+-        """ generated source for method cancelScannerSubscription """
++        """generated source for method cancelScannerSubscription"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < 24:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support API scanner subscription.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support API scanner subscription.",
++            )
+             return
+         VERSION = 1
+         #  send cancel mkt data msg
+@@ -357,31 +382,43 @@
+ 
+     @synchronized(mlock)
+     def reqScannerParameters(self):
+-        """ generated source for method reqScannerParameters """
++        """generated source for method reqScannerParameters"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < 24:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support API scanner subscription.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support API scanner subscription.",
++            )
+             return
+         VERSION = 1
+         try:
+             self.send(self.REQ_SCANNER_PARAMETERS)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQSCANNERPARAMETERS, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.FAIL_SEND_REQSCANNERPARAMETERS,
++                str(e),
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqScannerSubscription(self, tickerId, subscription):
+-        """ generated source for method reqScannerSubscription """
++        """generated source for method reqScannerSubscription"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < 24:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support API scanner subscription.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support API scanner subscription.",
++            )
+             return
+         VERSION = 3
+         try:
+@@ -417,24 +454,40 @@
+ 
+     @synchronized(mlock)
+     def reqMktData(self, tickerId, contract, genericTickList, snapshot):
+-        """ generated source for method reqMktData """
++        """generated source for method reqMktData"""
+         if not self.m_connected:
+             self.error(EClientErrors.NO_VALID_ID, EClientErrors.NOT_CONNECTED, "")
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SNAPSHOT_MKT_DATA and snapshot:
+-            self.error(tickerId, EClientErrors.UPDATE_TWS, "  It does not support snapshot market data requests.")
++            self.error(
++                tickerId,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support snapshot market data requests.",
++            )
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_UNDER_COMP:
+             if contract.m_underComp is not None:
+-                self.error(tickerId, EClientErrors.UPDATE_TWS, "  It does not support delta-neutral orders.")
++                self.error(
++                    tickerId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support delta-neutral orders.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_REQ_MKT_DATA_CONID:
+             if contract.m_conId > 0:
+-                self.error(tickerId, EClientErrors.UPDATE_TWS, "  It does not support conId parameter.")
++                self.error(
++                    tickerId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support conId parameter.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+             if not self.IsEmpty(contract.m_tradingClass):
+-                self.error(tickerId, EClientErrors.UPDATE_TWS, "  It does not support tradingClass parameter in reqMarketData.")
++                self.error(
++                    tickerId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support tradingClass parameter in reqMarketData.",
++                )
+                 return
+         VERSION = 10
+         try:
+@@ -460,7 +513,10 @@
+                 self.send(contract.m_localSymbol)
+             if self.m_serverVersion >= self.MIN_SERVER_VER_TRADING_CLASS:
+                 self.send(contract.m_tradingClass)
+-            if self.m_serverVersion >= 8 and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower():
++            if (
++                self.m_serverVersion >= 8
++                and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower()
++            ):
+                 if contract.m_comboLegs is None:
+                     self.send(0)
+                 else:
+@@ -499,13 +555,17 @@
+ 
+     @synchronized(mlock)
+     def cancelHistoricalData(self, tickerId):
+-        """ generated source for method cancelHistoricalData """
++        """generated source for method cancelHistoricalData"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < 24:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support historical data query cancellation.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support historical data query cancellation.",
++            )
+             return
+         VERSION = 1
+         #  send cancel mkt data msg
+@@ -518,13 +578,17 @@
+             self.close()
+ 
+     def cancelRealTimeBars(self, tickerId):
+-        """ generated source for method cancelRealTimeBars """
++        """generated source for method cancelRealTimeBars"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_REAL_TIME_BARS:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support realtime bar data query cancellation.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support realtime bar data query cancellation.",
++            )
+             return
+         VERSION = 1
+         #  send cancel mkt data msg
+@@ -536,10 +600,20 @@
+             self.error(tickerId, EClientErrors.FAIL_SEND_CANRTBARS, str(e))
+             self.close()
+ 
+-    #  Note that formatData parameter affects intra-day bars only; 1-day bars always return with date in YYYYMMDD format. 
++    #  Note that formatData parameter affects intra-day bars only; 1-day bars always return with date in YYYYMMDD format.
+     @synchronized(mlock)
+-    def reqHistoricalData(self, tickerId, contract, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, formatDate):
+-        """ generated source for method reqHistoricalData """
++    def reqHistoricalData(
++        self,
++        tickerId,
++        contract,
++        endDateTime,
++        durationStr,
++        barSizeSetting,
++        whatToShow,
++        useRTH,
++        formatDate,
++    ):
++        """generated source for method reqHistoricalData"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -547,11 +621,19 @@
+         VERSION = 5
+         try:
+             if self.m_serverVersion < 16:
+-                self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support historical data backfill.")
++                self.error(
++                    EClientErrors.NO_VALID_ID,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support historical data backfill.",
++                )
+                 return
+             if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+                 if not self.IsEmpty(contract.m_tradingClass) or (contract.m_conId > 0):
+-                    self.error(tickerId, EClientErrors.UPDATE_TWS, "  It does not support conId and trade parameters in reqHistroricalData.")                                                                
++                    self.error(
++                        tickerId,
++                        EClientErrors.UPDATE_TWS,
++                        "  It does not support conId and trade parameters in reqHistroricalData.",
++                    )
+                     return
+             self.send(self.REQ_HISTORICAL_DATA)
+             self.send(VERSION)
+@@ -600,17 +682,25 @@
+ 
+     @synchronized(mlock)
+     def reqRealTimeBars(self, tickerId, contract, barSize, whatToShow, useRTH):
+-        """ generated source for method reqRealTimeBars """
++        """generated source for method reqRealTimeBars"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_REAL_TIME_BARS:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support real time bars.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support real time bars.",
++            )
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+             if not self.IsEmpty(contract.m_tradingClass) or (contract.m_conId > 0):
+-                self.error(tickerId, EClientErrors.UPDATE_TWS, "  It does not support conId and tradingClass parameters in reqRealTimeBars.")
++                self.error(
++                    tickerId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support conId and tradingClass parameters in reqRealTimeBars.",
++                )
+                 return
+         VERSION = 2
+         try:
+@@ -643,22 +733,36 @@
+ 
+     @synchronized(mlock)
+     def reqContractDetails(self, reqId, contract):
+-        """ generated source for method reqContractDetails """
++        """generated source for method reqContractDetails"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         #  This feature is only available for versions of TWS >=4
+         if self.m_serverVersion < 4:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS.code(),
++                EClientErrors.UPDATE_TWS.msg(),
++            )
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SEC_ID_TYPE:
+-            if not self.IsEmpty(contract.m_secIdType) or not self.IsEmpty(contract.m_secId):
+-                self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support secIdType and secId parameters.")
++            if not self.IsEmpty(contract.m_secIdType) or not self.IsEmpty(
++                contract.m_secId
++            ):
++                self.error(
++                    reqId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support secIdType and secId parameters.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+             if not self.IsEmpty(contract.m_tradingClass):
+-                self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support tradingClass parameter in reqContractDetails.")
++                self.error(
++                    reqId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support tradingClass parameter in reqContractDetails.",
++                )
+                 return
+         VERSION = 7
+         try:
+@@ -688,23 +792,33 @@
+                 self.send(contract.m_secIdType)
+                 self.send(contract.m_secId)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQCONTRACT, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQCONTRACT, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqMktDepth(self, tickerId, contract, numRows):
+-        """ generated source for method reqMktDepth """
++        """generated source for method reqMktDepth"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         #  This feature is only available for versions of TWS >=6
+         if self.m_serverVersion < 6:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS.code(),
++                EClientErrors.UPDATE_TWS.msg(),
++            )
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+             if not self.IsEmpty(contract.m_tradingClass) or (contract.m_conId > 0):
+-                self.error(tickerId, EClientErrors.UPDATE_TWS, "  It does not support conId and tradingClass parameters in reqMktDepth.")
++                self.error(
++                    tickerId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support conId and tradingClass parameters in reqMktDepth.",
++                )
+                 return
+         VERSION = 4
+         try:
+@@ -735,7 +849,7 @@
+ 
+     @synchronized(mlock)
+     def cancelMktData(self, tickerId):
+-        """ generated source for method cancelMktData """
++        """generated source for method cancelMktData"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -752,14 +866,18 @@
+ 
+     @synchronized(mlock)
+     def cancelMktDepth(self, tickerId):
+-        """ generated source for method cancelMktDepth """
++        """generated source for method cancelMktDepth"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         #  This feature is only available for versions of TWS >=6
+         if self.m_serverVersion < 6:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS.code(),
++                EClientErrors.UPDATE_TWS.msg(),
++            )
+             return
+         VERSION = 1
+         #  send cancel mkt data msg
+@@ -772,8 +890,10 @@
+             self.close()
+ 
+     @synchronized(mlock)
+-    def exerciseOptions(self, tickerId, contract, exerciseAction, exerciseQuantity, account, override):
+-        """ generated source for method exerciseOptions """
++    def exerciseOptions(
++        self, tickerId, contract, exerciseAction, exerciseQuantity, account, override
++    ):
++        """generated source for method exerciseOptions"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -781,11 +901,19 @@
+         VERSION = 2
+         try:
+             if self.m_serverVersion < 21:
+-                self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support options exercise from the API.")
++                self.error(
++                    EClientErrors.NO_VALID_ID,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support options exercise from the API.",
++                )
+                 return
+             if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+                 if not self.IsEmpty(contract.m_tradingClass) or (contract.m_conId > 0):
+-                    self.error(tickerId, EClientErrors.UPDATE_TWS, "  It does not support conId and tradingClass parameters in exerciseOptions.")
++                    self.error(
++                        tickerId,
++                        EClientErrors.UPDATE_TWS,
++                        "  It does not support conId and tradingClass parameters in exerciseOptions.",
++                    )
+                     return
+             self.send(self.EXERCISE_OPTIONS)
+             self.send(VERSION)
+@@ -814,55 +942,97 @@
+ 
+     @synchronized(mlock)
+     def placeOrder(self, id, contract, order):
+-        """ generated source for method placeOrder """
++        """generated source for method placeOrder"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SCALE_ORDERS:
+-            if (order.m_scaleInitLevelSize != Integer.MAX_VALUE) or (order.m_scalePriceIncrement != Double.MAX_VALUE):
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support Scale orders.")
++            if (order.m_scaleInitLevelSize != Integer.MAX_VALUE) or (
++                order.m_scalePriceIncrement != Double.MAX_VALUE
++            ):
++                self.error(
++                    id, EClientErrors.UPDATE_TWS, "  It does not support Scale orders."
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SSHORT_COMBO_LEGS:
+             if contract.m_comboLegs:
+                 i = 0
+                 while i < len(contract.m_comboLegs):
+                     comboLeg = contract.m_comboLegs[i]
+-                    if comboLeg.m_shortSaleSlot != 0 or not self.IsEmpty(comboLeg.m_designatedLocation):
+-                        self.error(id, EClientErrors.UPDATE_TWS, "  It does not support SSHORT flag for combo legs.")
++                    if comboLeg.m_shortSaleSlot != 0 or not self.IsEmpty(
++                        comboLeg.m_designatedLocation
++                    ):
++                        self.error(
++                            id,
++                            EClientErrors.UPDATE_TWS,
++                            "  It does not support SSHORT flag for combo legs.",
++                        )
+                         return
+                     i += 1
+         if self.m_serverVersion < self.MIN_SERVER_VER_WHAT_IF_ORDERS:
+             if order.m_whatIf:
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support what-if orders.")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support what-if orders.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_UNDER_COMP:
+             if contract.m_underComp is not None:
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support delta-neutral orders.")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support delta-neutral orders.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SCALE_ORDERS2:
+             if order.m_scaleSubsLevelSize != Integer.MAX_VALUE:
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support Subsequent Level Size for Scale orders.")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support Subsequent Level Size for Scale orders.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_ALGO_ORDERS:
+             if not self.IsEmpty(order.m_algoStrategy):
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support algo orders.")
++                self.error(
++                    id, EClientErrors.UPDATE_TWS, "  It does not support algo orders."
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_NOT_HELD:
+             if order.m_notHeld:
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support notHeld parameter.")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support notHeld parameter.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SEC_ID_TYPE:
+-            if not self.IsEmpty(contract.m_secIdType) or not self.IsEmpty(contract.m_secId):
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support secIdType and secId parameters.")
++            if not self.IsEmpty(contract.m_secIdType) or not self.IsEmpty(
++                contract.m_secId
++            ):
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support secIdType and secId parameters.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_PLACE_ORDER_CONID:
+             if contract.m_conId > 0:
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support conId parameter.")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support conId parameter.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SSHORTX:
+             if order.m_exemptCode != -1:
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support exemptCode parameter.")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support exemptCode parameter.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SSHORTX:
+             if contract.m_comboLegs:
+@@ -870,50 +1040,117 @@
+                 while i < len(contract.m_comboLegs):
+                     comboLeg = contract.m_comboLegs[i]
+                     if comboLeg.m_exemptCode != -1:
+-                        self.error(id, EClientErrors.UPDATE_TWS, "  It does not support exemptCode parameter.")
++                        self.error(
++                            id,
++                            EClientErrors.UPDATE_TWS,
++                            "  It does not support exemptCode parameter.",
++                        )
+                         return
+                     i += 1
+         if self.m_serverVersion < self.MIN_SERVER_VER_HEDGE_ORDERS:
+             if not self.IsEmpty(order.m_hedgeType):
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support hedge orders.")
++                self.error(
++                    id, EClientErrors.UPDATE_TWS, "  It does not support hedge orders."
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_OPT_OUT_SMART_ROUTING:
+             if order.m_optOutSmartRouting:
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support optOutSmartRouting parameter.")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support optOutSmartRouting parameter.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_DELTA_NEUTRAL_CONID:
+-            if order.m_deltaNeutralConId > 0 or not self.IsEmpty(order.m_deltaNeutralSettlingFirm) or not self.IsEmpty(order.m_deltaNeutralClearingAccount) or not self.IsEmpty(order.m_deltaNeutralClearingIntent):
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support deltaNeutral parameters: ConId, SettlingFirm, ClearingAccount, ClearingIntent")
++            if (
++                order.m_deltaNeutralConId > 0
++                or not self.IsEmpty(order.m_deltaNeutralSettlingFirm)
++                or not self.IsEmpty(order.m_deltaNeutralClearingAccount)
++                or not self.IsEmpty(order.m_deltaNeutralClearingIntent)
++            ):
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support deltaNeutral parameters: ConId, SettlingFirm, ClearingAccount, ClearingIntent",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_DELTA_NEUTRAL_OPEN_CLOSE:
+-            if not self.IsEmpty(order.m_deltaNeutralOpenClose) or order.m_deltaNeutralShortSale or order.m_deltaNeutralShortSaleSlot > 0 or not self.IsEmpty(order.m_deltaNeutralDesignatedLocation):
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support deltaNeutral parameters: OpenClose, ShortSale, ShortSaleSlot, DesignatedLocation")
++            if (
++                not self.IsEmpty(order.m_deltaNeutralOpenClose)
++                or order.m_deltaNeutralShortSale
++                or order.m_deltaNeutralShortSaleSlot > 0
++                or not self.IsEmpty(order.m_deltaNeutralDesignatedLocation)
++            ):
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support deltaNeutral parameters: OpenClose, ShortSale, ShortSaleSlot, DesignatedLocation",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SCALE_ORDERS3:
+-            if order.m_scalePriceIncrement > 0 and order.m_scalePriceIncrement != Double.MAX_VALUE:
+-                if order.m_scalePriceAdjustValue != Double.MAX_VALUE or order.m_scalePriceAdjustInterval != Integer.MAX_VALUE or order.m_scaleProfitOffset != Double.MAX_VALUE or order.m_scaleAutoReset or order.m_scaleInitPosition != Integer.MAX_VALUE or order.m_scaleInitFillQty != Integer.MAX_VALUE or order.m_scaleRandomPercent:
+-                    self.error(id, EClientErrors.UPDATE_TWS, "  It does not support Scale order parameters: PriceAdjustValue, PriceAdjustInterval, " + "ProfitOffset, AutoReset, InitPosition, InitFillQty and RandomPercent")
++            if (
++                order.m_scalePriceIncrement > 0
++                and order.m_scalePriceIncrement != Double.MAX_VALUE
++            ):
++                if (
++                    order.m_scalePriceAdjustValue != Double.MAX_VALUE
++                    or order.m_scalePriceAdjustInterval != Integer.MAX_VALUE
++                    or order.m_scaleProfitOffset != Double.MAX_VALUE
++                    or order.m_scaleAutoReset
++                    or order.m_scaleInitPosition != Integer.MAX_VALUE
++                    or order.m_scaleInitFillQty != Integer.MAX_VALUE
++                    or order.m_scaleRandomPercent
++                ):
++                    self.error(
++                        id,
++                        EClientErrors.UPDATE_TWS,
++                        "  It does not support Scale order parameters: PriceAdjustValue, PriceAdjustInterval, "
++                        + "ProfitOffset, AutoReset, InitPosition, InitFillQty and RandomPercent",
++                    )
+                     return
+-        if self.m_serverVersion < self.MIN_SERVER_VER_ORDER_COMBO_LEGS_PRICE and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower():
++        if (
++            self.m_serverVersion < self.MIN_SERVER_VER_ORDER_COMBO_LEGS_PRICE
++            and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower()
++        ):
+             if order.m_orderComboLegs:
+                 i = 0
+                 while i < len(order.m_orderComboLegs):
+                     orderComboLeg = order.m_orderComboLegs[i]
+                     if orderComboLeg.m_price != Double.MAX_VALUE:
+-                        self.error(id, EClientErrors.UPDATE_TWS, "  It does not support per-leg prices for order combo legs.")
++                        self.error(
++                            id,
++                            EClientErrors.UPDATE_TWS,
++                            "  It does not support per-leg prices for order combo legs.",
++                        )
+                         return
+                     i += 1
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRAILING_PERCENT:
+             if order.m_trailingPercent != Double.MAX_VALUE:
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support trailing percent parameter")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support trailing percent parameter",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+             if not self.IsEmpty(contract.m_tradingClass):
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support tradingClass parameters in placeOrder.")
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support tradingClass parameters in placeOrder.",
++                )
+                 return
+         if self.m_serverVersion < self.MIN_SERVER_VER_SCALE_TABLE:
+-            if not self.IsEmpty(order.m_scaleTable) or not self.IsEmpty(order.m_activeStartTime) or not self.IsEmpty(order.m_activeStopTime):
+-                self.error(id, EClientErrors.UPDATE_TWS, "  It does not support scaleTable, activeStartTime and activeStopTime parameters.")
++            if (
++                not self.IsEmpty(order.m_scaleTable)
++                or not self.IsEmpty(order.m_activeStartTime)
++                or not self.IsEmpty(order.m_activeStopTime)
++            ):
++                self.error(
++                    id,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support scaleTable, activeStartTime and activeStopTime parameters.",
++                )
+                 return
+         VERSION = 27 if (self.m_serverVersion < self.MIN_SERVER_VER_NOT_HELD) else 41
+         #  send place order msg
+@@ -947,11 +1184,15 @@
+             self.send(order.m_totalQuantity)
+             self.send(order.m_orderType)
+             if self.m_serverVersion < self.MIN_SERVER_VER_ORDER_COMBO_LEGS_PRICE:
+-                self.send(0 if order.m_lmtPrice == Double.MAX_VALUE else order.m_lmtPrice)
++                self.send(
++                    0 if order.m_lmtPrice == Double.MAX_VALUE else order.m_lmtPrice
++                )
+             else:
+                 self.sendMax(order.m_lmtPrice)
+             if self.m_serverVersion < self.MIN_SERVER_VER_TRAILING_PERCENT:
+-                self.send(0 if order.m_auxPrice == Double.MAX_VALUE else order.m_auxPrice)
++                self.send(
++                    0 if order.m_auxPrice == Double.MAX_VALUE else order.m_auxPrice
++                )
+             else:
+                 self.sendMax(order.m_auxPrice)
+             #  send extended order fields
+@@ -971,13 +1212,16 @@
+                 self.send(order.m_triggerMethod)
+                 if self.m_serverVersion < 38:
+                     #  will never happen
+-                    self.send(False)#  order.m_ignoreRth 
++                    self.send(False)  #  order.m_ignoreRth
+                 else:
+                     self.send(order.m_outsideRth)
+             if self.m_serverVersion >= 7:
+                 self.send(order.m_hidden)
+             #  Send combo legs for BAG requests
+-            if self.m_serverVersion >= 8 and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower():
++            if (
++                self.m_serverVersion >= 8
++                and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower()
++            ):
+                 if contract.m_comboLegs is None:
+                     self.send(0)
+                 else:
+@@ -990,14 +1234,20 @@
+                         self.send(comboLeg.m_action)
+                         self.send(comboLeg.m_exchange)
+                         self.send(comboLeg.m_openClose)
+-                        if self.m_serverVersion >= self.MIN_SERVER_VER_SSHORT_COMBO_LEGS:
++                        if (
++                            self.m_serverVersion
++                            >= self.MIN_SERVER_VER_SSHORT_COMBO_LEGS
++                        ):
+                             self.send(comboLeg.m_shortSaleSlot)
+                             self.send(comboLeg.m_designatedLocation)
+                         if self.m_serverVersion >= self.MIN_SERVER_VER_SSHORTX_OLD:
+                             self.send(comboLeg.m_exemptCode)
+                         i += 1
+             #  Send order combo legs for BAG requests
+-            if self.m_serverVersion >= self.MIN_SERVER_VER_ORDER_COMBO_LEGS_PRICE and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower():
++            if (
++                self.m_serverVersion >= self.MIN_SERVER_VER_ORDER_COMBO_LEGS_PRICE
++                and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower()
++            ):
+                 if order.m_orderComboLegs is None:
+                     self.send(0)
+                 else:
+@@ -1007,9 +1257,16 @@
+                         orderComboLeg = order.m_orderComboLegs[i]
+                         self.sendMax(orderComboLeg.m_price)
+                         i += 1
+-            if self.m_serverVersion >= self.MIN_SERVER_VER_SMART_COMBO_ROUTING_PARAMS and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower():
++            if (
++                self.m_serverVersion >= self.MIN_SERVER_VER_SMART_COMBO_ROUTING_PARAMS
++                and self.BAG_SEC_TYPE.lower() == contract.m_secType.lower()
++            ):
+                 smartComboRoutingParams = order.m_smartComboRoutingParams
+-                smartComboRoutingParamsCount = 0 if smartComboRoutingParams is None else len(smartComboRoutingParams)
++                smartComboRoutingParamsCount = (
++                    0
++                    if smartComboRoutingParams is None
++                    else len(smartComboRoutingParams)
++                )
+                 self.send(smartComboRoutingParamsCount)
+                 if smartComboRoutingParamsCount > 0:
+                     i = 0
+@@ -1044,7 +1301,7 @@
+                 self.send(order.m_ocaType)
+                 if self.m_serverVersion < 38:
+                     #  will never happen
+-                    self.send(False)#  order.m_rthOnly 
++                    self.send(False)  #  order.m_rthOnly
+                 self.send(order.m_rule80A)
+                 self.send(order.m_settlingFirm)
+                 self.send(order.m_allOrNone)
+@@ -1058,8 +1315,16 @@
+                 self.sendMax(order.m_stockRefPrice)
+                 self.sendMax(order.m_delta)
+                 #  Volatility orders had specific watermark price attribs in server version 26
+-                lower = Double.MAX_VALUE if (self.m_serverVersion == 26) and order.m_orderType == "VOL" else order.m_stockRangeLower
+-                upper = Double.MAX_VALUE if (self.m_serverVersion == 26) and order.m_orderType == "VOL" else order.m_stockRangeUpper
++                lower = (
++                    Double.MAX_VALUE
++                    if (self.m_serverVersion == 26) and order.m_orderType == "VOL"
++                    else order.m_stockRangeLower
++                )
++                upper = (
++                    Double.MAX_VALUE
++                    if (self.m_serverVersion == 26) and order.m_orderType == "VOL"
++                    else order.m_stockRangeUpper
++                )
+                 self.sendMax(lower)
+                 self.sendMax(upper)
+             if self.m_serverVersion >= 22:
+@@ -1073,12 +1338,19 @@
+                 else:
+                     self.send(order.m_deltaNeutralOrderType)
+                     self.sendMax(order.m_deltaNeutralAuxPrice)
+-                    if self.m_serverVersion >= self.MIN_SERVER_VER_DELTA_NEUTRAL_CONID and not self.IsEmpty(order.m_deltaNeutralOrderType):
++                    if (
++                        self.m_serverVersion >= self.MIN_SERVER_VER_DELTA_NEUTRAL_CONID
++                        and not self.IsEmpty(order.m_deltaNeutralOrderType)
++                    ):
+                         self.send(order.m_deltaNeutralConId)
+                         self.send(order.m_deltaNeutralSettlingFirm)
+                         self.send(order.m_deltaNeutralClearingAccount)
+                         self.send(order.m_deltaNeutralClearingIntent)
+-                    if self.m_serverVersion >= self.MIN_SERVER_VER_DELTA_NEUTRAL_OPEN_CLOSE and not self.IsEmpty(order.m_deltaNeutralOrderType):
++                    if (
++                        self.m_serverVersion
++                        >= self.MIN_SERVER_VER_DELTA_NEUTRAL_OPEN_CLOSE
++                        and not self.IsEmpty(order.m_deltaNeutralOrderType)
++                    ):
+                         self.send(order.m_deltaNeutralOpenClose)
+                         self.send(order.m_deltaNeutralShortSale)
+                         self.send(order.m_deltaNeutralShortSaleSlot)
+@@ -1086,8 +1358,16 @@
+                 self.send(order.m_continuousUpdate)
+                 if self.m_serverVersion == 26:
+                     #  Volatility orders had specific watermark price attribs in server version 26
+-                    lower = order.m_stockRangeLower if order.m_orderType == "VOL" else Double.MAX_VALUE
+-                    upper = order.m_stockRangeUpper if order.m_orderType == "VOL" else Double.MAX_VALUE
++                    lower = (
++                        order.m_stockRangeLower
++                        if order.m_orderType == "VOL"
++                        else Double.MAX_VALUE
++                    )
++                    upper = (
++                        order.m_stockRangeUpper
++                        if order.m_orderType == "VOL"
++                        else Double.MAX_VALUE
++                    )
+                     self.sendMax(lower)
+                     self.sendMax(upper)
+                 self.sendMax(order.m_referencePriceType)
+@@ -1104,7 +1384,11 @@
+                     self.send("")
+                     self.sendMax(order.m_scaleInitLevelSize)
+                 self.sendMax(order.m_scalePriceIncrement)
+-            if self.m_serverVersion >= self.MIN_SERVER_VER_SCALE_ORDERS3 and order.m_scalePriceIncrement > 0.0 and order.m_scalePriceIncrement != Double.MAX_VALUE:
++            if (
++                self.m_serverVersion >= self.MIN_SERVER_VER_SCALE_ORDERS3
++                and order.m_scalePriceIncrement > 0.0
++                and order.m_scalePriceIncrement != Double.MAX_VALUE
++            ):
+                 self.sendMax(order.m_scalePriceAdjustValue)
+                 self.sendMax(order.m_scalePriceAdjustInterval)
+                 self.sendMax(order.m_scaleProfitOffset)
+@@ -1157,7 +1441,7 @@
+ 
+     @synchronized(mlock)
+     def reqAccountUpdates(self, subscribe, acctCode):
+-        """ generated source for method reqAccountUpdates """
++        """generated source for method reqAccountUpdates"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1177,7 +1461,7 @@
+ 
+     @synchronized(mlock)
+     def reqExecutions(self, reqId, filter):
+-        """ generated source for method reqExecutions """
++        """generated source for method reqExecutions"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1205,7 +1489,7 @@
+ 
+     @synchronized(mlock)
+     def cancelOrder(self, id):
+-        """ generated source for method cancelOrder """
++        """generated source for method cancelOrder"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1222,7 +1506,7 @@
+ 
+     @synchronized(mlock)
+     def reqOpenOrders(self):
+-        """ generated source for method reqOpenOrders """
++        """generated source for method reqOpenOrders"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1233,12 +1517,14 @@
+             self.send(self.REQ_OPEN_ORDERS)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_OORDER, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_OORDER, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqIds(self, numIds):
+-        """ generated source for method reqIds """
++        """generated source for method reqIds"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1249,12 +1535,14 @@
+             self.send(VERSION)
+             self.send(numIds)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CORDER, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CORDER, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqNewsBulletins(self, allMsgs):
+-        """ generated source for method reqNewsBulletins """
++        """generated source for method reqNewsBulletins"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1265,12 +1553,14 @@
+             self.send(VERSION)
+             self.send(allMsgs)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CORDER, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CORDER, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def cancelNewsBulletins(self):
+-        """ generated source for method cancelNewsBulletins """
++        """generated source for method cancelNewsBulletins"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1281,12 +1571,14 @@
+             self.send(self.CANCEL_NEWS_BULLETINS)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CORDER, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CORDER, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def setServerLogLevel(self, logLevel):
+-        """ generated source for method setServerLogLevel """
++        """generated source for method setServerLogLevel"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1298,12 +1590,16 @@
+             self.send(VERSION)
+             self.send(logLevel)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_SERVER_LOG_LEVEL, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.FAIL_SEND_SERVER_LOG_LEVEL,
++                str(e),
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqAutoOpenOrders(self, bAutoBind):
+-        """ generated source for method reqAutoOpenOrders """
++        """generated source for method reqAutoOpenOrders"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1315,12 +1611,14 @@
+             self.send(VERSION)
+             self.send(bAutoBind)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_OORDER, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_OORDER, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqAllOpenOrders(self):
+-        """ generated source for method reqAllOpenOrders """
++        """generated source for method reqAllOpenOrders"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1331,12 +1629,14 @@
+             self.send(self.REQ_ALL_OPEN_ORDERS)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_OORDER, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_OORDER, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqManagedAccts(self):
+-        """ generated source for method reqManagedAccts """
++        """generated source for method reqManagedAccts"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+@@ -1347,19 +1647,25 @@
+             self.send(self.REQ_MANAGED_ACCTS)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_OORDER, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_OORDER, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def requestFA(self, faDataType):
+-        """ generated source for method requestFA """
++        """generated source for method requestFA"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         #  This feature is only available for versions of TWS >= 13
+         if self.m_serverVersion < 13:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS.code(),
++                EClientErrors.UPDATE_TWS.msg(),
++            )
+             return
+         VERSION = 1
+         try:
+@@ -1372,14 +1678,18 @@
+ 
+     @synchronized(mlock)
+     def replaceFA(self, faDataType, xml):
+-        """ generated source for method replaceFA """
++        """generated source for method replaceFA"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         #  This feature is only available for versions of TWS >= 13
+         if self.m_serverVersion < 13:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg())
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS.code(),
++                EClientErrors.UPDATE_TWS.msg(),
++            )
+             return
+         VERSION = 1
+         try:
+@@ -1393,36 +1703,50 @@
+ 
+     @synchronized(mlock)
+     def reqCurrentTime(self):
+-        """ generated source for method reqCurrentTime """
++        """generated source for method reqCurrentTime"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         #  This feature is only available for versions of TWS >= 33
+         if self.m_serverVersion < 33:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support current time requests.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support current time requests.",
++            )
+             return
+         VERSION = 1
+         try:
+             self.send(self.REQ_CURRENT_TIME)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQCURRTIME, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQCURRTIME, str(e)
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqFundamentalData(self, reqId, contract, reportType):
+-        """ generated source for method reqFundamentalData """
++        """generated source for method reqFundamentalData"""
+         # not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_FUNDAMENTAL_DATA:
+-            self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support fundamental data requests.")
++            self.error(
++                reqId,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support fundamental data requests.",
++            )
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+             if contract.m_conId > 0:
+-                self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support conId parameter in reqFundamentalData.")
++                self.error(
++                    reqId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support conId parameter in reqFundamentalData.",
++                )
+                 return
+         VERSION = 2
+         try:
+@@ -1446,13 +1770,17 @@
+ 
+     @synchronized(mlock)
+     def cancelFundamentalData(self, reqId):
+-        """ generated source for method cancelFundamentalData """
++        """generated source for method cancelFundamentalData"""
+         # not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_FUNDAMENTAL_DATA:
+-            self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support fundamental data requests.")
++            self.error(
++                reqId,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support fundamental data requests.",
++            )
+             return
+         VERSION = 1
+         try:
+@@ -1466,17 +1794,25 @@
+ 
+     @synchronized(mlock)
+     def calculateImpliedVolatility(self, reqId, contract, optionPrice, underPrice):
+-        """ generated source for method calculateImpliedVolatility """
++        """generated source for method calculateImpliedVolatility"""
+         # not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_REQ_CALC_IMPLIED_VOLAT:
+-            self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support calculate implied volatility requests.")
++            self.error(
++                reqId,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support calculate implied volatility requests.",
++            )
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+             if not self.IsEmpty(contract.m_tradingClass):
+-                self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support tradingClass parameter in calculateImpliedVolatility.")
++                self.error(
++                    reqId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support tradingClass parameter in calculateImpliedVolatility.",
++                )
+                 return
+         VERSION = 2
+         try:
+@@ -1506,13 +1842,17 @@
+ 
+     @synchronized(mlock)
+     def cancelCalculateImpliedVolatility(self, reqId):
+-        """ generated source for method cancelCalculateImpliedVolatility """
++        """generated source for method cancelCalculateImpliedVolatility"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_CANCEL_CALC_IMPLIED_VOLAT:
+-            self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support calculate implied volatility cancellation.")
++            self.error(
++                reqId,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support calculate implied volatility cancellation.",
++            )
+             return
+         VERSION = 1
+         try:
+@@ -1526,17 +1866,25 @@
+ 
+     @synchronized(mlock)
+     def calculateOptionPrice(self, reqId, contract, volatility, underPrice):
+-        """ generated source for method calculateOptionPrice """
++        """generated source for method calculateOptionPrice"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_REQ_CALC_OPTION_PRICE:
+-            self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support calculate option price requests.")
++            self.error(
++                reqId,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support calculate option price requests.",
++            )
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_TRADING_CLASS:
+             if not self.IsEmpty(contract.m_tradingClass):
+-                self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support tradingClass parameter in calculateOptionPrice.")
++                self.error(
++                    reqId,
++                    EClientErrors.UPDATE_TWS,
++                    "  It does not support tradingClass parameter in calculateOptionPrice.",
++                )
+                 return
+         VERSION = 2
+         try:
+@@ -1566,13 +1914,17 @@
+ 
+     @synchronized(mlock)
+     def cancelCalculateOptionPrice(self, reqId):
+-        """ generated source for method cancelCalculateOptionPrice """
++        """generated source for method cancelCalculateOptionPrice"""
+         # not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_CANCEL_CALC_OPTION_PRICE:
+-            self.error(reqId, EClientErrors.UPDATE_TWS, "  It does not support calculate option price cancellation.")
++            self.error(
++                reqId,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support calculate option price cancellation.",
++            )
+             return
+         VERSION = 1
+         try:
+@@ -1586,13 +1938,17 @@
+ 
+     @synchronized(mlock)
+     def reqGlobalCancel(self):
+-        """ generated source for method reqGlobalCancel """
++        """generated source for method reqGlobalCancel"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_REQ_GLOBAL_CANCEL:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support globalCancel requests.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support globalCancel requests.",
++            )
+             return
+         VERSION = 1
+         #  send request global cancel msg
+@@ -1600,18 +1956,26 @@
+             self.send(self.REQ_GLOBAL_CANCEL)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQGLOBALCANCEL, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.FAIL_SEND_REQGLOBALCANCEL,
++                str(e),
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqMarketDataType(self, marketDataType):
+-        """ generated source for method reqMarketDataType """
++        """generated source for method reqMarketDataType"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_REQ_MARKET_DATA_TYPE:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support marketDataType requests.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support marketDataType requests.",
++            )
+             return
+         VERSION = 1
+         #  send the reqMarketDataType message
+@@ -1620,52 +1984,72 @@
+             self.send(VERSION)
+             self.send(marketDataType)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQMARKETDATATYPE, str(e))
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.FAIL_SEND_REQMARKETDATATYPE,
++                str(e),
++            )
+             self.close()
+ 
+     @synchronized(mlock)
+     def reqPositions(self):
+-        """ generated source for method reqPositions """
++        """generated source for method reqPositions"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_ACCT_SUMMARY:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support position requests.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support position requests.",
++            )
+             return
+         VERSION = 1
+         try:
+             self.send(self.REQ_POSITIONS)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQPOSITIONS, "" + e)
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQPOSITIONS, "" + e
++            )
+ 
+     @synchronized(mlock)
+     def cancelPositions(self):
+-        """ generated source for method cancelPositions """
++        """generated source for method cancelPositions"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_ACCT_SUMMARY:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support position cancellation.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support position cancellation.",
++            )
+             return
+         VERSION = 1
+         try:
+             self.send(self.CANCEL_POSITIONS)
+             self.send(VERSION)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CANPOSITIONS, "" + e)
++            self.error(
++                EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CANPOSITIONS, "" + e
++            )
+ 
+     @synchronized(mlock)
+     def reqAccountSummary(self, reqId, group, tags):
+-        """ generated source for method reqAccountSummary """
++        """generated source for method reqAccountSummary"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_ACCT_SUMMARY:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support account summary requests.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support account summary requests.",
++            )
+             return
+         VERSION = 1
+         try:
+@@ -1675,17 +2059,25 @@
+             self.send(group)
+             self.send(tags)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_REQACCOUNTDATA, "" + e)
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.FAIL_SEND_REQACCOUNTDATA,
++                "" + e,
++            )
+ 
+     @synchronized(mlock)
+     def cancelAccountSummary(self, reqId):
+-        """ generated source for method cancelAccountSummary """
++        """generated source for method cancelAccountSummary"""
+         #  not connected?
+         if not self.m_connected:
+             self.notConnected()
+             return
+         if self.m_serverVersion < self.MIN_SERVER_VER_ACCT_SUMMARY:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS, "  It does not support account summary cancellation.")
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.UPDATE_TWS,
++                "  It does not support account summary cancellation.",
++            )
+             return
+         VERSION = 1
+         try:
+@@ -1693,46 +2085,50 @@
+             self.send(VERSION)
+             self.send(reqId)
+         except Exception as e:
+-            self.error(EClientErrors.NO_VALID_ID, EClientErrors.FAIL_SEND_CANACCOUNTDATA, "" + e)
++            self.error(
++                EClientErrors.NO_VALID_ID,
++                EClientErrors.FAIL_SEND_CANACCOUNTDATA,
++                "" + e,
++            )
+ 
+-    #  @deprecated, never called. 
++    #  @deprecated, never called.
+     @overloaded
+     @synchronized(mlock)
+     def error(self, err):
+-        """ generated source for method error """
++        """generated source for method error"""
+         self.m_anyWrapper.error(err)
+ 
+     @synchronized(mlock)
+     @error.register(object, int, int, str)
+     def error_0(self, id, errorCode, errorMsg):
+-        """ generated source for method error_0 """
++        """generated source for method error_0"""
+         self.m_anyWrapper.error(id, errorCode, errorMsg)
+ 
+     def close(self):
+-        """ generated source for method close """
++        """generated source for method close"""
+         self.eDisconnect()
+         self.wrapper().connectionClosed()
+ 
+     @classmethod
+     def is_(cls, strval):
+-        """ generated source for method is_ """
++        """generated source for method is_"""
+         #  return true if the string is not empty
+         return strval is not None and len(strval) > 0
+ 
+     @classmethod
+     def isNull(cls, strval):
+-        """ generated source for method isNull """
++        """generated source for method isNull"""
+         #  return true if the string is null or empty
+         return not cls.is_(strval)
+ 
+     @error.register(object, int, EClientErrors.CodeMsgPair, str)
+     def error_1(self, id, pair, tail):
+-        """ generated source for method error_1 """
++        """generated source for method error_1"""
+         self.error(id, pair.code(), pair.msg() + tail)
+ 
+     @overloaded
+     def send(self, strval):
+-        """ generated source for method send """
++        """generated source for method send"""
+         #  write string to data buffer; writer thread will
+         #  write it to socket
+         if not self.IsEmpty(strval):
+@@ -1740,33 +2136,33 @@
+         self.sendEOL()
+ 
+     def sendEOL(self):
+-        """ generated source for method sendEOL """
++        """generated source for method sendEOL"""
+         self.m_dos.write(self.EOL)
+ 
+     @send.register(object, int)
+     def send_0(self, val):
+-        """ generated source for method send_0 """
++        """generated source for method send_0"""
+         self.send(str(val))
+ 
+     @send.register(object, str)
+     def send_1(self, val):
+-        """ generated source for method send_1 """
++        """generated source for method send_1"""
+         self.m_dos.write(val)
+         self.sendEOL()
+ 
+     @send.register(object, float)
+     def send_2(self, val):
+-        """ generated source for method send_2 """
++        """generated source for method send_2"""
          self.send(str(val))
  
 -    @send.register(object, long)
 +    @send.register(object, int)
      def send_3(self, val):
-         """ generated source for method send_3 """
+-        """ generated source for method send_3 """
++        """generated source for method send_3"""
          self.send(str(val))
+ 
+     @overloaded
+     def sendMax(self, val):
+-        """ generated source for method sendMax """
++        """generated source for method sendMax"""
+         if val == Double.MAX_VALUE:
+             self.sendEOL()
+         else:
+@@ -1774,7 +2170,7 @@
+ 
+     @sendMax.register(object, int)
+     def sendMax_0(self, val):
+-        """ generated source for method sendMax_0 """
++        """generated source for method sendMax_0"""
+         if val == Integer.MAX_VALUE:
+             self.sendEOL()
+         else:
+@@ -1782,14 +2178,14 @@
+ 
+     @send.register(object, bool)
+     def send_4(self, val):
+-        """ generated source for method send_4 """
++        """generated source for method send_4"""
+         self.send(1 if val else 0)
+ 
+     @classmethod
+     def IsEmpty(cls, strval):
+-        """ generated source for method IsEmpty """
++        """generated source for method IsEmpty"""
+         return Util.StringIsEmpty(strval)
+ 
+     def notConnected(self):
+-        """ generated source for method notConnected """
++        """generated source for method notConnected"""
+         self.error(EClientErrors.NO_VALID_ID, EClientErrors.NOT_CONNECTED, "")

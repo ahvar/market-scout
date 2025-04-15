@@ -107,14 +107,14 @@ class Researcher(UserMixin, db.Model):
         """
         three_months_ago = datetime.now(timezone.utc) - relativedelta(months=3)
 
-        stmt = (
+        return (
             sa.select(
                 Researcher.id,
                 Researcher.researcher_name,
                 sa.func.sum(
                     sa.cast(Trade.close_price, sa.Numeric(12, 4))
                     - sa.cast(Trade.open_price, sa.Numeric(12, 4))
-                ).label("total_pnl")
+                ).label("total_pnl"),
             )
             .join(followers, followers.c.followed_id == Researcher.id, isouter=True)
             .join(ProfitAndLoss, ProfitAndLoss.researcher_id == Researcher.id)
@@ -126,9 +126,6 @@ class Researcher(UserMixin, db.Model):
             .group_by(Researcher.id, Researcher.researcher_name)
             .order_by(sa.desc("total_pnl"))
         )
-
-        results = db.session.execute(stmt).all()
-        return results
 
 
 @login.user_loader
