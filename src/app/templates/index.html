@@ -2,6 +2,7 @@
 
 {% block content %}
     <h1>Hello, {{ current_user.researcher_name }}!</h1>
+    {% if form %}
     <form action="" method="post">
         {{ form.hidden_tag() }}
         
@@ -39,18 +40,16 @@
 
         {{ form.submit() }}
     </form>
-    {% if results %}
+    {% endif %}
+    {% if profitability %}
         <h2>Profitability of Researchers You Follow (Last 3 Months)</h2>
         <table>
             <tr>
                 <th>Researcher</th>
-                <th>Total PnL</th>
+                <th>Trades</th>
             </tr>
-            {% for row in results %}
-                <tr>
-                    <td>{{ row[1] }}</td> {# row[1] = researcher_name #}
-                    <td>{{ row[2] }}</td> {# row[2] = total_pnl #}
-                </tr>
+            {% for trade in profitability %}
+                {% include '_trade.html' %}
             {% endfor %}
         </table>
     {% else %}

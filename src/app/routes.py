@@ -44,8 +44,8 @@ def index():
         db.session.commit()
         flash('Your trade has been submitted!')
         return redirect( url_for('index') )
-    results = current_user.following_profitability()
-    return render_template("index.html", title="Home Page", form=form, results=results)
+    profitability = db.session.scalars(current_user.following_profitability()).all()
+    return render_template("index.html", title="Home Page", form=form, profitability=profitability)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -174,3 +174,10 @@ def unfollow(researcher_name):
         return redirect(url_for('researcher', researcher_name=researcher_name))
     else:
         return redirect(url_for('index'))
+    
+@app.route('/explore')
+@login_required
+def explore():
+    query = sa.select(Trade).order_by(Trade.open_date.desc())
+    trades = db.session.scalars(query).all()
+    return render_template('index.html', title='Explore', trades=trades)
