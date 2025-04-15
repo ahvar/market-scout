@@ -11,7 +11,8 @@ from src.app.forms import (
     ProfitAndLossForm,
     RegistrationForm,
     EditProfileForm,
-    EmptyForm
+    EmptyForm,
+    TradeForm
 )
 from src.app.models.researcher import Researcher
 from src.app.models.trade import Trade
@@ -20,12 +21,31 @@ from src.app.models.profit_and_loss import ProfitAndLoss
 import sqlalchemy as sa
 
 
-@app.route("/")
-@app.route("/index")
+@app.route("/", methods=['GET', 'POST'])
+@app.route("/index", methods=['GET', 'POST'])
 @login_required
 def index():
+    form = TradeForm()
+    if form.validate_on_submit():
+        pnl = db.session.scalar(sa.select(ProfitAndLoss).where(ProfitAndLoss.researcher_id == current_user.id)
+    )
+        if not pnl:
+            pnl = ProfitAndLoss(name=f"{current_user.researcher_name}'s PnL", researcher_id=current_user.id)
+            db.session.add(pnl)
+            db.session.commit()
+        trade = Trade(
+            open_date=form.date.data,
+            instrument_name=form.instrument_name.data,
+            product_type=form.product_type.data,
+            open_price=0,  # or parse from form.trade.data if needed
+            profit_and_loss_id=pnl.id
+        )
+        db.session.add(trade)
+        db.session.commit()
+        flash('Your trade has been submitted!')
+        return redirect( url_for('index') )
     results = current_user.following_profitability()
-    return render_template("index.html", title="Home", results=results)
+    return render_template("index.html", title="Home Page", form=form, results=results)
 
 
 @app.route("/login", methods=["GET", "POST"])

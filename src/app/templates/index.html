@@ -2,6 +2,43 @@
 
 {% block content %}
     <h1>Hello, {{ current_user.researcher_name }}!</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        
+        <p>
+            {{ form.date.label }}<br>
+            {{ form.date() }}<br>
+            {% for error in form.date.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.instrument_name.label }}<br>
+            {{ form.instrument_name() }}<br>
+            {% for error in form.instrument_name.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.product_type.label }}<br>
+            {{ form.product_type() }}<br>
+            {% for error in form.product_type.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        
+        <p>
+            {{ form.trade.label }}<br>
+            {{ form.trade(rows=4, cols=32) }}<br>
+            {% for error in form.trade.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        {{ form.submit() }}
+    </form>
     {% if results %}
         <h2>Profitability of Researchers You Follow (Last 3 Months)</h2>
         <table>

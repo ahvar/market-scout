@@ -81,3 +81,10 @@ class EditProfileForm(FlaskForm):
             
 class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')
+
+
+class TradeForm(FlaskForm):
+    instrument_name = StringField("Instrument (e.g. GBPUSD)", validators=[DataRequired()])
+    product_type = StringField("Leveraged Product (e.g. spot FX)", validators=[DataRequired()])
+    trade = TextAreaField("Order Details")
+    submit = SubmitField("Submit")
