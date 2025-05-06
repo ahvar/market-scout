@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from datetime import datetime, timezone
 from flask import render_template, flash, redirect, url_for, request
 from urllib.parse import urlsplit
@@ -13,11 +13,13 @@ from src.app.forms import (
     EditProfileForm,
     EmptyForm,
     TradeForm,
+    ResetPasswordRequestForm,
+    ResetPasswordForm,
 )
 from src.app.models.researcher import Researcher
 from src.app.models.trade import Trade
 from src.app.models.profit_and_loss import ProfitAndLoss
-
+from src.app.email import send_password_reset_email
 import sqlalchemy as sa
 
 
@@ -128,10 +130,7 @@ def researcher(researcher_name):
         .order_by(Trade.open_date.desc())
     )
     trades = db.paginate(
-        trades_query,
-        page=page,
-        per_page=app.config["POSTS_PER_PAGE"],
-        error_out=False
+        trades_query, page=page, per_page=app.config["TRADES_PER_PAGE"], error_out=False
     )
     next_url = (
         url_for(
@@ -246,3 +245,37 @@ def explore():
         next_url=next_url,
         prev_url=prev_url,
     )
+
+
+@app.route("/reset_password_request", methods=["GET", "POST"])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        researcher = db.session.scalar(
+            sa.select(Researcher).where(Researcher.email == form.email.data)
+        )
+        if researcher:
+            send_password_reset_email(researcher)
+        flash("Check your email for the instructions to reset your password")
+        return redirect(url_for("login"))
+    return render_template(
+        "reset_password_request.html", title="Reset Password", form=form
+    )
+
+
+@app.route("/reset_password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    researcher = Researcher.verify_reset_password(token)
+    if not researcher:
+        return redirect(url_for("index"))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        researcher.set_password(form.password.data)
+        db.session.commit()
+        flash("Your password has been reset")
+        return redirect(url_for("login"))
+    return render_template("reset_password.html", form=form)

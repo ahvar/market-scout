@@ -29,11 +29,6 @@ class ProfitAndLossForm(FlaskForm):
     trades = StringField("Start", validators=[DataRequired()])
 
 
-class TradeForm(FlaskForm):
-    date = DateField("Expense Date", validators=[DataRequired()])
-    owner = StringField("PandL Owner", validators=[DataRequired()])
-
-
 class RegistrationForm(FlaskForm):
     researcher_name = StringField("Researcher Name", validators=[DataRequired()])
     email = StringField("Email", validators=[DataRequired(), Email()])
@@ -85,6 +80,7 @@ class EmptyForm(FlaskForm):
 
 
 class TradeForm(FlaskForm):
+    date = DateField("Expense Date", validators=[DataRequired()])
     instrument_name = StringField(
         "Instrument (e.g. GBPUSD)", validators=[DataRequired()]
     )
@@ -93,3 +89,16 @@ class TradeForm(FlaskForm):
     )
     trade = TextAreaField("Order Details")
     submit = SubmitField("Submit")
+
+
+class ResetPasswordRequestForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField("Request Password Reset")
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField("Password", validators=[DataRequired()])
+    password2 = PasswordField(
+        "Repeat Password", validators=[DataRequired(), EqualTo("password")]
+    )
+    submit = SubmitField("Request Password Reset")
