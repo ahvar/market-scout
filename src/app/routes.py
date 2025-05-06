@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from datetime import datetime, timezone
 from flask import render_template, flash, redirect, url_for, request
 from urllib.parse import urlsplit
@@ -14,6 +14,7 @@ from src.app.forms import (
     EmptyForm,
     TradeForm,
     ResetPasswordRequestForm,
+    ResetPasswordForm,
 )
 from src.app.models.researcher import Researcher
 from src.app.models.trade import Trade
@@ -262,3 +263,19 @@ def reset_password_request():
     return render_template(
         "reset_password_request.html", title="Reset Password", form=form
     )
+
+
+@app.route("/reset_password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    researcher = Researcher.verify_reset_password(token)
+    if not researcher:
+        return redirect(url_for("index"))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        researcher.set_password(form.password.data)
+        db.session.commit()
+        flash("Your password has been reset")
+        return redirect(url_for("login"))
+    return render_template("reset_password.html", form=form)
