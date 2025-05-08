@@ -1,63 +1,72 @@
 {% extends "base.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
 
 {% block content %}
     <h1>Hello, {{ current_user.researcher_name }}!</h1>
     {% if form %}
-    <form action="" method="post">
-        {{ form.hidden_tag() }}
-        
-        <p>
-            {{ form.date.label }}<br>
-            {{ form.date() }}<br>
-            {% for error in form.date.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-
-        <p>
-            {{ form.instrument_name.label }}<br>
-            {{ form.instrument_name() }}<br>
-            {% for error in form.instrument_name.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-
-        <p>
-            {{ form.product_type.label }}<br>
-            {{ form.product_type() }}<br>
-            {% for error in form.product_type.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        
-        <p>
-            {{ form.trade.label }}<br>
-            {{ form.trade(rows=4, cols=32) }}<br>
-            {% for error in form.trade.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-
-        {{ form.submit() }}
-    </form>
+    {{ wtf.quick_form(form) }}
     {% endif %}
-    {% if trades %}
-        <h2>Trades in the Past Three Months for Researchers You Follow</h2>
-        <table>
-            <tr>
-                <th>Researcher</th>
-                <th>Trades</th>
-            </tr>
-            {% for trade in trades %}
-                {% include '_trade.html' %}
-            {% endfor %}
-            {% if prev_url %}
-            <a href="{{ prev_url }}">Newer Trades</a>
-            {% endif %}
-            {% if next_url %}
-            <a href="{{ next_url }}">Older Trades</a>
-            {% endif %}
-        </table>
+    {% if own_trades or following_trades %}
+        {% if own_trades %}
+            <h2>Your Trades (Last 3 Months)</h2>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="70px">Avatar</th>
+                        <th>Trade Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for trade in own_trades %}
+                    {% include '_trade.html' %}
+                {% endfor %}
+                </tbody>
+            </table>
+            <nav aria-label="Trades navigation">
+                <ul class="pagination">
+                    <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                        <a class="page-link" href="{{ prev_url }}">
+                            <span aria-hidden="true">&larr;</span> Previous
+                        </a>
+                    </li>
+                    <li class="page-item{% if not next_url %} disabled{% endif %}">
+                        <a class="page-link" href="{{ next_url }}">
+                            Next <span aria-hidden="true">&rarr;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        {% endif %}
+        {% if following_trades %}
+            <h2>Trades from Researchers You Follow (Last 3 Months)</h2>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="70px">Avatar</th>
+                        <th>Trade Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for trade in following_trades %}
+                    {% include '_trade.html' %}
+                {% endfor %}
+                </tbody>
+            </table>
+            <nav aria-label="Following trades navigation">
+                <ul class="pagination">
+                    <li class="page-item{% if not following_prev_url %} disabled{% endif %}">
+                        <a class="page-link" href="{{ following_prev_url }}">
+                            <span aria-hidden="true">&larr;</span> Previous
+                        </a>
+                    </li>
+                    <li class="page-item{% if not following_next_url %} disabled{% endif %}">
+                        <a class="page-link" href="{{ following_next_url }}">
+                            Next <span aria-hidden="true">&rarr;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        {% endif %}
     {% else %}
         <p>No Trades Found</p>
     {% endif %}

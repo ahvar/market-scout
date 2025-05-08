@@ -1,16 +1,19 @@
-<table>
-    <tr valign="top">
-        <td><img src="{{ trade.profit_and_loss.researcher.avatar(36) }}"></td>
-        <td>
-            <a href="{{ url_for('researcher', researcher_name=trade.profit_and_loss.researcher.researcher_name) }}">
-                {{ trade.profit_and_loss.researcher.researcher_name }}
-            </a><br>
-            Instrument: {{ trade.instrument_name }}<br>
-            Product: {{ trade.product_type }}<br>
-            Open Date: {{ trade.open_date }}<br>
-            Open Price: {{ trade.open_price }}<br>
-            Close Date: {% if trade.close_date %}{{ trade.close_date }}{% else %}N/A{% endif %}<br>
-            Close Price: {% if trade.close_price != None %}{{ trade.close_price }}{% else %}N/A{% endif %}
-        </td>
-    </tr>
-</table>
+<tr>
+    <td width="70px">
+        <a href="{{ url_for('researcher', researcher_name=trade.profit_and_loss.researcher.researcher_name) }}">
+            <img src="{{ trade.profit_and_loss.researcher.avatar(70) }}" />
+        </a>
+    </td>
+    <td>
+        <a href="{{ url_for('researcher', researcher_name=trade.profit_and_loss.researcher.researcher_name) }}">
+            {{ trade.profit_and_loss.researcher.researcher_name }}
+        </a>
+        <br>
+        Instrument: {{ trade.instrument_name }}<br>
+        Product: {{ trade.product_type }}<br>
+        Open Date: {{ trade.open_date }}<br>
+        Open Price: {{ trade.open_price }}<br>
+        Close Date: {% if trade.close_date %}{{ trade.close_date }}{% else %}N/A{% endif %}<br>
+        Close Price: {% if trade.close_price != None %}{{ trade.close_price }}{% else %}N/A{% endif %}
+    </td>
+</tr>
