@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <table>
-        <tr valign="top">
-            <td><img src="{{ researcher.avatar(128) }}"></td>
+    <table class="table table-hover">
+        <tr>
+            <td width="256px"><img src="{{ researcher.avatar(256) }}"></td>
             <td>
                 <h1>Researcher: {{ researcher.researcher_name }}</h1>
                 {% if researcher.about_me %}<p>{{ researcher.about_me }}</p>{% endif %}
@@ -13,14 +13,14 @@
                 <p><a href="{{ url_for('edit_profile') }}">Edit your profile</a></p>
                 {% elif not current_user.is_following(researcher) %}
                 <p>
-                    <form action="{{ url_for('follow', researcher_name=researcher.researcher_name) }}" method="post">
+                    <form action="{{ url_for('follow'), researcher_name=researcher.researcher_name) }}" method="post">
                         {{ form.hidden_tag() }}
                         {{ form.submit(value='Follow') }}
                     </form>
                 </p>
                 {% else %}
                 <p>
-                    <form action="{{ url_for('unfollow', researcher=researcher.researcher_name) }}" method="post">
+                    <form action="{{ url_for('unfollow'), researcher=researcher.researcher_name) }}" method="post">
                         {{ form.hidden_tag() }}
                         {{ form.submit(value='Unfollow') }}
                     </form>
@@ -29,8 +29,27 @@
             </td>
         </tr>
     </table>
+    {% if researcher == current_user %}
+    <div class="followed-activity">
+        <h2>Recent Trades from Followed Researchers</h2>
+    {% set followed_trades = researcher.following_profitability() %}
+    {% if followed_trades %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th width="70px">Avatar</th>
+                    <th>Trade Details</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for trade in followed_trades %}
+                {% include '_trade.html' %}
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No recent trades from followed researchers.</p>
+    {% endif %}
+    </div>
     <hr>
-    {% for trade in trades %}
-        {% include '_trade.html' %}
-    {% endfor %}
 {% endblock %}

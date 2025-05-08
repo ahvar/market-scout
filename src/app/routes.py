@@ -1,6 +1,8 @@
 """ """
 
-from datetime import datetime, timezone
+import logging
+from datetime import datetime, timezone, UTC
+from dateutil import relativedelta
 from flask import render_template, flash, redirect, url_for, request
 from urllib.parse import urlsplit
 from flask_login import current_user, login_user, logout_user, login_required
@@ -16,11 +18,14 @@ from src.app.forms import (
     ResetPasswordRequestForm,
     ResetPasswordForm,
 )
-from src.app.models.researcher import Researcher
+from src.app.models.researcher import Researcher, followers
 from src.app.models.trade import Trade
 from src.app.models.profit_and_loss import ProfitAndLoss
-from src.app.email import send_password_reset_email
+from src.app.email_service import send_password_reset_email
+from src.utils.references import MKT_SCOUT_FRONTEND
 import sqlalchemy as sa
+
+frontend_logger = logging.getLogger(MKT_SCOUT_FRONTEND)
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -53,21 +58,60 @@ def index():
         flash("Your trade has been submitted!")
         return redirect(url_for("index"))
     page = request.args.get("page", 1, type=int)
-    trades = db.paginate(
-        current_user.following_profitability(),
+    own_trades_query = (
+        sa.select(Trade)
+        .join(ProfitAndLoss, Trade.profit_and_loss_id == ProfitAndLoss.id)
+        .where(ProfitAndLoss.researcher_id == current_user.id)
+        .where(Trade.open_date >= datetime.now(timezone.utc) - relativedelta(months=3))
+        .order_by(Trade.open_date.desc())
+    )
+    following_page = request.args.get("following_page", 1, type=int)
+    following_trades_query = (
+        sa.select(Trade)
+        .join(ProfitAndLoss, Trade.profit_and_loss_id == ProfitAndLoss.id)
+        .join(followers, followers.c.followed_id == ProfitAndLoss.researcher_id)
+        .where(followers.c.follower_id == current_user.id)
+        .where(Trade.open_date >= datetime.now(timezone.utc) - relativedelta(months=3))
+        .order_by(Trade.open_date.desc())
+    )
+    following_trades = db.paginate(
+        following_trades_query,
+        page=following_page,
+        per_page=app.config["TRADES_PER_PAGE"],
+        error_out=False,
+    )
+    own_trades = db.paginate(
+        own_trades_query,
         page=page,
         per_page=app.config["TRADES_PER_PAGE"],
         error_out=False,
     )
-    next_url = url_for("index", page=trades.next_num) if trades.has_next else None
-    prev_url = url_for("index", page=trades.prev_num) if trades.has_prev else None
+    next_url = (
+        url_for("index", page=own_trades.next_num) if own_trades.has_next else None
+    )
+    prev_url = (
+        url_for("index", page=own_trades.prev_num) if own_trades.has_prev else None
+    )
+    following_next_url = (
+        url_for("index", following_page=following_trades.next_num)
+        if following_trades.has_next
+        else None
+    )
+    following_prev_url = (
+        url_for("index", following_page=following_trades.prev_num)
+        if following_trades.has_prev
+        else None
+    )
     return render_template(
         "index.html",
         title="Home Page",
         form=form,
-        trades=trades.items,
+        own_trades=own_trades.items,
+        following_trades=following_trades.items,
         next_url=next_url,
         prev_url=prev_url,
+        following_next_url=following_next_url,
+        following_prev_url=following_prev_url,
     )
 
 
