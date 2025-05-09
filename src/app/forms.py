@@ -1,3 +1,4 @@
+from flask_babel import lazy_gettext as _l
 from flask_wtf import FlaskForm
 from wtforms import (
     StringField,
@@ -17,26 +18,26 @@ from src.app.models.profit_and_loss import ProfitAndLoss
 
 
 class LoginForm(FlaskForm):
-    researcher_name = StringField("Researcher Name", validators=[DataRequired()])
-    password = PasswordField("Password", validators=[DataRequired()])
-    remember_me = BooleanField("Remember Me")
-    submit = SubmitField("Sign In")
+    researcher_name = StringField(_l("Researcher Name"), validators=[DataRequired()])
+    password = PasswordField(_l("Password"), validators=[DataRequired()])
+    remember_me = BooleanField(_l("Remember Me"))
+    submit = SubmitField(_l("Sign In"))
 
 
 class ProfitAndLossForm(FlaskForm):
-    name = StringField("Profit & Loss Name", validators=[DataRequired()])
-    researcher = StringField("Researcher", validators=[DataRequired()])
-    trades = StringField("Start", validators=[DataRequired()])
+    name = StringField(_l("Profit & Loss Name"), validators=[DataRequired()])
+    researcher = StringField(_l("Researcher"), validators=[DataRequired()])
+    trades = StringField(_l("Start"), validators=[DataRequired()])
 
 
 class RegistrationForm(FlaskForm):
-    researcher_name = StringField("Researcher Name", validators=[DataRequired()])
-    email = StringField("Email", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
+    researcher_name = StringField(_l("Researcher Name"), validators=[DataRequired()])
+    email = StringField(_l("Email"), validators=[DataRequired(), Email()])
+    password = PasswordField(_l("Password"), validators=[DataRequired()])
     password2 = PasswordField(
-        "Repeat Password", validators=[DataRequired(), EqualTo("password")]
+        _l("Repeat Password"), validators=[DataRequired(), EqualTo("password")]
     )
-    submit = SubmitField("Register")
+    submit = SubmitField(_l("Register"))
 
     def validate_researcher_name(self, researcher_name):
         researcher = db.session.scalar(
@@ -45,20 +46,20 @@ class RegistrationForm(FlaskForm):
             )
         )
         if researcher is not None:
-            raise ValidationError("Please use a different researcher name")
+            raise ValidationError(_l("Please use a different researcher name"))
 
     def validate_email(self, email):
         researcher = db.session.scalar(
             sa.select(Researcher).where(Researcher.email == email.data)
         )
         if researcher is not None:
-            raise ValidationError("Please use a different email address")
+            raise ValidationError(_l("Please use a different email address"))
 
 
 class EditProfileForm(FlaskForm):
-    researcher_name = StringField("Researcher Name", validators=[DataRequired()])
-    about_me = TextAreaField("About Me", validators=[Length(min=0, max=140)])
-    submit = SubmitField("Submit")
+    researcher_name = StringField(_l("Researcher Name"), validators=[DataRequired()])
+    about_me = TextAreaField(_l("About Me"), validators=[Length(min=0, max=140)])
+    submit = SubmitField(_l("Submit"))
 
     def __init__(self, original_researcher_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -72,33 +73,33 @@ class EditProfileForm(FlaskForm):
                 )
             )
             if researcher is not None:
-                raise ValidationError("Please use a different researcher name.")
+                raise ValidationError(_l("Please use a different researcher name"))
 
 
 class EmptyForm(FlaskForm):
-    submit = SubmitField("Submit")
+    submit = SubmitField(_l("Submit"))
 
 
 class TradeForm(FlaskForm):
-    date = DateField("Expense Date", validators=[DataRequired()])
+    date = DateField(_l("Expense Date"), validators=[DataRequired()])
     instrument_name = StringField(
-        "Instrument (e.g. GBPUSD)", validators=[DataRequired()]
+        _l("Instrument (e.g. GBPUSD)"), validators=[DataRequired()]
     )
     product_type = StringField(
-        "Leveraged Product (e.g. spot FX)", validators=[DataRequired()]
+        _l("Leveraged Product (e.g. spot FX)"), validators=[DataRequired()]
     )
-    trade = TextAreaField("Order Details")
-    submit = SubmitField("Submit")
+    trade = TextAreaField(_l("Order Details"))
+    submit = SubmitField(_l("Submit"))
 
 
 class ResetPasswordRequestForm(FlaskForm):
-    email = StringField("Email", validators=[DataRequired(), Email()])
-    submit = SubmitField("Request Password Reset")
+    email = StringField(_l("Email"), validators=[DataRequired(), Email()])
+    submit = SubmitField(_l("Request Password Reset"))
 
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField("Password", validators=[DataRequired()])
+    password = PasswordField(_l("Password"), validators=[DataRequired()])
     password2 = PasswordField(
-        "Repeat Password", validators=[DataRequired(), EqualTo("password")]
+        _l("Repeat Password"), validators=[DataRequired(), EqualTo("password")]
     )
-    submit = SubmitField("Request Password Reset")
+    submit = SubmitField(_l("Request Password Reset"))
