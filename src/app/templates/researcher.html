@@ -5,24 +5,23 @@
         <tr>
             <td width="256px"><img src="{{ researcher.avatar(256) }}"></td>
             <td>
-                <h1>Researcher: {{ researcher.researcher_name }}</h1>
-                {% if researcher.about_me %}<p>{{ researcher.about_me }}</p>{% endif %}
-                {% if researcher.last_seen %}<p>Last seen on: {{ moment(researcher.last_seen).format('LLL') }}</p>{% endif %}
-                <p>{{ researcher.followers_count() }} followers, {{ researcher.following_count() }} following.</p>
+                <h1>{{ _('Researcher') }}: {{ researcher.researcher_name }}</h1>
+                {% if researcher.about_me %}<p>{{ _('%(about_me)s', about_me=researcher.about_me) }}</p>{% endif %}
+                <p>{{ researcher.followers_count() }} {{ _('followers') }}, {{ researcher.following_count() }} {{ _('following') }}.</p>
                 {% if researcher == current_user %}
-                <p><a href="{{ url_for('edit_profile') }}">Edit your profile</a></p>
+                <p><a href="{{ url_for('edit_profile') }}">{{ _('Edit your profile') }}</a></p>
                 {% elif not current_user.is_following(researcher) %}
                 <p>
-                    <form action="{{ url_for('follow'), researcher_name=researcher.researcher_name) }}" method="post">
+                    <form action="{{ url_for('follow', researcher_name=researcher.researcher_name) }}" method="post">
                         {{ form.hidden_tag() }}
-                        {{ form.submit(value='Follow') }}
+                        {{ form.submit(value=_('Follow')) }}
                     </form>
                 </p>
                 {% else %}
                 <p>
-                    <form action="{{ url_for('unfollow'), researcher=researcher.researcher_name) }}" method="post">
+                    <form action="{{ url_for('unfollow', researcher_name=researcher.researcher_name) }}" method="post">
                         {{ form.hidden_tag() }}
-                        {{ form.submit(value='Unfollow') }}
+                        {{ form.submit(value=_('Unfollow')) }}
                     </form>
                 </p>
                 {% endif %}
@@ -31,25 +30,25 @@
     </table>
     {% if researcher == current_user %}
     <div class="followed-activity">
-        <h2>Recent Trades from Followed Researchers</h2>
-    {% set followed_trades = researcher.following_profitability() %}
-    {% if followed_trades %}
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th width="70px">Avatar</th>
-                    <th>Trade Details</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for trade in followed_trades %}
-                {% include '_trade.html' %}
-            {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No recent trades from followed researchers.</p>
-    {% endif %}
+        <h2>{{ _('Recent Trades from Followed Researchers') }}</h2>
+        {% set followed_trades = researcher.following_profitability() %}
+        {% if followed_trades %}
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="70px">{{ _('Avatar') }}</th>
+                        <th>{{ _('Trade Details') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for trade in followed_trades %}
+                    {% include '_trade.html' %}
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>{{ _('No recent trades from followed researchers.') }}</p>
+        {% endif %}
     </div>
     <hr>
 {% endblock %}

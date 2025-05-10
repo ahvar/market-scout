@@ -9,11 +9,11 @@
             {{ trade.profit_and_loss.researcher.researcher_name }}
         </a>
         <br>
-        Instrument: {{ trade.instrument_name }}<br>
-        Product: {{ trade.product_type }}<br>
-        Open Date: {{ trade.open_date }}<br>
-        Open Price: {{ trade.open_price }}<br>
-        Close Date: {% if trade.close_date %}{{ trade.close_date }}{% else %}N/A{% endif %}<br>
-        Close Price: {% if trade.close_price != None %}{{ trade.close_price }}{% else %}N/A{% endif %}
+        {{_('Instrument')}}: {{ _('%(instrument_name)s', instrument_name=trade.instrument_name) }}<br>
+        {{_('Product')}}: {{ _('%(product_type)s', product_type=trade.product_type) }}<br>
+        {{_('Open Date')}}: {{ trade.open_date }}<br>
+        {{_('Open Price')}}: {{ trade.open_price }}<br>
+        {{_('Close Date')}}: {% if trade.close_date %}{{ trade.close_date }}{% else %}{{ _('N/A') }}{% endif %}<br>
+        {{_('Close Price')}}: {% if trade.close_price != None %}{{ trade.close_price }}{% else %}{{ _('N/A') }}{% endif %}
     </td>
 </tr>

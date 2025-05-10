@@ -2,18 +2,18 @@
 {% import "bootstrap_wtf.html" as wtf %}
 
 {% block content %}
-    <h1>Hello, {{ current_user.researcher_name }}!</h1>
+<h1>{{ _('Hello') }}, {{ current_user.researcher_name }}!</h1>
     {% if form %}
-    {{ wtf.quick_form(form) }}
+        {{ wtf.quick_form(form) }}
     {% endif %}
     {% if own_trades or following_trades %}
         {% if own_trades %}
-            <h2>Your Trades (Last 3 Months)</h2>
+        <h2>{{ _('Your Trades (Last 3 Months)') }}</h2>
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th width="70px">Avatar</th>
-                        <th>Trade Details</th>
+                        <th width="70px">{{ _('Avatar') }}</th>
+                        <th>{{ _('Trade Details') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -26,24 +26,24 @@
                 <ul class="pagination">
                     <li class="page-item{% if not prev_url %} disabled{% endif %}">
                         <a class="page-link" href="{{ prev_url }}">
-                            <span aria-hidden="true">&larr;</span> Previous
+                            <span aria-hidden="true">&larr;</span> {{ _('Previous') }}
                         </a>
                     </li>
                     <li class="page-item{% if not next_url %} disabled{% endif %}">
                         <a class="page-link" href="{{ next_url }}">
-                            Next <span aria-hidden="true">&rarr;</span>
+                            {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
                         </a>
                     </li>
                 </ul>
             </nav>
         {% endif %}
         {% if following_trades %}
-            <h2>Trades from Researchers You Follow (Last 3 Months)</h2>
+        <h2>{{ _('Trades from Researchers You Follow (Last 3 Months)') }}</h2>
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th width="70px">Avatar</th>
-                        <th>Trade Details</th>
+                        <th width="70px">{{ _('Avatar') }}</th>
+                        <th>{{ _('Trade Details') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -56,18 +56,18 @@
                 <ul class="pagination">
                     <li class="page-item{% if not following_prev_url %} disabled{% endif %}">
                         <a class="page-link" href="{{ following_prev_url }}">
-                            <span aria-hidden="true">&larr;</span> Previous
+                            <span aria-hidden="true">&larr;</span> {{ _('Previous') }}
                         </a>
                     </li>
                     <li class="page-item{% if not following_next_url %} disabled{% endif %}">
                         <a class="page-link" href="{{ following_next_url }}">
-                            Next <span aria-hidden="true">&rarr;</span>
+                            {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
                         </a>
                     </li>
                 </ul>
             </nav>
         {% endif %}
     {% else %}
-        <p>No Trades Found</p>
+        <p>{{ _('No Trades Found') }}</p>
     {% endif %}
 {% endblock %}
