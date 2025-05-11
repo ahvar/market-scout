@@ -5,9 +5,9 @@
         <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             {% if title %}
-            <title>{{ title }} - Market Scout</title>
+            <title>{{ _(title) }} - {{ _('Market Scout') }}</title>
             {% else %}
-            <title>Welcome to Market Scout</title>
+            <title>{{ _('Welcome to Market Scout') }}</title>
             {% endif %}
             <link
             href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
@@ -19,30 +19,30 @@
     <body>
         <nav class="navbar navbar-expand-lg bg-body-tertiary">
             <div class="container">
-                <a class="navbar-brand" href="{{ url_for('index') }}">Market Scout</a>
+                <a class="navbar-brand" href="{{ url_for('index') }}">{{ _('Market Scout') }}</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="{{ url_for('index') }}">Home</a>
+                        <a class="nav-link" aria-current="page" href="{{ url_for('index') }}">{{ _('Home') }}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="{{ url_for('explore') }}">Explore</a>
+                        <a class="nav-link" aria-current="page" href="{{ url_for('explore') }}">{{ _('Explore') }}</a>
                     </li>
                     </ul>
                     <ul class="navbar-nav mb-2 mb-lg-0">
                     {% if current_user.is_anonymous %}
                     <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="{{ url_for('login') }}">Login</a>
+                        <a class="nav-link" aria-current="page" href="{{ url_for('login') }}">{{ _('Login') }}</a>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="{{ url_for('researcher', researcher_name=current_user.researcher_name) }}">Profile</a>
+                        <a class="nav-link" aria-current="page" href="{{ url_for('researcher', researcher_name=current_user.researcher_name) }}">{{ _('Profile') }}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="{{ url_for('logout') }}">Logout</a>
+                        <a class="nav-link" aria-current="page" href="{{ url_for('logout') }}">{{ _('Logout') }}</a>
                     </li>
                     {% endif %}
                     </ul>
@@ -53,7 +53,7 @@
             {% with messages = get_flashed_messages() %}
             {% if messages %}
             {% for message in messages %}
-            <div class="alert alert-info" role="alert">{{ message }}</div>
+            <div class="alert alert-info" role="alert">{{ _(message) }}</div>
             {% endfor %}
             {% endif %}
             {% endwith %}
@@ -65,6 +65,7 @@
             crossorigin="anonymous">
         </script>
         {{ moment.include_moment() }}
+        {{ moment.locale(g.locale) }}
     </body>
 
 </html>

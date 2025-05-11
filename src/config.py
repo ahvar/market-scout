@@ -16,3 +16,4 @@ class Config:
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     ADMINS = ["arthurvargasdev@gmail.com"]
     TRADES_PER_PAGE = 20
+    LANGUAGES = ["en", "es"]

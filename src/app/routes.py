@@ -2,10 +2,13 @@
 
 import logging
 from datetime import datetime, timezone, UTC
-from dateutil import relativedelta
+from dateutil.relativedelta import relativedelta
 from flask import render_template, flash, redirect, url_for, request
 from urllib.parse import urlsplit
 from flask_login import current_user, login_user, logout_user, login_required
+from flask_babel import _
+from flask import g
+from flask_babel import get_locale
 from src.app import app, db
 from src.app.forms import (
     LoginForm,
@@ -55,7 +58,7 @@ def index():
         )
         db.session.add(trade)
         db.session.commit()
-        flash("Your trade has been submitted!")
+        flash(_("Your trade has been submitted!"))
         return redirect(url_for("index"))
     page = request.args.get("page", 1, type=int)
     own_trades_query = (
@@ -127,7 +130,7 @@ def login():
             )
         )
         if researcher is None or not researcher.check_password(form.password.data):
-            flash("Invalid researcher name or password")
+            flash(_("Invalid researcher name or password"))
             return redirect(url_for("login"))
         login_user(researcher, remember=form.remember_me.data)
         next_page = request.args.get("next")
@@ -155,7 +158,7 @@ def register():
         researcher.set_password(form.password.data)
         db.session.add(researcher)
         db.session.commit()
-        flash("Congratulations, you are now a registered!")
+        flash(_("Congratulations, you are now a registered!"))
         return redirect(url_for("login"))
     return render_template("register.html", title="Register", form=form)
 
@@ -213,7 +216,7 @@ def edit_profile():
         current_user.researcher_name = form.researcher_name.data
         current_user.about_me = form.about_me.data
         db.session.commit()
-        flash("Your changes have been saved")
+        flash(_("Your changes have been saved"))
         return redirect(url_for("edit_profile"))
     elif request.method == "GET":
         form.researcher_name.data = current_user.researcher_name
@@ -226,6 +229,7 @@ def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
+    g.locale = str(get_locale())
 
 
 @app.route("/follow/<researcher_name>", methods=["POST"])
@@ -240,11 +244,13 @@ def follow(researcher_name):
             flash(f"Researcher {researcher_name} not found.")
             return redirect(url_for("index"))
         if researcher == current_user:
-            flash("You cannot follow yourself!")
+            flash(_("You cannot follow yourself!"))
             return redirect(url_for("researcher", researcher_name=researcher_name))
         current_user.follow(researcher_name)
         db.session.commit()
-        flash(f"You are following {researcher_name}!")
+        flash(
+            _("You are following %(researcher_name)s!", researcher_name=researcher_name)
+        )
         return redirect(url_for("researcher", researcher_name=researcher_name))
     else:
         return redirect(url_for("index"))
@@ -259,14 +265,24 @@ def unfollow(researcher_name):
             sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
         )
         if researcher is None:
-            flash(f"Researcher {researcher_name} is not found.")
+            flash(
+                _(
+                    "Researcher %(researcher_name)s is not found.",
+                    researcher_name=researcher_name,
+                )
+            )
             return redirect(url_for("index"))
         if researcher == current_user:
-            flash("You cannot unfollow yourself!")
+            flash(_("You cannot unfollow yourself!"))
             return redirect(url_for("researcher", researcher_name=researcher_name))
         current_user.unfollow(researcher)
         db.session.commit()
-        flash(f"You are not following {researcher_name}")
+        flash(
+            _(
+                "You are not following %(researcher_name)s",
+                researcher_name=researcher_name,
+            )
+        )
         return redirect(url_for("researcher", researcher_name=researcher_name))
     else:
         return redirect(url_for("index"))
@@ -302,7 +318,7 @@ def reset_password_request():
         )
         if researcher:
             send_password_reset_email(researcher)
-        flash("Check your email for the instructions to reset your password")
+        flash(_("Check your email for the instructions to reset your password"))
         return redirect(url_for("login"))
     return render_template(
         "reset_password_request.html", title="Reset Password", form=form
@@ -320,6 +336,6 @@ def reset_password(token):
     if form.validate_on_submit():
         researcher.set_password(form.password.data)
         db.session.commit()
-        flash("Your password has been reset")
+        flash(_("Your password has been reset"))
         return redirect(url_for("login"))
     return render_template("reset_password.html", form=form)
