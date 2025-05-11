@@ -2,11 +2,13 @@
 
 import logging
 from datetime import datetime, timezone, UTC
-from dateutil import relativedelta
+from dateutil.relativedelta import relativedelta
 from flask import render_template, flash, redirect, url_for, request
 from urllib.parse import urlsplit
 from flask_login import current_user, login_user, logout_user, login_required
 from flask_babel import _
+from flask import g
+from flask_babel import get_locale
 from src.app import app, db
 from src.app.forms import (
     LoginForm,
@@ -227,6 +229,7 @@ def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
+    g.locale = str(get_locale())
 
 
 @app.route("/follow/<researcher_name>", methods=["POST"])
