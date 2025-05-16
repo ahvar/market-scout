@@ -46,7 +46,7 @@ class Researcher(UserMixin, db.Model):
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(
         default=lambda: datetime.now(timezone.utc)
     )
-
+    posts: so.WriteOnlyMapped["Post"] = so.relationship(back_populates="author")
     following: so.WriteOnlyMapped["Researcher"] = so.relationship(
         secondary=followers,
         primaryjoin=(followers.c.follower_id == id),
@@ -118,6 +118,23 @@ class Researcher(UserMixin, db.Model):
         )
         return db.session.scalar(query)
 
+    def following_posts(self):
+        Author = so.aliased(Researcher)
+        Follower = so.aliased(Researcher)
+        return (
+            sa.select(Post)
+            .join(Post.author.of_type(Author))
+            .join(Author.followers.of_type(Follower), isouter=True)
+            .where(
+                sa.or_(
+                    Follower.id == self.id,
+                    Author.id == self.id,
+                )
+            )
+            .group_by(Post)
+            .order_by(Post.timestamp.desc())
+        )
+
     def following_profitability(self):
         """
         Returns a list of (researcher_id, researcher_name, total_pnl)
@@ -146,6 +163,23 @@ class Researcher(UserMixin, db.Model):
             .order_by(sa.desc("total_pnl"))
         )
         return db.session.execute(query).all()
+
+
+class Post(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    body: so.Mapped[str] = so.mapped_column(sa.String(140))
+    timestamp: so.Mapped[datetime] = so.mapped_column(
+        index=True, default=lambda: datetime.now(timezone.utc)
+    )
+    researcher_id: so.Mapped[int] = so.mapped_column(
+        sa.ForeignKey(Researcher.id), index=True
+    )
+    language: so.Mapped[Optional[str]] = so.mapped_column(sa.String(5))
+
+    author: so.Mapped[Researcher] = so.relationship(back_populates="posts")
+
+    def __repr__(self):
+        return "<Post {}>".format(self.body)
 
 
 @login.user_loader

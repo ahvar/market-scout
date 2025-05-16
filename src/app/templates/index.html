@@ -3,9 +3,10 @@
 
 {% block content %}
 <h1>{{ _('Hello') }}, {{ current_user.researcher_name }}!</h1>
-    {% if form %}
-        {{ wtf.quick_form(form) }}
-    {% endif %}
+    <div class="d-grid gap-3 mb-4">
+        <a href="{{ url_for('new_trade') }}" class="btn btn-primary">{{ _('Add New Trade') }}</a>
+        <a href="{{ url_for('find_more_researchers') }}" class="btn btn-outline-primary">{{ _('Research Community') }}</a>
+    </div>
     {% if own_trades or following_trades %}
         {% if own_trades %}
         <h2>{{ _('Your Trades (Last 3 Months)') }}</h2>

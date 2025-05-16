@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="container">
     <table class="table table-hover">
         <tr>
             <td width="256px"><img src="{{ researcher.avatar(256) }}"></td>
             <td>
                 <h1>{{ _('Researcher') }}: {{ researcher.researcher_name }}</h1>
-                {% if researcher.about_me %}<p>{{ _('%(about_me)s', about_me=researcher.about_me) }}</p>{% endif %}
+                {% if researcher.about_me %}<p>{{ researcher.about_me }}</p>{% endif %}
+                {% if researcher.last_seen %}<p>{{ _('Last seen on') }}: {{ moment(researcher.last_seen).format('LLL') }}</p>{% endif %}
                 <p>{{ researcher.followers_count() }} {{ _('followers') }}, {{ researcher.following_count() }} {{ _('following') }}.</p>
                 {% if researcher == current_user %}
                 <p><a href="{{ url_for('edit_profile') }}">{{ _('Edit your profile') }}</a></p>
@@ -21,35 +23,100 @@
                 <p>
                     <form action="{{ url_for('unfollow', researcher_name=researcher.researcher_name) }}" method="post">
                         {{ form.hidden_tag() }}
-                        {{ form.submit(value=_('Unfollow')) }}
+                        {{ form.submit(value=_('Unfollow'), class="btn btn-outline-secondary") }}
                     </form>
                 </p>
                 {% endif %}
             </td>
         </tr>
     </table>
+    
+    <!-- Post form if current user -->
     {% if researcher == current_user %}
-    <div class="followed-activity">
-        <h2>{{ _('Recent Trades from Followed Researchers') }}</h2>
-        {% set followed_trades = researcher.following_profitability() %}
-        {% if followed_trades %}
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th width="70px">{{ _('Avatar') }}</th>
-                        <th>{{ _('Trade Details') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for trade in followed_trades %}
-                    {% include '_trade.html' %}
+    <div class="card mb-4">
+        <div class="card-header">{{ _('Share a research update') }}</div>
+        <div class="card-body">
+            <form action="{{ url_for('find_more_researchers') }}" method="post">
+                {{ post_form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ post_form.post.label }}
+                    {{ post_form.post(class="form-control", rows=3) }}
+                </div>
+                {{ post_form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Posts -->
+    <div class="card mb-4">
+        <div class="card-header">
+            {% if researcher == current_user %}
+                <h5 class="card-title mb-0">{{ _('Your Research Feed') }}</h5>
+            {% else %}
+                <h5 class="card-title mb-0">{{ _('Research Posts by') }} {{ researcher.researcher_name }}</h5>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if posts %}
+                {% for post in posts %}
+                    {% include '_post.html' %}
                 {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>{{ _('No recent trades from followed researchers.') }}</p>
+            {% else %}
+                <div class="card-body">
+                    <p>{{ _('No posts found.') }}</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Pagination for posts -->
+        {% if posts %}
+        <div class="card-footer">
+            <nav aria-label="{{ _('Posts navigation') }}">
+                <ul class="pagination mb-0 justify-content-center">
+                    <li class="page-item{% if not posts_prev_url %} disabled{% endif %}">
+                        <a class="page-link" href="{{ posts_prev_url }}">
+                            <span aria-hidden="true">&larr;</span> {{ _('Previous') }}
+                        </a>
+                    </li>
+                    <li class="page-item{% if not posts_next_url %} disabled{% endif %}">
+                        <a class="page-link" href="{{ posts_next_url }}">
+                            {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
         {% endif %}
     </div>
-    <hr>
+    
+    <!-- Trades from followed researchers -->
+    {% if researcher == current_user %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">{{ _('Recent Trades from Followed Researchers') }}</h5>
+        </div>
+        <div class="card-body">
+            {% set followed_trades = researcher.following_profitability() %}
+            {% if followed_trades %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="70px">{{ _('Avatar') }}</th>
+                            <th>{{ _('Trade Details') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for trade in followed_trades %}
+                        {% include '_trade.html' %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>{{ _('No recent trades from followed researchers.') }}</p>
+            {% endif %}
+        </div>
+    </div>
     {% endif %}
+</div>
 {% endblock %}
