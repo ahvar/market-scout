@@ -20,8 +20,9 @@ from src.app.forms import (
     TradeForm,
     ResetPasswordRequestForm,
     ResetPasswordForm,
+    PostForm,
 )
-from src.app.models.researcher import Researcher, followers
+from src.app.models.researcher import Researcher, followers, Post
 from src.app.models.trade import Trade
 from src.app.models.profit_and_loss import ProfitAndLoss
 from src.app.email_service import send_password_reset_email
@@ -35,6 +36,23 @@ frontend_logger = logging.getLogger(MKT_SCOUT_FRONTEND)
 @app.route("/index", methods=["GET", "POST"])
 @login_required
 def index():
+    post_form = PostForm()
+    if post_form.validate_on_submit():
+        post = Post(body=post_form.post.data, author=current_user)
+        db.session.add(post)
+        db.session.commit()
+        flash(_("Your post is now live!"))
+        return redirect(url_for("index"))
+    # Set up page and pagination for posts
+    page = request.args.get("page", 1, type=int)
+    posts = db.paginate(
+        current_user.following_posts(),
+        page=page,
+        per_page=app.config["POSTS_PER_PAGE"],
+        error_out=False,
+    )
+    posts_next_url = url_for("index", page=posts.next_num) if posts.has_next else None
+    posts_prev_url = url_for("index", page=posts.prev_num) if posts.has_prev else None
     form = TradeForm()
     if form.validate_on_submit():
         pnl = db.session.scalar(
@@ -109,8 +127,12 @@ def index():
         "index.html",
         title="Home Page",
         form=form,
+        post_form=post_form,
+        posts=posts,
         own_trades=own_trades.items,
         following_trades=following_trades.items,
+        posts_next_url=posts_next_url,
+        posts_prev_url=posts_prev_url,
         next_url=next_url,
         prev_url=prev_url,
         following_next_url=following_next_url,
@@ -197,7 +219,47 @@ def researcher(researcher_name):
         if trades.has_prev
         else None
     )
+    # Get posts for this researcher
+    posts_page = request.args.get("posts_page", 1, type=int)
+    if researcher == current_user:
+        # For the logged-in user, show their posts and posts from followed researchers
+        posts = db.paginate(
+            researcher.following_posts(),
+            page=posts_page,
+            per_page=app.config["POSTS_PER_PAGE"],
+            error_out=False,
+        )
+    else:
+        # For other researchers, show only their posts
+        posts = db.paginate(
+            sa.select(Post)
+            .where(Post.researcher_id == researcher.id)
+            .order_by(Post.timestamp.desc()),
+            page=posts_page,
+            per_page=app.config["POSTS_PER_PAGE"],
+            error_out=False,
+        )
+
+    posts_next_url = (
+        url_for(
+            "researcher",
+            researcher_name=researcher.researcher_name,
+            posts_page=posts.next_num,
+        )
+        if posts.has_next
+        else None
+    )
+    posts_prev_url = (
+        url_for(
+            "researcher",
+            researcher_name=researcher.researcher_name,
+            posts_page=posts.prev_num,
+        )
+        if posts.has_prev
+        else None
+    )
     form = EmptyForm()
+    post_form = PostForm() if researcher == current_user else None
     return render_template(
         "researcher.html",
         researcher=researcher,
@@ -205,6 +267,10 @@ def researcher(researcher_name):
         next_url=next_url,
         prev_url=prev_url,
         form=form,
+        posts=posts.items,
+        posts_next_url=posts_next_url,
+        posts_prev_url=posts_prev_url,
+        post_form=post_form,
     )
 
 
@@ -299,12 +365,84 @@ def explore():
     next_url = url_for("explore", page=trades.next_num) if trades.has_next else None
     prev_url = url_for("explore", page=trades.prev_num) if trades.has_prev else None
     return render_template(
-        "index.html",
-        title="Explore",
+        "explore.html",
+        title=_("Explore Markets"),
         trades=trades.items,
         next_url=next_url,
         prev_url=prev_url,
     )
+
+
+@app.route("/find_more_researchers", methods=["GET", "POST"])
+@login_required
+def find_more_researchers():
+    post_form = PostForm()
+    if post_form.validate_on_submit():
+        post = Post(body=post_form.post.data, author=current_user)
+        db.session.add(post)
+        db.session.commit()
+        flash(_("Your post is now live!"))
+        return redirect(url_for("find_more_researchers"))
+
+    page = request.args.get("page", 1, type=int)
+    posts = db.paginate(
+        current_user.following_posts(),
+        page=page,
+        per_page=app.config["POSTS_PER_PAGE"],
+        error_out=False,
+    )
+    posts_next_url = (
+        url_for("find_more_researchers", page=posts.next_num)
+        if posts.has_next
+        else None
+    )
+    posts_prev_url = (
+        url_for("find_more_researchers", page=posts.prev_num)
+        if posts.has_prev
+        else None
+    )
+
+    return render_template(
+        "find_more_researchers.html",
+        title=_("Research Community"),
+        post_form=post_form,
+        posts=posts,
+        posts_next_url=posts_next_url,
+        posts_prev_url=posts_prev_url,
+    )
+
+
+@app.route("/new_trade", methods=["GET", "POST"])
+@login_required
+def new_trade():
+    form = TradeForm()
+    if form.validate_on_submit():
+        pnl = db.session.scalar(
+            sa.select(ProfitAndLoss).where(
+                ProfitAndLoss.researcher_id == current_user.id
+            )
+        )
+        if not pnl:
+            pnl = ProfitAndLoss(
+                name=f"{current_user.researcher_name}'s PnL",
+                researcher_id=current_user.id,
+            )
+            db.session.add(pnl)
+            db.session.commit()
+
+        trade = Trade(
+            open_date=form.date.data,
+            instrument_name=form.instrument_name.data,
+            product_type=form.product_type.data,
+            open_price=0,  # or parse from form.trade.data if needed
+            profit_and_loss_id=pnl.id,
+        )
+        db.session.add(trade)
+        db.session.commit()
+        flash(_("Your trade has been submitted!"))
+        return redirect(url_for("index"))
+
+    return render_template("new_trade.html", title=_("New Trade"), form=form)
 
 
 @app.route("/reset_password_request", methods=["GET", "POST"])

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+{% block content %}
+<h1>{{ _('Explore Markets') }}</h1>
+<div class="row">
+    <div class="col-md-8">
+        <!-- This is where we'll display price charts from CSV data -->
+        <div id="price-chart" style="height: 400px;">
+            <!-- Chart will be inserted here via JavaScript -->
+        </div>
+    </div>
+    <div class="col-md-4">
+        <!-- Instrument selection -->
+        <div class="card">
+            <div class="card-header">{{ _('Select Instrument') }}</div>
+            <div class="card-body">
+                <select id="instrument-selector" class="form-select">
+                    <option value="">{{ _('Loading instruments...') }}</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Price data stats -->
+        <div class="card mt-3">
+            <div class="card-header">{{ _('Statistics') }}</div>
+            <div class="card-body">
+                <div id="price-stats">
+                    <p>{{ _('Select an instrument to view statistics') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
