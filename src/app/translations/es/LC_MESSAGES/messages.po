@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-05-10 13:07-0500\n"
-"PO-Revision-Date: 2025-05-10 13:10-0500\n"
-"Last-Translator: arthurvargasdev@gmail.com\n"
+"POT-Creation-Date: 2025-05-20 16:07-0500\n"
+"PO-Revision-Date: 2025-05-20 16:07-0500\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
 "Language-Team: es <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
@@ -18,179 +18,455 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: app/forms.py:49 app/forms.py:76
+#: /Users/arthurvargas/dev/market-scout/src/app/email_service.py:23
+msgid "[Market Scout] Reset Your Password"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:21
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:34
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:60
+msgid "Researcher Name"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:22
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:36
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:108
+msgid "Password"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:23
+msgid "Remember Me"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:24
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/login.html:4
+msgid "Sign In"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:28
+msgid "Profit & Loss Name"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:29
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:9
+msgid "Researcher"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:30
+msgid "Start"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:35
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:103
+msgid "Email"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:38
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:110
+msgid "Repeat Password"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:40
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/register.html:4
+msgid "Register"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:49
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:76
 msgid "Please use a different researcher name"
-msgstr "Por favor usa un nombre de investigador diferente"
+msgstr ""
 
-#: app/forms.py:56
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:56
 msgid "Please use a different email address"
-msgstr "Por favor usa una dirección de correo electrónico diferente"
+msgstr ""
 
-#: app/forms.py:61
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:61
 msgid "About Me"
-msgstr "Sobre mí"
+msgstr ""
 
-#: app/forms.py:62 app/forms.py:80 app/forms.py:92
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:62
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:83
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:87
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:99
 msgid "Submit"
-msgstr "Enviar"
+msgstr ""
 
-#: app/forms.py:84
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:81
+msgid "Say something"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:91
 msgid "Expense Date"
-msgstr "Fecha del gasto"
+msgstr ""
 
-#: app/forms.py:86
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:93
 msgid "Instrument (e.g. GBPUSD)"
-msgstr "Instrumento (por ej. GBPUSD)"
+msgstr ""
 
-#: app/forms.py:89
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:96
 msgid "Leveraged Product (e.g. spot FX)"
-msgstr "Producto apalancado (por ej. FX spot)"
+msgstr ""
 
-#: app/forms.py:91
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:98
 msgid "Order Details"
-msgstr "Detalles de la orden"
+msgstr ""
 
-#: app/forms.py:97 app/forms.py:105
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:104
+#: /Users/arthurvargas/dev/market-scout/src/app/forms.py:112
 msgid "Request Password Reset"
-msgstr "Solicitar restablecimiento de contraseña"
+msgstr ""
 
-#: app/routes.py:59
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:51
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:420
+msgid "Your post is now live!"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:86
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:478
 msgid "Your trade has been submitted!"
-msgstr "¡Tu operación ha sido enviada!"
+msgstr ""
 
-#: app/routes.py:131
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:162
 msgid "Invalid researcher name or password"
-msgstr "Nombre del investigador o contraseña inválidos"
+msgstr ""
 
-#: app/routes.py:159
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:190
 msgid "Congratulations, you are now a registered!"
-msgstr "¡Felicidades, ahora estás registrado!"
+msgstr ""
 
-#: app/routes.py:217
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:292
 msgid "Your changes have been saved"
-msgstr "Tus cambios han sido guardados"
+msgstr ""
 
-#: app/routes.py:244
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:320
 msgid "You cannot follow yourself!"
-msgstr "¡No puedes seguirte a ti mismo!"
+msgstr ""
 
-#: app/routes.py:249
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:325
 #, python-format
 msgid "You are following %(researcher_name)s!"
-msgstr "¡Estás siguiendo a %(researcher_name)s!"
+msgstr ""
 
-#: app/routes.py:267
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:343
 #, python-format
 msgid "Researcher %(researcher_name)s is not found."
-msgstr "No se ha encontrado al investigador %(researcher_name)s."
+msgstr ""
 
-#: app/routes.py:273
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:349
 msgid "You cannot unfollow yourself!"
-msgstr "¡No puedes dejar de seguirte a ti mismo!"
+msgstr ""
 
-#: app/routes.py:279
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:355
 #, python-format
 msgid "You are not following %(researcher_name)s"
-msgstr "No estás siguiendo a %(researcher_name)s"
+msgstr ""
 
-#: app/routes.py:318
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:405
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/explore.html:4
+msgid "Explore Markets"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:443
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:35
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/find_more_researchers.html:6
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:8
+msgid "Research Community"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:481
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:32
+msgid "New Trade"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:495
 msgid "Check your email for the instructions to reset your password"
-msgstr "Consulta tu correo electrónico para las instrucciones para restablecer tu contraseña"
+msgstr ""
 
-#: app/routes.py:336
+#: /Users/arthurvargas/dev/market-scout/src/app/routes.py:513
 msgid "Your password has been reset"
-msgstr "Tu contraseña ha sido restablecida"
+msgstr ""
 
-#: app/templates/404.html:4
+#: /Users/arthurvargas/dev/market-scout/src/app/translate.py:8
+msgid "Error: the translation service is not configured"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/translate.py:23
+msgid "Error: the translation service failed."
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/404.html:4
 msgid "File Not Found"
-msgstr "Archivo no encontrado"
+msgstr ""
 
-#: app/templates/500.html:4
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/500.html:4
 msgid "An unexpected error has occurred"
-msgstr "Ha ocurrido un error inesperado"
+msgstr ""
 
-#: app/templates/500.html:5
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/500.html:5
 msgid "The administrator has been notified. Sorry for the inconvenience!"
-msgstr "El administrador ha sido notificado. ¡Disculpa las molestias!"
+msgstr ""
 
-#: app/templates/_trade.html:12
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_post.html:14
+#, python-format
+msgid "%(researcher_name)s said %(when)s"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_post.html:27
+msgid "Translate"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:12
 msgid "Instrument"
-msgstr "Instrumento"
+msgstr ""
 
-#: app/templates/_trade.html:12
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:12
 #, python-format
 msgid "%(instrument_name)s"
-msgstr "%(instrument_name)s"
+msgstr ""
 
-#: app/templates/_trade.html:13
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:13
 msgid "Product"
-msgstr "Producto"
+msgstr ""
 
-#: app/templates/_trade.html:13
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:13
 #, python-format
 msgid "%(product_type)s"
-msgstr "%(product_type)s"
+msgstr ""
 
-#: app/templates/_trade.html:14
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:14
 msgid "Open Date"
-msgstr "Fecha de apertura"
+msgstr ""
 
-#: app/templates/_trade.html:15
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:15
 msgid "Open Price"
-msgstr "Precio de apertura"
+msgstr ""
 
-#: app/templates/_trade.html:16
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:16
 msgid "Close Date"
-msgstr "Fecha de cierre"
+msgstr ""
 
-#: app/templates/_trade.html:16 app/templates/_trade.html:17
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:16
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:17
 msgid "N/A"
-msgstr "No aplica"
+msgstr ""
 
-#: app/templates/_trade.html:17
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/_trade.html:17
 msgid "Close Price"
-msgstr "Precio de cierre"
+msgstr ""
 
-#: app/templates/base.html:8 app/templates/base.html:22
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:8
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:22
 msgid "Market Scout"
-msgstr "Market Scout"
+msgstr ""
 
-#: app/templates/base.html:10
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:10
 msgid "Welcome to Market Scout"
-msgstr "Bienvenido a Market Scout"
+msgstr ""
 
-#: app/templates/base.html:29
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:29
 msgid "Home"
-msgstr "Inicio"
+msgstr ""
 
-#: app/templates/base.html:32
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:38
 msgid "Explore"
-msgstr "Explorar"
+msgstr ""
 
-#: app/templates/base.html:38
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:44
 msgid "Login"
-msgstr "Iniciar sesión"
+msgstr ""
 
-#: app/templates/base.html:42
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:48
 msgid "Profile"
-msgstr "Perfil"
+msgstr ""
 
-#: app/templates/base.html:45
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/base.html:51
 msgid "Logout"
-msgstr "Cerrar sesión"
+msgstr ""
 
-#: app/templates/edit_profile.html:5
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/edit_profile.html:5
 msgid "Edit Profile"
-msgstr "Editar perfil"
+msgstr ""
 
-#: app/templates/index.html:5
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/explore.html:15
+msgid "Select Instrument"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/explore.html:18
+msgid "Loading instruments..."
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/explore.html:25
+msgid "Statistics"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/explore.html:28
+msgid "Select an instrument to view statistics"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/find_more_researchers.html:10
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:37
+msgid "Share a research update"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/find_more_researchers.html:26
+msgid "Research Activity"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/find_more_researchers.html:34
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:75
+msgid "Posts navigation"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/find_more_researchers.html:38
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:30
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:60
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:79
+msgid "Previous"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/find_more_researchers.html:43
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:35
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:65
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:84
+msgid "Next"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:5
 msgid "Hello"
-msgstr "Hola"
+msgstr ""
 
-#: app/templates/index.html:11
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:7
+msgid "Add New Trade"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:12
 msgid "Your Trades (Last 3 Months)"
-msgstr "Tus operaciones (últimos 3 meses)"
+msgstr ""
 
-#: app/templates/index.html:71
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:16
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:46
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:105
+msgid "Avatar"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:17
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:47
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/new_trade.html:9
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:106
+msgid "Trade Details"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:42
+msgid "Trades from Researchers You Follow (Last 3 Months)"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/index.html:72
 msgid "No Trades Found"
-msgstr "No se encontraron operaciones"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/login.html:6
+msgid "New User?"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/login.html:6
+msgid "Click to Register!"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/login.html:8
+msgid "Forgot Your Password?"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/login.html:9
+msgid "Click to Reset It"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/new_trade.html:6
+msgid "Enter New Trade"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:11
+msgid "Last seen on"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:12
+msgid "followers"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:12
+msgid "following"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:14
+msgid "Edit your profile"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:19
+msgid "Follow"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:26
+msgid "Unfollow"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:55
+msgid "Your Research Feed"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:57
+msgid "Research Posts by"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:67
+msgid "No posts found."
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:97
+msgid "Recent Trades from Followed Researchers"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/researcher.html:116
+msgid "No recent trades from followed researchers."
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/reset_password_request.html:5
+msgid "Reset Your Password"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.html:4
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.txt:1
+msgid "Dear"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.html:6
+msgid "To reset your password"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.html:8
+msgid "click here"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.html:11
+msgid ""
+"Alternatively, you can paste the following link in your browser's address"
+" bar:"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.html:13
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.txt:7
+msgid "If you have not requested a password reset simply ignore this message."
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.html:14
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.txt:9
+msgid "Sincerely"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.html:15
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.txt:11
+msgid "The Market Scout Team"
+msgstr ""
+
+#: /Users/arthurvargas/dev/market-scout/src/app/templates/email/reset_email.txt:3
+msgid "To reset your password click on the following link:"
+msgstr ""
+

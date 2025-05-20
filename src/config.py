@@ -14,6 +14,7 @@ class Config:
     MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS") is not None
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+    MS_TRANSLATOR_KEY = os.environ.get("MS_TRANSLATOR_KEY")
     ADMINS = ["arthurvargasdev@gmail.com"]
     TRADES_PER_PAGE = 20
     POSTS_PER_PAGE = 20

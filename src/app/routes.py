@@ -9,6 +9,7 @@ from flask_login import current_user, login_user, logout_user, login_required
 from flask_babel import _
 from flask import g
 from flask_babel import get_locale
+from langdetect import detect, LangDetectException
 from src.app import app, db
 from src.app.forms import (
     LoginForm,
@@ -26,6 +27,7 @@ from src.app.models.researcher import Researcher, followers, Post
 from src.app.models.trade import Trade
 from src.app.models.profit_and_loss import ProfitAndLoss
 from src.app.email_service import send_password_reset_email
+from src.app.translate import translate
 from src.utils.references import MKT_SCOUT_FRONTEND
 import sqlalchemy as sa
 
@@ -38,6 +40,11 @@ frontend_logger = logging.getLogger(MKT_SCOUT_FRONTEND)
 def index():
     post_form = PostForm()
     if post_form.validate_on_submit():
+        try:
+            language = detect(form.post.data)
+        except LangDetectException:
+            language = ""
+
         post = Post(body=post_form.post.data, author=current_user)
         db.session.add(post)
         db.session.commit()
@@ -352,6 +359,35 @@ def unfollow(researcher_name):
         return redirect(url_for("researcher", researcher_name=researcher_name))
     else:
         return redirect(url_for("index"))
+
+
+@app.route("/translate", methods=["POST"])
+@login_required
+def translate_next():
+    """Translate text between languages.
+
+    API endpoint that accepts JSON with source text, source language, and
+    destination language. Uses the Azure Translator service to perform translation.
+
+    Request body should be JSON with structure:
+    {
+        "text": "Text to translate",
+        "source_language": "en",
+        "dest_language": "es"
+    }
+
+    Returns:
+        JSON response with the translated text:
+        {
+            "text": "Translated text here"
+        }
+
+    Requires authentication to prevent abuse of translation API quota.
+    """
+    data = request.get_json()
+    return {
+        "text": translate(data["text"], data["source_language"], data["dest_language"])
+    }
 
 
 @app.route("/explore")
