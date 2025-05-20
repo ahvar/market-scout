@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">{{ _('Starter System') }}</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ _('About the Strategy') }}</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ _('The Starter System is designed to be suitable for beginner traders with minimal capital. It uses a systematic approach to trading based on exponentially weighted moving averages (EWMA).') }}</p>
+                    <p>{{ _('The system calculates a forecast value from price history, which is the ratio of the difference between the fast and slow EWMAs of a price series to the volatility of price changes. This forecast value is used to make trading decisions.') }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ _('Strategy Parameters') }}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ _('Annual Risk Target') }}
+                            <span class="badge bg-primary rounded-pill">16%</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ _('Business Days in Year') }}
+                            <span class="badge bg-primary rounded-pill">256</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ _('Value per Point') }}
+                            <span class="badge bg-primary rounded-pill">1.0</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">{{ _('Configure Your Strategy') }}</h5>
+        </div>
+        <div class="card-body">
+            {{ wtf.quick_form(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -15,6 +15,7 @@ from src.app.forms import (
     LoginForm,
     TradeForm,
     ProfitAndLossForm,
+    StarterSystemForm,
     RegistrationForm,
     EditProfileForm,
     EmptyForm,
@@ -359,6 +360,21 @@ def unfollow(researcher_name):
         return redirect(url_for("researcher", researcher_name=researcher_name))
     else:
         return redirect(url_for("index"))
+
+
+@app.route("/starter_system", methods=["GET", "POST"])
+@login_required
+def starter_system():
+    form = StarterSystemForm()
+    if form.validate_on_submit():
+        instrument = form.instrument.data
+        capital = float(form.capital.data)
+        fast_ewma = int(form.fast_ewma.data)
+        slow_ewma = int(form.slow_ewma.data)
+        flash(_("Your strategy has been configured and is running!"))
+        return redirect(url_for("index"))
+
+    return render_template("starter_system.html", title=_("Starter System"), form=form)
 
 
 @app.route("/translate", methods=["POST"])

@@ -2,73 +2,70 @@
 {% import "bootstrap_wtf.html" as wtf %}
 
 {% block content %}
-<h1>{{ _('Hello') }}, {{ current_user.researcher_name }}!</h1>
-    <div class="d-grid gap-3 mb-4">
-        <a href="{{ url_for('new_trade') }}" class="btn btn-primary">{{ _('Add New Trade') }}</a>
-        <a href="{{ url_for('find_more_researchers') }}" class="btn btn-outline-primary">{{ _('Research Community') }}</a>
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 mb-4">{{ _('Market Scout') }}</h1>
+            <p class="lead mb-5">
+                {{ _('A comprehensive platform for researching financial markets, running trading strategies, analyzing market trends, and managing account positions. Market Scout provides the tools you need to make informed trading decisions backed by data-driven analysis.') }}
+            </p>
+        </div>
+    </div>
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ _('Starter System') }}</h5>
+                    <p class="card-text">{{ _('A simple trading system designed for beginner traders with minimal capital. Uses EWMA crossover strategies to generate trading signals.') }}</p>
+                    <a href="{{ url_for('starter_system') }}" class="btn btn-primary">{{ _('Get Started') }}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ _('Explore Markets') }}</h5>
+                    <p class="card-text">{{ _('Analyze price charts, historical patterns, and market data to identify potential trading opportunities.') }}</p>
+                    <a href="{{ url_for('explore') }}" class="btn btn-outline-primary">{{ _('Explore') }}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ _('Research Community') }}</h5>
+                    <p class="card-text">{{ _('Connect with other researchers, share insights, and follow successful traders.') }}</p>
+                    <a href="{{ url_for('find_more_researchers') }}" class="btn btn-outline-primary">{{ _('Connect') }}</a>
+                </div>
+            </div>
+        </div>
     </div>
     {% if own_trades or following_trades %}
-        {% if own_trades %}
-        <h2>{{ _('Your Trades (Last 3 Months)') }}</h2>
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th width="70px">{{ _('Avatar') }}</th>
-                        <th>{{ _('Trade Details') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for trade in own_trades %}
-                    {% include '_trade.html' %}
-                {% endfor %}
-                </tbody>
-            </table>
-            <nav aria-label="Trades navigation">
-                <ul class="pagination">
-                    <li class="page-item{% if not prev_url %} disabled{% endif %}">
-                        <a class="page-link" href="{{ prev_url }}">
-                            <span aria-hidden="true">&larr;</span> {{ _('Previous') }}
-                        </a>
-                    </li>
-                    <li class="page-item{% if not next_url %} disabled{% endif %}">
-                        <a class="page-link" href="{{ next_url }}">
-                            {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        {% endif %}
-        {% if following_trades %}
-        <h2>{{ _('Trades from Researchers You Follow (Last 3 Months)') }}</h2>
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th width="70px">{{ _('Avatar') }}</th>
-                        <th>{{ _('Trade Details') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for trade in following_trades %}
-                    {% include '_trade.html' %}
-                {% endfor %}
-                </tbody>
-            </table>
-            <nav aria-label="Following trades navigation">
-                <ul class="pagination">
-                    <li class="page-item{% if not following_prev_url %} disabled{% endif %}">
-                        <a class="page-link" href="{{ following_prev_url }}">
-                            <span aria-hidden="true">&larr;</span> {{ _('Previous') }}
-                        </a>
-                    </li>
-                    <li class="page-item{% if not following_next_url %} disabled{% endif %}">
-                        <a class="page-link" href="{{ following_next_url }}">
-                            {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        {% endif %}
-    {% else %}
-        <p>{{ _('No Trades Found') }}</p>
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">{{ _('Recent Activity') }}</h2>
+            {% if own_trades %}
+            <div class="card mb-4">
+                <div class="card-header">{{ _('Your Recent Trades') }}</div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th width="70px">{{ _('Avatar') }}</th>
+                                <th>{{ _('Trade Details') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for trade in own_trades %}
+                            {% include '_trade.html' %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
     {% endif %}
+</div>
 {% endblock %}

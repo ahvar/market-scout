@@ -8,6 +8,7 @@ from wtforms import (
     DateField,
     FloatField,
     TextAreaField,
+    SelectField,
 )
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length
 import sqlalchemy as sa
@@ -74,6 +75,36 @@ class EditProfileForm(FlaskForm):
             )
             if researcher is not None:
                 raise ValidationError(_l("Please use a different researcher name"))
+
+
+class StarterSystemForm(FlaskForm):
+    instrument = SelectField(
+        _l("Instrument"),
+        choices=[
+            ("GBPUSD", "GBPUSD"),
+            ("EURUSD", "EURUSD"),
+            ("USDJPY", "USDJPY"),
+            ("AUDUSD", "AUDUSD"),
+            ("USDCAD", "USDCAD"),
+        ],
+    )
+    capital = SelectField(_l("Forecast Capital"), choices=[("100000", "100,000 USD")])
+    fast_ewma = SelectField(
+        _l("Fast EWMA (days)"), choices=[("16", "16"), ("32", "32")]
+    )
+    slow_ewma = SelectField(
+        _l("Slow EWMA (days)"), choices=[("64", "64"), ("128", "128")]
+    )
+    days = SelectField(_l("Lookback Days"), choices=[("35", "35")])
+    min_periods = SelectField(_l("Minimum Observations"), choices=[("10", "10")])
+    vol_abs_min = SelectField(
+        _l("Absolute Min Volatility"), choices=[("0.0000000001", "0.0000000001")]
+    )
+    vol_floor = BooleanField(_l("Apply Volatility Floor"), default=True)
+    floor_min_quant = SelectField(
+        _l("Floor Minimum Quantile"), choices=[("0.05", "0.05")]
+    )
+    submit = SubmitField(_l("Run Strategy"))
 
 
 class PostForm(FlaskForm):
