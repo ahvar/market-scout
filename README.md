@@ -3,7 +3,7 @@
 
 # Introduction 
 
-This application, MARKET SCOUT, is designed to retrieve real-time and historical market data from a supported brokerage service API.
+This application, MARKET SCOUT, retrieves real-time and historical market data from a supported brokerage service API.
 
 # Installation and Setup for Running Market Scout Locally
 Here are the steps to run Market Scout from the command-line in your local environment. 

@@ -1,8 +1,8 @@
-"""initial db migration
+"""empty message
 
-Revision ID: 9a43e2891ead
+Revision ID: 9bcd224a9531
 Revises: 
-Create Date: 2025-05-10 11:23:39.009124
+Create Date: 2025-06-02 13:53:15.319469
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9a43e2891ead'
+revision = '9bcd224a9531'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -38,6 +38,19 @@ def upgrade():
     sa.ForeignKeyConstraint(['follower_id'], ['researcher.id'], ),
     sa.PrimaryKeyConstraint('follower_id', 'followed_id')
     )
+    op.create_table('post',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('body', sa.String(length=140), nullable=False),
+    sa.Column('language', sa.String(length=5), nullable=True),
+    sa.Column('timestamp', sa.DateTime(), nullable=False),
+    sa.Column('researcher_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['researcher_id'], ['researcher.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_post_researcher_id'), ['researcher_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_post_timestamp'), ['timestamp'], unique=False)
+
     op.create_table('profit_and_loss',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=140), nullable=False),
@@ -78,6 +91,11 @@ def downgrade():
 
     op.drop_table('trade')
     op.drop_table('profit_and_loss')
+    with op.batch_alter_table('post', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_post_timestamp'))
+        batch_op.drop_index(batch_op.f('ix_post_researcher_id'))
+
+    op.drop_table('post')
     op.drop_table('followers')
     with op.batch_alter_table('researcher', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_researcher_researcher_name'))

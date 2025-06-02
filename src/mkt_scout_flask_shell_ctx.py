@@ -5,10 +5,11 @@ NOTE:
 
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from src.app import app, db
-from src.app import cli
+from src.app import create_app, db
 from src.app.models.researcher import Researcher
 from src.app.models.profit_and_loss import ProfitAndLoss
+
+app = create_app()
 
 
 @app.shell_context_processor

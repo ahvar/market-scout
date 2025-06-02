@@ -11,7 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # an extension that provides a Flask-friendly wrapper to SQLAlchemy
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from src.app import db, app
+from src.app import db
 
 from src.app.models.profit_and_loss import ProfitAndLoss
 from src.app.models.trade import Trade

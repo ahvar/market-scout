@@ -1,14 +1,17 @@
 import requests
 from flask_babel import _
-from src.app import app
+from flask import current_app
 
 
 def translate(text, source_language, dest_language):
-    if "MS_TRANSLATOR_KEY" not in app.config or not app.config["MS_TRANSLATOR_KEY"]:
+    if (
+        "MS_TRANSLATOR_KEY" not in current_app.config
+        or not current_app.config["MS_TRANSLATOR_KEY"]
+    ):
         return _("Error: the translation service is not configured")
     endpoint = "https://market-scout.cognitiveservices.azure.com/translator/text/v3.0/translate"
     headers = {
-        "Ocp-Apim-Subscription-Key": app.config["MS_TRANSLATOR_KEY"],
+        "Ocp-Apim-Subscription-Key": current_app.config["MS_TRANSLATOR_KEY"],
         "Ocp-Apim-Subscription-Region": "southcentralus",
         "Content-Type": "application/json",
     }

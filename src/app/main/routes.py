@@ -1,42 +1,30 @@
-""" """
-
 import logging
-from datetime import datetime, timezone, UTC
-from dateutil.relativedelta import relativedelta
-from flask import render_template, flash, redirect, url_for, request
-from urllib.parse import urlsplit
-from flask_login import current_user, login_user, logout_user, login_required
-from flask_babel import _
-from flask import g
-from flask_babel import get_locale
-from langdetect import detect, LangDetectException
-from src.app import app, db
-from src.app.forms import (
-    LoginForm,
-    TradeForm,
-    ProfitAndLossForm,
-    StarterSystemForm,
-    RegistrationForm,
-    EditProfileForm,
-    EmptyForm,
-    TradeForm,
-    ResetPasswordRequestForm,
-    ResetPasswordForm,
-    PostForm,
-)
-from src.app.models.researcher import Researcher, followers, Post
-from src.app.models.trade import Trade
-from src.app.models.profit_and_loss import ProfitAndLoss
-from src.app.email_service import send_password_reset_email
-from src.app.translate import translate
-from src.utils.references import MKT_SCOUT_FRONTEND
+from pathlib import Path
+from datetime import datetime, timezone
+from dateutil import relativedelta
+from flask import render_template, flash, redirect, url_for, request, g, current_app
+from flask_login import current_user, login_required
+from flask_babel import _, get_locale
 import sqlalchemy as sa
+from langdetect import detect, LangDetectException
+from src.app import db
+from src.app.main.forms import (
+    EmptyForm,
+    PostForm,
+    TradeForm,
+    StarterSystemForm,
+    EditProfileForm,
+)
+from src.app.models.researcher import Researcher, Post, ProfitAndLoss, Trade, followers
+from src.app.translate import translate
+from src.app.main import bp
+from src.utils.references import MKT_SCOUT_FRONTEND
 
 frontend_logger = logging.getLogger(MKT_SCOUT_FRONTEND)
 
 
-@app.route("/", methods=["GET", "POST"])
-@app.route("/index", methods=["GET", "POST"])
+@bp.route("/", methods=["GET", "POST"])
+@bp.route("/index", methods=["GET", "POST"])
 @login_required
 def index():
     post_form = PostForm()
@@ -56,7 +44,7 @@ def index():
     posts = db.paginate(
         current_user.following_posts(),
         page=page,
-        per_page=app.config["POSTS_PER_PAGE"],
+        per_page=current_app.config["POSTS_PER_PAGE"],
         error_out=False,
     )
     posts_next_url = url_for("index", page=posts.next_num) if posts.has_next else None
@@ -106,13 +94,13 @@ def index():
     following_trades = db.paginate(
         following_trades_query,
         page=following_page,
-        per_page=app.config["TRADES_PER_PAGE"],
+        per_page=current_app.config["TRADES_PER_PAGE"],
         error_out=False,
     )
     own_trades = db.paginate(
         own_trades_query,
         page=page,
-        per_page=app.config["TRADES_PER_PAGE"],
+        per_page=current_app.config["TRADES_PER_PAGE"],
         error_out=False,
     )
     next_url = (
@@ -148,52 +136,85 @@ def index():
     )
 
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
+@bp.before_request
+def before_request():
     if current_user.is_authenticated:
-        return redirect(url_for("index"))
-    form = LoginForm()
-    if form.validate_on_submit():
-        researcher = db.session.scalar(
-            sa.select(Researcher).where(
-                Researcher.researcher_name == form.researcher_name.data
-            )
-        )
-        if researcher is None or not researcher.check_password(form.password.data):
-            flash(_("Invalid researcher name or password"))
-            return redirect(url_for("login"))
-        login_user(researcher, remember=form.remember_me.data)
-        next_page = request.args.get("next")
-        if not next_page or urlsplit(next_page).netloc != "":
-            next_page = url_for("index")
-        return redirect(next_page)
-    return render_template("login.html", title="Sign In", form=form)
-
-
-@app.route("/logout")
-def logout():
-    logout_user()
-    return redirect(url_for("index"))
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        researcher = Researcher(
-            researcher_name=form.researcher_name.data, email=form.email.data
-        )
-        researcher.set_password(form.password.data)
-        db.session.add(researcher)
+        current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
-        flash(_("Congratulations, you are now a registered!"))
-        return redirect(url_for("login"))
-    return render_template("register.html", title="Register", form=form)
+    g.locale = str(get_locale())
 
 
-@app.route("/researcher/<researcher_name>")
+@bp.before_app_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.now(timezone.utc)
+        db.session.commit()
+        g.search_form = SearchForm()
+    g.locale = str(get_locale())
+
+
+@bp.route("/explore")
+@login_required
+def explore():
+    page = request.args.get("page", 1, type=int)
+    query = sa.select(Trade).order_by(Trade.open_date.desc())
+    trades = db.paginate(
+        query,
+        page=page,
+        per_page=current_app.config["TRADES_PER_PAGE"],
+        error_out=False,
+    )
+    next_url = url_for("explore", page=trades.next_num) if trades.has_next else None
+    prev_url = url_for("explore", page=trades.prev_num) if trades.has_prev else None
+    return render_template(
+        "explore.html",
+        title=_("Explore Markets"),
+        trades=trades.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
+
+@bp.route("/find_more_researchers", methods=["GET", "POST"])
+@login_required
+def find_more_researchers():
+    post_form = PostForm()
+    if post_form.validate_on_submit():
+        post = Post(body=post_form.post.data, author=current_user)
+        db.session.add(post)
+        db.session.commit()
+        flash(_("Your post is now live!"))
+        return redirect(url_for("find_more_researchers"))
+
+    page = request.args.get("page", 1, type=int)
+    posts = db.paginate(
+        current_user.following_posts(),
+        page=page,
+        per_page=current_app.config["POSTS_PER_PAGE"],
+        error_out=False,
+    )
+    posts_next_url = (
+        url_for("find_more_researchers", page=posts.next_num)
+        if posts.has_next
+        else None
+    )
+    posts_prev_url = (
+        url_for("find_more_researchers", page=posts.prev_num)
+        if posts.has_prev
+        else None
+    )
+
+    return render_template(
+        "find_more_researchers.html",
+        title=_("Research Community"),
+        post_form=post_form,
+        posts=posts,
+        posts_next_url=posts_next_url,
+        posts_prev_url=posts_prev_url,
+    )
+
+
+@bp.route("/researcher/<researcher_name>")
 @login_required
 def researcher(researcher_name):
     researcher = db.first_or_404(
@@ -207,7 +228,10 @@ def researcher(researcher_name):
         .order_by(Trade.open_date.desc())
     )
     trades = db.paginate(
-        trades_query, page=page, per_page=app.config["TRADES_PER_PAGE"], error_out=False
+        trades_query,
+        page=page,
+        per_page=current_app.config["TRADES_PER_PAGE"],
+        error_out=False,
     )
     next_url = (
         url_for(
@@ -234,7 +258,7 @@ def researcher(researcher_name):
         posts = db.paginate(
             researcher.following_posts(),
             page=posts_page,
-            per_page=app.config["POSTS_PER_PAGE"],
+            per_page=current_app.config["POSTS_PER_PAGE"],
             error_out=False,
         )
     else:
@@ -244,7 +268,7 @@ def researcher(researcher_name):
             .where(Post.researcher_id == researcher.id)
             .order_by(Post.timestamp.desc()),
             page=posts_page,
-            per_page=app.config["POSTS_PER_PAGE"],
+            per_page=current_app.config["POSTS_PER_PAGE"],
             error_out=False,
         )
 
@@ -282,189 +306,7 @@ def researcher(researcher_name):
     )
 
 
-@app.route("/edit_profile", methods=["GET", "POST"])
-@login_required
-def edit_profile():
-    form = EditProfileForm(current_user.researcher_name)
-    if form.validate_on_submit():
-        current_user.researcher_name = form.researcher_name.data
-        current_user.about_me = form.about_me.data
-        db.session.commit()
-        flash(_("Your changes have been saved"))
-        return redirect(url_for("edit_profile"))
-    elif request.method == "GET":
-        form.researcher_name.data = current_user.researcher_name
-        form.about_me.data = current_user.about_me
-    return render_template("edit_profile.html", title="Edit Profile", form=form)
-
-
-@app.before_request
-def before_request():
-    if current_user.is_authenticated:
-        current_user.last_seen = datetime.now(timezone.utc)
-        db.session.commit()
-    g.locale = str(get_locale())
-
-
-@app.route("/follow/<researcher_name>", methods=["POST"])
-@login_required
-def follow(researcher_name):
-    form = EmptyForm()
-    if form.validate_on_submit():
-        researcher = db.session.scalar(
-            sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
-        )
-        if researcher is None:
-            flash(f"Researcher {researcher_name} not found.")
-            return redirect(url_for("index"))
-        if researcher == current_user:
-            flash(_("You cannot follow yourself!"))
-            return redirect(url_for("researcher", researcher_name=researcher_name))
-        current_user.follow(researcher_name)
-        db.session.commit()
-        flash(
-            _("You are following %(researcher_name)s!", researcher_name=researcher_name)
-        )
-        return redirect(url_for("researcher", researcher_name=researcher_name))
-    else:
-        return redirect(url_for("index"))
-
-
-@app.route("/unfollow/<researcher_name>", methods=["POST"])
-@login_required
-def unfollow(researcher_name):
-    form = EmptyForm()
-    if form.validate_on_submit():
-        researcher = db.session.scalar(
-            sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
-        )
-        if researcher is None:
-            flash(
-                _(
-                    "Researcher %(researcher_name)s is not found.",
-                    researcher_name=researcher_name,
-                )
-            )
-            return redirect(url_for("index"))
-        if researcher == current_user:
-            flash(_("You cannot unfollow yourself!"))
-            return redirect(url_for("researcher", researcher_name=researcher_name))
-        current_user.unfollow(researcher)
-        db.session.commit()
-        flash(
-            _(
-                "You are not following %(researcher_name)s",
-                researcher_name=researcher_name,
-            )
-        )
-        return redirect(url_for("researcher", researcher_name=researcher_name))
-    else:
-        return redirect(url_for("index"))
-
-
-@app.route("/starter_system", methods=["GET", "POST"])
-@login_required
-def starter_system():
-    form = StarterSystemForm()
-    if form.validate_on_submit():
-        instrument = form.instrument.data
-        capital = float(form.capital.data)
-        fast_ewma = int(form.fast_ewma.data)
-        slow_ewma = int(form.slow_ewma.data)
-        flash(_("Your strategy has been configured and is running!"))
-        return redirect(url_for("index"))
-
-    return render_template("starter_system.html", title=_("Starter System"), form=form)
-
-
-@app.route("/translate", methods=["POST"])
-@login_required
-def translate_next():
-    """Translate text between languages.
-
-    API endpoint that accepts JSON with source text, source language, and
-    destination language. Uses the Azure Translator service to perform translation.
-
-    Request body should be JSON with structure:
-    {
-        "text": "Text to translate",
-        "source_language": "en",
-        "dest_language": "es"
-    }
-
-    Returns:
-        JSON response with the translated text:
-        {
-            "text": "Translated text here"
-        }
-
-    Requires authentication to prevent abuse of translation API quota.
-    """
-    data = request.get_json()
-    return {
-        "text": translate(data["text"], data["source_language"], data["dest_language"])
-    }
-
-
-@app.route("/explore")
-@login_required
-def explore():
-    page = request.args.get("page", 1, type=int)
-    query = sa.select(Trade).order_by(Trade.open_date.desc())
-    trades = db.paginate(
-        query, page=page, per_page=app.config["TRADES_PER_PAGE"], error_out=False
-    )
-    next_url = url_for("explore", page=trades.next_num) if trades.has_next else None
-    prev_url = url_for("explore", page=trades.prev_num) if trades.has_prev else None
-    return render_template(
-        "explore.html",
-        title=_("Explore Markets"),
-        trades=trades.items,
-        next_url=next_url,
-        prev_url=prev_url,
-    )
-
-
-@app.route("/find_more_researchers", methods=["GET", "POST"])
-@login_required
-def find_more_researchers():
-    post_form = PostForm()
-    if post_form.validate_on_submit():
-        post = Post(body=post_form.post.data, author=current_user)
-        db.session.add(post)
-        db.session.commit()
-        flash(_("Your post is now live!"))
-        return redirect(url_for("find_more_researchers"))
-
-    page = request.args.get("page", 1, type=int)
-    posts = db.paginate(
-        current_user.following_posts(),
-        page=page,
-        per_page=app.config["POSTS_PER_PAGE"],
-        error_out=False,
-    )
-    posts_next_url = (
-        url_for("find_more_researchers", page=posts.next_num)
-        if posts.has_next
-        else None
-    )
-    posts_prev_url = (
-        url_for("find_more_researchers", page=posts.prev_num)
-        if posts.has_prev
-        else None
-    )
-
-    return render_template(
-        "find_more_researchers.html",
-        title=_("Research Community"),
-        post_form=post_form,
-        posts=posts,
-        posts_next_url=posts_next_url,
-        posts_prev_url=posts_prev_url,
-    )
-
-
-@app.route("/new_trade", methods=["GET", "POST"])
+@bp.route("/new_trade", methods=["GET", "POST"])
 @login_required
 def new_trade():
     form = TradeForm()
@@ -497,35 +339,117 @@ def new_trade():
     return render_template("new_trade.html", title=_("New Trade"), form=form)
 
 
-@app.route("/reset_password_request", methods=["GET", "POST"])
-def reset_password_request():
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
-    form = ResetPasswordRequestForm()
+@bp.route("/follow/<researcher_name>", methods=["POST"])
+@login_required
+def follow(researcher_name):
+    form = EmptyForm()
     if form.validate_on_submit():
         researcher = db.session.scalar(
-            sa.select(Researcher).where(Researcher.email == form.email.data)
+            sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
         )
-        if researcher:
-            send_password_reset_email(researcher)
-        flash(_("Check your email for the instructions to reset your password"))
-        return redirect(url_for("login"))
-    return render_template(
-        "reset_password_request.html", title="Reset Password", form=form
-    )
-
-
-@app.route("/reset_password/<token>", methods=["GET", "POST"])
-def reset_password(token):
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
-    researcher = Researcher.verify_reset_password(token)
-    if not researcher:
-        return redirect(url_for("index"))
-    form = ResetPasswordForm()
-    if form.validate_on_submit():
-        researcher.set_password(form.password.data)
+        if researcher is None:
+            flash(f"Researcher {researcher_name} not found.")
+            return redirect(url_for("index"))
+        if researcher == current_user:
+            flash(_("You cannot follow yourself!"))
+            return redirect(url_for("researcher", researcher_name=researcher_name))
+        current_user.follow(researcher_name)
         db.session.commit()
-        flash(_("Your password has been reset"))
-        return redirect(url_for("login"))
-    return render_template("reset_password.html", form=form)
+        flash(
+            _("You are following %(researcher_name)s!", researcher_name=researcher_name)
+        )
+        return redirect(url_for("researcher", researcher_name=researcher_name))
+    else:
+        return redirect(url_for("index"))
+
+
+@bp.route("/unfollow/<researcher_name>", methods=["POST"])
+@login_required
+def unfollow(researcher_name):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        researcher = db.session.scalar(
+            sa.select(Researcher).where(Researcher.researcher_name == researcher_name)
+        )
+        if researcher is None:
+            flash(
+                _(
+                    "Researcher %(researcher_name)s is not found.",
+                    researcher_name=researcher_name,
+                )
+            )
+            return redirect(url_for("index"))
+        if researcher == current_user:
+            flash(_("You cannot unfollow yourself!"))
+            return redirect(url_for("researcher", researcher_name=researcher_name))
+        current_user.unfollow(researcher)
+        db.session.commit()
+        flash(
+            _(
+                "You are not following %(researcher_name)s",
+                researcher_name=researcher_name,
+            )
+        )
+        return redirect(url_for("researcher", researcher_name=researcher_name))
+    else:
+        return redirect(url_for("index"))
+
+
+@bp.route("/starter_system", methods=["GET", "POST"])
+@login_required
+def starter_system():
+    form = StarterSystemForm()
+    if form.validate_on_submit():
+        instrument = form.instrument.data
+        capital = float(form.capital.data)
+        fast_ewma = int(form.fast_ewma.data)
+        slow_ewma = int(form.slow_ewma.data)
+        flash(_("Your strategy has been configured and is running!"))
+        return redirect(url_for("index"))
+
+    return render_template("starter_system.html", title=_("Starter System"), form=form)
+
+
+@bp.route("/edit_profile", methods=["GET", "POST"])
+@login_required
+def edit_profile():
+    form = EditProfileForm(current_user.researcher_name)
+    if form.validate_on_submit():
+        current_user.researcher_name = form.researcher_name.data
+        current_user.about_me = form.about_me.data
+        db.session.commit()
+        flash(_("Your changes have been saved"))
+        return redirect(url_for("edit_profile"))
+    elif request.method == "GET":
+        form.researcher_name.data = current_user.researcher_name
+        form.about_me.data = current_user.about_me
+    return render_template("edit_profile.html", title="Edit Profile", form=form)
+
+
+@bp.route("/translate", methods=["POST"])
+@login_required
+def translate_text():
+    """Translate text between languages.
+
+    API endpoint that accepts JSON with source text, source language, and
+    destination language. Uses the Azure Translator service to perform translation.
+
+    Request body should be JSON with structure:
+    {
+        "text": "Text to translate",
+        "source_language": "en",
+        "dest_language": "es"
+    }
+
+    Returns:
+        JSON response with the translated text:
+        {
+            "text": "Translated text here"
+        }
+
+    Requires authentication to prevent abuse of translation API quota.
+    """
+    data = request.get_json()
+    return {
+        "text": translate(data["text"], data["source_language"], data["dest_language"])
+    }
