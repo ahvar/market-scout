@@ -9,7 +9,7 @@
     <div class="card mb-4">
         <div class="card-header">{{ _('Share a research update') }}</div>
         <div class="card-body">
-            <form action="{{ url_for('find_more_researchers') }}" method="post">
+            <form action="{{ url_for('main.find_more_researchers') }}" method="post">
                 {{ post_form.hidden_tag() }}
                 <div class="mb-3">
                     {{ post_form.post.label }}

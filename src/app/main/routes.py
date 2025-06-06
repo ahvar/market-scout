@@ -14,6 +14,7 @@ from src.app.main.forms import (
     TradeForm,
     StarterSystemForm,
     EditProfileForm,
+    SearchForm,
 )
 from src.app.models.researcher import Researcher, Post, ProfitAndLoss, Trade, followers
 from src.app.translate import translate
@@ -38,7 +39,7 @@ def index():
         db.session.add(post)
         db.session.commit()
         flash(_("Your post is now live!"))
-        return redirect(url_for("index"))
+        return redirect(url_for("main.index"))
     # Set up page and pagination for posts
     page = request.args.get("page", 1, type=int)
     posts = db.paginate(
@@ -47,8 +48,12 @@ def index():
         per_page=current_app.config["POSTS_PER_PAGE"],
         error_out=False,
     )
-    posts_next_url = url_for("index", page=posts.next_num) if posts.has_next else None
-    posts_prev_url = url_for("index", page=posts.prev_num) if posts.has_prev else None
+    posts_next_url = (
+        url_for("main.index", page=posts.next_num) if posts.has_next else None
+    )
+    posts_prev_url = (
+        url_for("main.index", page=posts.prev_num) if posts.has_prev else None
+    )
     form = TradeForm()
     if form.validate_on_submit():
         pnl = db.session.scalar(
@@ -73,7 +78,7 @@ def index():
         db.session.add(trade)
         db.session.commit()
         flash(_("Your trade has been submitted!"))
-        return redirect(url_for("index"))
+        return redirect(url_for("main.index"))
     page = request.args.get("page", 1, type=int)
     own_trades_query = (
         sa.select(Trade)
@@ -104,18 +109,18 @@ def index():
         error_out=False,
     )
     next_url = (
-        url_for("index", page=own_trades.next_num) if own_trades.has_next else None
+        url_for("main.index", page=own_trades.next_num) if own_trades.has_next else None
     )
     prev_url = (
-        url_for("index", page=own_trades.prev_num) if own_trades.has_prev else None
+        url_for("main.index", page=own_trades.prev_num) if own_trades.has_prev else None
     )
     following_next_url = (
-        url_for("index", following_page=following_trades.next_num)
+        url_for("main.index", following_page=following_trades.next_num)
         if following_trades.has_next
         else None
     )
     following_prev_url = (
-        url_for("index", following_page=following_trades.prev_num)
+        url_for("main.index", following_page=following_trades.prev_num)
         if following_trades.has_prev
         else None
     )
@@ -164,8 +169,12 @@ def explore():
         per_page=current_app.config["TRADES_PER_PAGE"],
         error_out=False,
     )
-    next_url = url_for("explore", page=trades.next_num) if trades.has_next else None
-    prev_url = url_for("explore", page=trades.prev_num) if trades.has_prev else None
+    next_url = (
+        url_for("main.explore", page=trades.next_num) if trades.has_next else None
+    )
+    prev_url = (
+        url_for("main.explore", page=trades.prev_num) if trades.has_prev else None
+    )
     return render_template(
         "explore.html",
         title=_("Explore Markets"),
@@ -184,7 +193,7 @@ def find_more_researchers():
         db.session.add(post)
         db.session.commit()
         flash(_("Your post is now live!"))
-        return redirect(url_for("find_more_researchers"))
+        return redirect(url_for("main.find_more_researchers"))
 
     page = request.args.get("page", 1, type=int)
     posts = db.paginate(
@@ -194,12 +203,12 @@ def find_more_researchers():
         error_out=False,
     )
     posts_next_url = (
-        url_for("find_more_researchers", page=posts.next_num)
+        url_for("main.find_more_researchers", page=posts.next_num)
         if posts.has_next
         else None
     )
     posts_prev_url = (
-        url_for("find_more_researchers", page=posts.prev_num)
+        url_for("main.find_more_researchers", page=posts.prev_num)
         if posts.has_prev
         else None
     )
@@ -235,7 +244,7 @@ def researcher(researcher_name):
     )
     next_url = (
         url_for(
-            "researcher",
+            "main.researcher",
             researcher_name=researcher.researcher_name,
             page=trades.next_num,
         )
@@ -244,7 +253,7 @@ def researcher(researcher_name):
     )
     prev_url = (
         url_for(
-            "researcher",
+            "main.researcher",
             researcher_name=researcher.researcher_name,
             page=trades.has_prev,
         )
@@ -274,7 +283,7 @@ def researcher(researcher_name):
 
     posts_next_url = (
         url_for(
-            "researcher",
+            "main.researcher",
             researcher_name=researcher.researcher_name,
             posts_page=posts.next_num,
         )
@@ -283,7 +292,7 @@ def researcher(researcher_name):
     )
     posts_prev_url = (
         url_for(
-            "researcher",
+            "main.researcher",
             researcher_name=researcher.researcher_name,
             posts_page=posts.prev_num,
         )
@@ -334,7 +343,7 @@ def new_trade():
         db.session.add(trade)
         db.session.commit()
         flash(_("Your trade has been submitted!"))
-        return redirect(url_for("index"))
+        return redirect(url_for("main.index"))
 
     return render_template("new_trade.html", title=_("New Trade"), form=form)
 
@@ -349,18 +358,18 @@ def follow(researcher_name):
         )
         if researcher is None:
             flash(f"Researcher {researcher_name} not found.")
-            return redirect(url_for("index"))
+            return redirect(url_for("main.index"))
         if researcher == current_user:
             flash(_("You cannot follow yourself!"))
-            return redirect(url_for("researcher", researcher_name=researcher_name))
+            return redirect(url_for("main.researcher", researcher_name=researcher_name))
         current_user.follow(researcher_name)
         db.session.commit()
         flash(
             _("You are following %(researcher_name)s!", researcher_name=researcher_name)
         )
-        return redirect(url_for("researcher", researcher_name=researcher_name))
+        return redirect(url_for("main.researcher", researcher_name=researcher_name))
     else:
-        return redirect(url_for("index"))
+        return redirect(url_for("main.index"))
 
 
 @bp.route("/unfollow/<researcher_name>", methods=["POST"])
@@ -378,10 +387,10 @@ def unfollow(researcher_name):
                     researcher_name=researcher_name,
                 )
             )
-            return redirect(url_for("index"))
+            return redirect(url_for("main.index"))
         if researcher == current_user:
             flash(_("You cannot unfollow yourself!"))
-            return redirect(url_for("researcher", researcher_name=researcher_name))
+            return redirect(url_for("main.researcher", researcher_name=researcher_name))
         current_user.unfollow(researcher)
         db.session.commit()
         flash(
@@ -390,9 +399,9 @@ def unfollow(researcher_name):
                 researcher_name=researcher_name,
             )
         )
-        return redirect(url_for("researcher", researcher_name=researcher_name))
+        return redirect(url_for("main.researcher", researcher_name=researcher_name))
     else:
-        return redirect(url_for("index"))
+        return redirect(url_for("main.index"))
 
 
 @bp.route("/starter_system", methods=["GET", "POST"])
@@ -405,7 +414,7 @@ def starter_system():
         fast_ewma = int(form.fast_ewma.data)
         slow_ewma = int(form.slow_ewma.data)
         flash(_("Your strategy has been configured and is running!"))
-        return redirect(url_for("index"))
+        return redirect(url_for("main.index"))
 
     return render_template("starter_system.html", title=_("Starter System"), form=form)
 
@@ -419,7 +428,7 @@ def edit_profile():
         current_user.about_me = form.about_me.data
         db.session.commit()
         flash(_("Your changes have been saved"))
-        return redirect(url_for("edit_profile"))
+        return redirect(url_for("auth.edit_profile"))
     elif request.method == "GET":
         form.researcher_name.data = current_user.researcher_name
         form.about_me.data = current_user.about_me
