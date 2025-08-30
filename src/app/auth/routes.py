@@ -60,7 +60,7 @@ def register():
         db.session.add(researcher)
         db.session.commit()
         flash(_("Congratulations, you are now a registered!"))
-        return redirect(url_for("main.login"))
+        return redirect(url_for("auth.login"))
     return render_template("auth/register.html", title="Register", form=form)
 
 
