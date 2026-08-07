@@ -5,7 +5,7 @@ Unit tests for indicators
 import unittest
 from unittest.mock import patch
 import pandas as pd
-from src.strategies.indicator import MovingAverage
+from strategies.indicator import MovingAverage
 
 
 class TestMovingAverage(unittest.TestCase):
@@ -13,7 +13,7 @@ class TestMovingAverage(unittest.TestCase):
     Unit tests for the MovingAverage class.
     """
 
-    @patch("src.models.indicator.indicator_logger")
+    @patch("models.indicator.indicator_logger")
     def setUp(self, mock_logger):
         """
         Set up the test case by initializing the MovingAverage object.
@@ -35,7 +35,7 @@ class TestMovingAverage(unittest.TestCase):
         )
         self.assertIsNone(self.moving_average.moving_average)
 
-    @patch("src.models.indicator.indicator_logger")
+    @patch("models.indicator.indicator_logger")
     def test_calculate(self, mock_logger):
         """Test the calculation of the moving average."""
         self.moving_average.calculate()
@@ -47,7 +47,7 @@ class TestMovingAverage(unittest.TestCase):
         )
         mock_logger.error.assert_not_called()
 
-    @patch("src.models.indicator.indicator_logger")
+    @patch("models.indicator.indicator_logger")
     def test_calculate_error(self, mock_logger):
         """Test the calculation of the moving average with an error due to insufficient prices length."""
         # Set prices to a length less than the moving average length to trigger the error condition

@@ -2,14 +2,14 @@ import unittest
 import pytest
 import pandas as pd
 import numpy as np
-from src.strategies.vol import robust_daily_vol_given_price
-from src.strategies.trading_rule import EWMACTradingRule
-from src.accounts.profit_and_loss import (
+from strategies.vol import robust_daily_vol_given_price
+from strategies.trading_rule import EWMACTradingRule
+from app.accounts.profit_and_loss import (
     get_average_notional_position,
     get_notional_position_for_forecast,
 )
-from src.utils.tabulation import ConsoleTabulator
-from src.utils.references import (
+from utils.tabulation import ConsoleTabulator
+from utils.references import (
     ARBITRARY_FORECAST_ANNUAL_RISK_TARGET_PERCENTAGE,
     ARBITRARY_FORECAST_CAPITAL,
     ROOT_BDAYS_INYEAR,

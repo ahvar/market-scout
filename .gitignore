@@ -3,12 +3,15 @@ envs/*
 .env
 __pycache__
 .coverage
+.flaskenv
+
 
 scrap/*
 notebooks/
 graveyard/
 prices_and_analysis/
 
-src/models/fast_ewma.csv
-src/models/raw_ewmac.csv
-src/models/slow_ewma.csv
+models/fast_ewma.csv
+models/raw_ewmac.csv
+models/slow_ewma.csv
+messages.pot

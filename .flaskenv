@@ -1,1 +1,2 @@
-FLASK_APP=src.app.mkt_scout
+FLASK_APP=mkt_scout_flask_shell_ctx
+FLASK_DEBUG=1

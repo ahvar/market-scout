@@ -8,7 +8,7 @@ class TestConnectionWatchdog(unittest.TestCase):
     Test the ConnectionWatchdog class.
     """
 
-    @patch("src.api.ib_utils.utils_logger")
+    @patch("api.ib_utils.utils_logger")
     def setUp(self, mock_utils_logger):
         self.mock_utils_logger = mock_utils_logger
         self.mock_start_services = MagicMock()

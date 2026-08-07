@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
-from src.app import app
+from app import app
 from datetime import datetime
 
 
@@ -16,11 +16,11 @@ class TestCLI(unittest.TestCase):
         """
         self.runner = CliRunner()
 
-    @patch("src.app.logger")
-    @patch("src.app.IBApiClient")
-    @patch("src.app.IBMarketMemory")
-    @patch("src.app.ContractFactory")
-    @patch("src.app.time.sleep")
+    @patch("app.logger")
+    @patch("app.IBApiClient")
+    @patch("app.IBMarketMemory")
+    @patch("app.ContractFactory")
+    @patch("app.time.sleep")
     def test_historical_quote_valid(
         self, mock_sleep, mock_contract_factory, mock_memory, mock_client, mock_logger
     ):
