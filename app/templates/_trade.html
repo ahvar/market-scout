@@ -1,0 +1,19 @@
+<tr>
+    <td width="70px">
+        <a href="{{ url_for('main.researcher', researcher_name=trade.profit_and_loss.researcher.researcher_name) }}">
+            <img src="{{ trade.profit_and_loss.researcher.avatar(70) }}" />
+        </a>
+    </td>
+    <td>
+        <a href="{{ url_for('main.researcher', researcher_name=trade.profit_and_loss.researcher.researcher_name) }}">
+            {{ trade.profit_and_loss.researcher.researcher_name }}
+        </a>
+        <br>
+        {{_('Instrument')}}: {{ _('%(instrument_name)s', instrument_name=trade.instrument_name) }}<br>
+        {{_('Product')}}: {{ _('%(product_type)s', product_type=trade.product_type) }}<br>
+        {{_('Open Date')}}: {{ trade.open_date }}<br>
+        {{_('Open Price')}}: {{ trade.open_price }}<br>
+        {{_('Close Date')}}: {% if trade.close_date %}{{ trade.close_date }}{% else %}{{ _('N/A') }}{% endif %}<br>
+        {{_('Close Price')}}: {% if trade.close_price != None %}{{ trade.close_price }}{% else %}{{ _('N/A') }}{% endif %}
+    </td>
+</tr>

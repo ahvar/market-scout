@@ -3,10 +3,10 @@ os.environ['DATABASE_URL'] = 'sqlite://'
 
 from datetime import datetime, timezone, timedelta
 import unittest
-from src.app import app, db
-from src.app.models.researcher import Researcher
-from src.app.models.profit_and_loss import ProfitAndLoss
-from src.app.models.trade import Trade
+from app import app, db
+from app.models.researcher import Researcher
+from app.models.profit_and_loss import ProfitAndLoss
+from app.models.trade import Trade
 
 class TestResearcherModel(unittest.TestCase):
     def setUp(self):

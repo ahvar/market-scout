@@ -19,7 +19,7 @@ from broker.ib_api_exception import (
     HistoricalDataMissingException,
     IBApiDataRequestException,
 )
-from src.utils.references import Tickers as T
+from utils.references import Tickers as T
 
 
 class TestIBApiClient(unittest.TestCase):
@@ -45,9 +45,9 @@ class TestIBApiClient(unittest.TestCase):
         if "TEST_MODE" in os.environ:
             del os.environ["TEST_MODE"]
 
-    @patch("src.api.ib.ib_api_logger")
-    @patch("src.api.brokerage.client.ConnectionWatchdog")
-    @patch("src.api.ib_utils.IBMarketMemory")
+    @patch("api.ib.ib_api_logger")
+    @patch("api.brokerage.client.ConnectionWatchdog")
+    @patch("api.ib_utils.IBMarketMemory")
     def setUp(self, mock_market_memory, mock_watchdog, mock_logger):
         """
         Set up the IBApiClient instance and mocks before each test.
@@ -67,9 +67,9 @@ class TestIBApiClient(unittest.TestCase):
         """
         # self.ib_api_client.stop_services()
 
-    @patch("src.api.ib.IBApiClient._run_connection_thread")
-    @patch("src.api.ib.IBApiClient._connect_to_broker_api")
-    @patch("src.api.brokerage.client.ThreadPoolExecutor", autospec=True)
+    @patch("api.ib.IBApiClient._run_connection_thread")
+    @patch("api.ib.IBApiClient._connect_to_broker_api")
+    @patch("api.brokerage.client.ThreadPoolExecutor", autospec=True)
     def test_start_services_schedules_connection(
         self,
         mock_thread_pool_executor,
@@ -95,7 +95,7 @@ class TestIBApiClient(unittest.TestCase):
         mock_executor_instance.submit.assert_has_calls(calls)
         assert mock_executor_instance.submit.call_count == 3
 
-    @patch("src.api.ib.IBApiClient._connect_to_broker_api")
+    @patch("api.ib.IBApiClient._connect_to_broker_api")
     def test_start_services_eventual_connection_success(
         self, mock_connect_to_broker_api
     ):
@@ -109,7 +109,7 @@ class TestIBApiClient(unittest.TestCase):
         self.assertEqual(self.ib_api_client._verify_connection.call_count, 3)
         self.assertEqual(self.ib_api_client._count_attempts_to_verify, 0)
 
-    @patch("src.api.ib.IBApiClient._connect_to_broker_api")
+    @patch("api.ib.IBApiClient._connect_to_broker_api")
     def test_start_services_continuous_connection_failure(
         self, mock_connect_to_broker_api
     ):
@@ -129,7 +129,7 @@ class TestIBApiClient(unittest.TestCase):
         mock_connect_to_broker_api.assert_called_once()
         self.assertEqual(self.ib_api_client._verify_connection.call_count, 4)
 
-    @patch("src.api.ib.IBApiClient._disconnect_from_broker_api")
+    @patch("api.ib.IBApiClient._disconnect_from_broker_api")
     def test_stop_services_disconnection_failure(self, mock_disconnect_from_broker_api):
         """
         Test that stop_services attempts to disconnect but ultimately raises an exception
@@ -148,7 +148,7 @@ class TestIBApiClient(unittest.TestCase):
         self.ib_api_client._run_connection_future.cancel.assert_not_called()
         self.mock_watchdog.return_value.stop_dog.assert_not_called()
 
-    @patch("src.api.ib.IBApiClient._disconnect_from_broker_api")
+    @patch("api.ib.IBApiClient._disconnect_from_broker_api")
     def test_stop_services_eventual_disconnection_success(
         self, mock_disconnect_from_broker_api
     ):
@@ -171,7 +171,7 @@ class TestIBApiClient(unittest.TestCase):
         self.ib_api_client._run_connection_future.cancel.assert_called()
         self.mock_watchdog.return_value.stop_dog.assert_called()
 
-    @patch("src.api.ib.IBApiClient._connect_to_broker_api")
+    @patch("api.ib.IBApiClient._connect_to_broker_api")
     def test_connect_to_ib_successful(self, mock_connect_to_broker_api):
         """
         Test connecting to IB successfully.
@@ -180,7 +180,7 @@ class TestIBApiClient(unittest.TestCase):
         self.ib_api_client.start_services()
         mock_connect_to_broker_api.assert_called()
 
-    @patch("src.api.ib.IBApiClient.reqHistoricalData")
+    @patch("api.ib.IBApiClient.reqHistoricalData")
     def test_request_historical_data_sends_correct_request(
         self, mock_req_historical_data
     ):
@@ -215,7 +215,7 @@ class TestIBApiClient(unittest.TestCase):
             None,
         )
 
-    @patch("src.api.ib.IBApiClient.reqHistoricalData")
+    @patch("api.ib.IBApiClient.reqHistoricalData")
     def test_request_historical_data_handles_errors_gracefully(
         self, mock_req_historical_data
     ):

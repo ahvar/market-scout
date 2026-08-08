@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 mb-4">{{ _('Market Scout') }}</h1>
+            <p class="lead mb-5">
+                {{ _('A comprehensive platform for researching financial markets, running trading strategies, analyzing market trends, and managing account positions. Market Scout provides the tools you need to make informed trading decisions backed by data-driven analysis.') }}
+            </p>
+        </div>
+    </div>
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ _('Starter System') }}</h5>
+                    <p class="card-text">{{ _('A simple trading system designed for beginner traders with minimal capital. Uses EWMA crossover strategies to generate trading signals.') }}</p>
+                    <a href="{{ url_for('main.starter_system') }}" class="btn btn-primary">{{ _('Get Started') }}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ _('Explore Markets') }}</h5>
+                    <p class="card-text">{{ _('Analyze price charts, historical patterns, and market data to identify potential trading opportunities.') }}</p>
+                    <a href="{{ url_for('main.explore') }}" class="btn btn-outline-primary">{{ _('Explore') }}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ _('Research Community') }}</h5>
+                    <p class="card-text">{{ _('Connect with other researchers, share insights, and follow successful traders.') }}</p>
+                    <a href="{{ url_for('main.find_more_researchers') }}" class="btn btn-outline-primary">{{ _('Connect') }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if own_trades or following_trades %}
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">{{ _('Recent Activity') }}</h2>
+            {% if own_trades %}
+            <div class="card mb-4">
+                <div class="card-header">{{ _('Your Recent Trades') }}</div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th width="70px">{{ _('Avatar') }}</th>
+                                <th>{{ _('Trade Details') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for trade in own_trades %}
+                            {% include '_trade.html' %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

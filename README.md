@@ -3,7 +3,7 @@
 
 # Introduction 
 
-This application, MARKET SCOUT, is designed to retrieve real-time and historical market data from a supported brokerage service API.
+This application, MARKET SCOUT, retrieves real-time and historical market data from a supported brokerage service API.
 
 # Installation and Setup for Running Market Scout Locally
 Here are the steps to run Market Scout from the command-line in your local environment. 
@@ -37,7 +37,7 @@ Here are two options for printing the help message for Market Scout
 
 ### Customize Scout to run like any other executable
     # If you have permission, symlink scout to /usr/local/bin/scout
-    $ sudo ln -s /path/to/market_scout/src/scout
+    $ sudo ln -s /path/to/market_scout/scout
 
 ### Run Scout to get Description
     # be sure your virtual environment is activated
@@ -64,7 +64,7 @@ Here are two options for printing the help message for Market Scout
     ```
 2. Change to the directory containing your Flask application:
     ```
-    $ cd ./market_scout/src/api
+    $ cd ./market_scout/api
     ```
 3. Run the Flask development server (replace "app.py" with your Flask entry point if it differs):
     ```
@@ -87,7 +87,7 @@ Here are the steps to build the Market Scout container and run it
     $ docker build -t Dockerfile -f ./containers/Dockerfile .
 
 ## Run the container
-    # the Dockerfile has an ENTRYPOINT that points to market_scout/src/scout.py
+    # the Dockerfile has an ENTRYPOINT that points to market_scout/scout.py
     # running a container from this image will automatically execute the script
     $ docker run --name Dockerfile market-scout
 
